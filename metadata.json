@@ -1,0 +1,6 @@
+{
+  "name": "자동차진단평가사 2급 기출문제집 - 수기 필기 노트",
+  "description": "종이 질감과 수기 펜 노트 감성의 자동차진단평가사 2급 기출문제 풀이 앱. 빨간펜 정답 동그라미 채점 애니메이션과 오답노트 바인더 제공.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

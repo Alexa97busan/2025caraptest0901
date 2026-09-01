@@ -1,0 +1,212 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+}
+
+/* Custom Typography Helper Classes */
+.font-hand {
+  font-family: 'Gaegu', 'Nanum Pen Script', cursive, sans-serif;
+}
+.font-pen {
+  font-family: 'Nanum Pen Script', 'Gaegu', cursive;
+}
+.font-serif-kr {
+  font-family: 'Gowun Batang', serif;
+}
+.font-typewriter {
+  font-family: 'Courier Prime', 'Space Mono', monospace;
+}
+.font-mono-custom {
+  font-family: 'Space Mono', 'SF Mono', Consolas, monospace;
+}
+
+/* Paper Textures & Patterns */
+.paper-texture-ivory {
+  background-color: #f7f5ee;
+  background-image: 
+    radial-gradient(rgba(180, 160, 130, 0.12) 1px, transparent 0),
+    radial-gradient(rgba(200, 180, 150, 0.08) 1px, transparent 0);
+  background-size: 24px 24px, 36px 36px;
+  background-position: 0 0, 12px 12px;
+}
+
+.paper-texture-grid {
+  background-color: #faf8f2;
+  background-image: 
+    linear-gradient(to right, rgba(160, 190, 220, 0.22) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(160, 190, 220, 0.22) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.paper-texture-lined {
+  background-color: #fbf9f4;
+  background-image: linear-gradient(to bottom, transparent 95%, rgba(180, 195, 210, 0.35) 95%);
+  background-size: 100% 28px;
+}
+
+.paper-texture-kraft {
+  background-color: #d8c3a5;
+  background-image: 
+    radial-gradient(rgba(100, 75, 45, 0.1) 1px, transparent 0);
+  background-size: 16px 16px;
+}
+
+.paper-texture-card {
+  background-color: #ffffff;
+  background-image: 
+    radial-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 0);
+  background-size: 8px 8px;
+}
+
+/* Authentic Paper Shadow & Edges */
+.paper-shadow-vintage {
+  box-shadow: 
+    0 1px 3px rgba(0,0,0,0.1),
+    0 12px 28px -4px rgba(0,0,0,0.22),
+    0 2px 0 #e4dfd3 inset;
+}
+
+.paper-shadow-layer {
+  box-shadow: 
+    -2px 3px 6px rgba(0, 0, 0, 0.15),
+    4px 6px 16px rgba(0, 0, 0, 0.18);
+}
+
+/* Washi Tape / Scotch Tape Effect */
+.washi-tape {
+  background-color: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  backdrop-filter: blur(1px);
+  border-left: 2px dashed rgba(0,0,0,0.12);
+  border-right: 2px dashed rgba(0,0,0,0.12);
+}
+
+.washi-tape-yellow {
+  background-color: rgba(255, 238, 140, 0.7);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border-left: 2px dashed rgba(200, 180, 50, 0.2);
+  border-right: 2px dashed rgba(200, 180, 50, 0.2);
+}
+
+/* Red Pen SVG Drawing Animations */
+@keyframes drawCircle {
+  0% {
+    stroke-dashoffset: 600;
+    opacity: 0;
+    transform: scale(0.85) rotate(-5deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes drawSlash {
+  0% {
+    stroke-dashoffset: 200;
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes stampImpact {
+  0% {
+    transform: scale(2.2) rotate(-18deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.92) rotate(-6deg);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1.05) rotate(-8deg);
+  }
+  100% {
+    transform: scale(1) rotate(-7deg);
+    opacity: 0.95;
+  }
+}
+
+@keyframes inkBlotPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+.animate-draw-circle {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation: drawCircle 0.55s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.animate-draw-slash {
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: drawSlash 0.35s ease-out forwards;
+}
+
+.animate-stamp {
+  animation: stampImpact 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Rubber Stamp Styling */
+.rubber-stamp-red {
+  color: #d12e2e;
+  border: 3.5px solid #d12e2e;
+  border-radius: 6px;
+  text-transform: uppercase;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  mask-image: radial-gradient(circle, black 70%, rgba(0,0,0,0.5) 100%);
+  text-shadow: 0 0 1px rgba(209, 46, 46, 0.4);
+  box-shadow: inset 0 0 0 1px #d12e2e;
+}
+
+.rubber-stamp-blue {
+  color: #1d4ed8;
+  border: 3.5px solid #1d4ed8;
+  border-radius: 6px;
+  text-transform: uppercase;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  mask-image: radial-gradient(circle, black 70%, rgba(0,0,0,0.5) 100%);
+  text-shadow: 0 0 1px rgba(29, 78, 216, 0.4);
+}
+
+/* Ballpoint Pen Ink Effect */
+.ink-blue {
+  color: #1e3a8a;
+}
+.ink-red {
+  color: #b91c1c;
+}
+.ink-pencil {
+  color: #374151;
+}
+
+/* Binder Holes */
+.binder-hole {
+  width: 14px;
+  height: 14px;
+  background-color: #242426;
+  border-radius: 50%;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* Paper clip aesthetic */
+.paper-clip-shadow {
+  filter: drop-shadow(2px 3px 2px rgba(0,0,0,0.25));
+}
+
