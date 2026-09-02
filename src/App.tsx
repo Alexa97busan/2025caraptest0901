@@ -7,9 +7,11 @@ import { sound } from './utils/audio';
 
 type ViewMode = 'setup' | 'quiz' | 'result';
 
+const ALL_ROUNDS_KEY = 'ALL';
+
 export default function App() {
   const [view, setView] = useState<ViewMode>('setup');
-  const [selectedYear, setSelectedYear] = useState<string>('2024');
+  const [selectedYear, setSelectedYear] = useState<string>('2026-42');
   const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Array<{ selected: number; correct: boolean } | null>>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -70,16 +72,20 @@ export default function App() {
     setSelectedYear(yearKey);
     setGradingMode(chosenGradingMode);
 
+    const baseSet: Question[] =
+      yearKey === ALL_ROUNDS_KEY
+        ? Object.values(QUIZ_DATABASE).flatMap(set => set.questions)
+        : QUIZ_DATABASE[yearKey].questions;
+
     let qList: Question[] = [];
     if (studyMode === 'wrongOnly') {
-      qList = savedWrongPool.length > 0 ? [...savedWrongPool] : [...QUIZ_DATABASE[yearKey].questions];
+      qList = savedWrongPool.length > 0 ? [...savedWrongPool] : [...baseSet];
     } else if (studyMode === 'quick20') {
       // Pick 20 questions evenly distributed
-      const fullSet = QUIZ_DATABASE[yearKey].questions;
-      const step = fullSet.length / 20;
-      qList = Array.from({ length: 20 }, (_, i) => fullSet[Math.floor(i * step)]);
+      const step = baseSet.length / 20;
+      qList = Array.from({ length: 20 }, (_, i) => baseSet[Math.floor(i * step)]);
     } else {
-      qList = [...QUIZ_DATABASE[yearKey].questions];
+      qList = [...baseSet];
     }
 
     setActiveQuestions(qList);
@@ -175,7 +181,10 @@ export default function App() {
     setView('setup');
   };
 
-  const yearLabel = QUIZ_DATABASE[selectedYear]?.label || `${selectedYear}년도`;
+  const yearLabel =
+    selectedYear === ALL_ROUNDS_KEY
+      ? '2019~2026 전체 통합 모의고사'
+      : QUIZ_DATABASE[selectedYear]?.label || `${selectedYear}년도`;
 
   return (
     <main className="min-h-screen bg-[#242426] text-[#2c2b29] flex flex-col items-center justify-start pb-12">

@@ -11,6 +11,9 @@ interface SetupViewProps {
   onResetAllData: () => void;
 }
 
+const ALL_ROUNDS_KEY = 'ALL';
+const TOTAL_QUESTION_COUNT = Object.values(QUIZ_DATABASE).reduce((sum, s) => sum + s.total, 0);
+
 export const SetupView: React.FC<SetupViewProps> = ({
   onStartQuiz,
   savedWrongCount,
@@ -18,7 +21,7 @@ export const SetupView: React.FC<SetupViewProps> = ({
   onToggleSound,
   onResetAllData
 }) => {
-  const [selectedYear, setSelectedYear] = React.useState<string>('2024');
+  const [selectedYear, setSelectedYear] = React.useState<string>('2026-42');
   const [mode, setMode] = React.useState<'full' | 'quick20'>('full');
   const [gradingMode, setGradingMode] = React.useState<'instant' | 'exam'>('instant');
   const [showResetConfirm, setShowResetConfirm] = React.useState<boolean>(false);
@@ -27,6 +30,24 @@ export const SetupView: React.FC<SetupViewProps> = ({
     setSelectedYear(year);
     sound.playPencilMark();
   };
+
+  // Group exam rounds by year (most recent year first) for a compact folder-tab layout.
+  const groupedByYear = React.useMemo(() => {
+    const groups: Record<string, Array<{ key: string; label: string; total: number }>> = {};
+    Object.entries(QUIZ_DATABASE).forEach(([key, set]) => {
+      if (!groups[set.year]) groups[set.year] = [];
+      groups[set.year].push({ key, label: set.label, total: set.total });
+    });
+    return Object.entries(groups).sort((a, b) => Number(b[0]) - Number(a[0]));
+  }, []);
+
+  const selectedLabel =
+    selectedYear === ALL_ROUNDS_KEY
+      ? '전체 통합 모의고사'
+      : QUIZ_DATABASE[selectedYear]?.label || selectedYear;
+
+  const selectedTotal =
+    selectedYear === ALL_ROUNDS_KEY ? TOTAL_QUESTION_COUNT : QUIZ_DATABASE[selectedYear]?.total ?? 0;
 
   const handleStart = () => {
     sound.playPageTurn();
@@ -76,7 +97,7 @@ export const SetupView: React.FC<SetupViewProps> = ({
               자동차진단평가사 2급
             </h1>
             <p className="font-hand text-base text-[#685947] mt-0.5">
-              기출문제 실전 수기 필기 노트 (2024 · 2025 통합본)
+              기출문제 실전 수기 필기 노트 (2019~2026년 15개 회차 · 900문항)
             </p>
           </div>
 
@@ -100,57 +121,78 @@ export const SetupView: React.FC<SetupViewProps> = ({
           </div>
         </div>
 
-        {/* Year Selection Box */}
+        {/* Year / Round Selection Box */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-serif-kr font-bold text-sm text-[#382f25] flex items-center gap-1.5">
-              <BookOpen className="w-4 h-4 text-[#c2410c]" /> 검정 연도 선택
+              <BookOpen className="w-4 h-4 text-[#c2410c]" /> 검정 연도 · 회차 선택
             </h2>
             <span className="text-[11px] font-mono-custom text-[#7d6e5b]">
-              합격 기준 60점 (36문항 이상)
+              합격 기준 60점 (60% 이상)
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3.5">
-            {Object.keys(QUIZ_DATABASE).map((yr) => {
-              const item = QUIZ_DATABASE[yr];
-              const isSelected = selectedYear === yr;
+          {/* All-rounds combined mega button */}
+          <button
+            onClick={() => handleYearClick(ALL_ROUNDS_KEY)}
+            className={`w-full mb-4 p-4 text-left rounded-xl border-2 transition-all duration-150 ${
+              selectedYear === ALL_ROUNDS_KEY
+                ? 'bg-[#1f1b17] border-[#1f1b17] shadow-sm ring-1 ring-[#c2410c]/40'
+                : 'bg-[#2b251e] border-[#2b251e] hover:bg-[#3a3226]'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-serif-kr font-bold text-[#faf7ee] text-sm flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#fbbf24]" /> 2019~2026 전체 통합 모의고사
+                </div>
+                <div className="text-[11px] font-mono-custom text-[#c9bea9] mt-1">
+                  15개 회차 · 총 {TOTAL_QUESTION_COUNT}문항 랜덤 없이 순서대로 수록
+                </div>
+              </div>
+              {selectedYear === ALL_ROUNDS_KEY && (
+                <CheckCircle2 className="w-5 h-5 text-[#fbbf24] flex-shrink-0" />
+              )}
+            </div>
+          </button>
 
-              return (
-                <button
-                  key={yr}
-                  onClick={() => handleYearClick(yr)}
-                  className={`relative p-4 text-left rounded-xl border-2 transition-all duration-150 ${
-                    isSelected
-                      ? 'bg-[#fef7ee] border-[#c2410c] shadow-sm ring-1 ring-[#c2410c]/30'
-                      : 'bg-[#faf7ef] border-[#d8cebe] hover:border-[#b8a994] hover:bg-[#f5f0e3]'
-                  }`}
-                >
-                  {isSelected && (
-                    <div className="absolute top-2.5 right-2.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#c2410c] inline-block animate-pulse"></span>
-                    </div>
-                  )}
-
-                  <div className="font-mono-custom text-2xl font-bold text-[#1f1b17]">
-                    {yr}년
-                  </div>
-                  <div className="text-xs font-serif-kr text-[#5c4e3f] font-semibold mt-1">
-                    {item.label}
-                  </div>
-                  <div className="text-[11px] font-mono-custom text-[#8a7b69] mt-0.5">
-                    총 {item.total}문항 수록
-                  </div>
-
-                  {/* Stamp mark when selected */}
-                  {isSelected && (
-                    <div className="mt-2.5 pt-2 border-t border-[#f0d4b8] flex items-center gap-1 text-[11px] font-hand font-bold text-[#c2410c]">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> 시험지 세트 준비됨
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+          {/* Year-grouped round chips */}
+          <div className="space-y-3.5 max-h-[340px] overflow-y-auto pr-1">
+            {groupedByYear.map(([year, rounds]) => (
+              <div key={year}>
+                <div className="text-[11px] font-mono-custom font-bold text-[#8a7b69] mb-1.5 px-0.5">
+                  {year}년
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {rounds.map((item) => {
+                    const isSelected = selectedYear === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        onClick={() => handleYearClick(item.key)}
+                        className={`relative p-3 text-left rounded-xl border-2 transition-all duration-150 ${
+                          isSelected
+                            ? 'bg-[#fef7ee] border-[#c2410c] shadow-sm ring-1 ring-[#c2410c]/30'
+                            : 'bg-[#faf7ef] border-[#d8cebe] hover:border-[#b8a994] hover:bg-[#f5f0e3]'
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-2 right-2">
+                            <span className="w-2 h-2 rounded-full bg-[#c2410c] inline-block animate-pulse"></span>
+                          </div>
+                        )}
+                        <div className="text-xs font-serif-kr font-bold text-[#1f1b17] leading-snug pr-3">
+                          {item.label.replace(`${year}년 `, '')}
+                        </div>
+                        <div className="text-[10px] font-mono-custom text-[#8a7b69] mt-0.5">
+                          총 {item.total}문항
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -171,7 +213,7 @@ export const SetupView: React.FC<SetupViewProps> = ({
                   : 'bg-transparent border-[#c9bea9] text-[#6b5c4b] hover:bg-white/50'
               }`}
             >
-              전체 60문항 정주행
+              전체 {selectedTotal}문항 정주행
             </button>
             <button
               onClick={() => {
@@ -250,7 +292,7 @@ export const SetupView: React.FC<SetupViewProps> = ({
           className="w-full py-4 px-6 bg-[#1f1b17] hover:bg-[#38332c] active:scale-[0.99] text-[#faf8f2] font-serif-kr font-bold text-base rounded-xl border border-[#110e0b] shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
           <Sparkles className="w-4 h-4 text-[#fbbf24]" />
-          <span>{selectedYear}년도 시험지 펼치기</span>
+          <span>{selectedLabel} 시험지 펼치기</span>
         </button>
 
         {/* Saved wrong notes shortcut if exists */}
