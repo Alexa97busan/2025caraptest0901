@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>단진자 3D - Apple HIG Edition</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>단진자 3D</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <style>
@@ -51,6 +51,8 @@
       --dock-indicator: rgba(255, 255, 255, 0.08);
     }
 
+    html { height: 100%; }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -64,9 +66,8 @@
       background-color: var(--bg-canvas);
       color: var(--label-primary);
       overflow: hidden;
-      width: 100vw;
-      height: 100vh;
-      height: 100dvh;
+      width: 100%;
+      height: 100%;
       transition: background-color 0.4s var(--ease-out), color 0.4s ease;
       letter-spacing: -0.015em;
     }
@@ -574,8 +575,7 @@
   </style>
 </head>
 <body>
-
-  <!-- 3D 인터랙티브 무대 -->
+<!-- 3D 인터랙티브 무대 -->
   <div id="canvas-container"></div>
 
   <!-- 상단 Dynamic Island 스타일 헤더 -->
@@ -588,6 +588,9 @@
 
     <!-- 우측 테마 토글 및 SF 폰트 HUD -->
     <div class="hud-cluster">
+      <a class="btn-circle" id="homeLink" href="lab.html" aria-label="정비 학습 랩으로 이동" style="text-decoration:none;color:var(--label-primary);">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+      </a>
       <button class="btn-circle" id="themeToggleBtn" aria-label="화면 테마 변경">
         <span id="themeSymbol" aria-hidden="true">🌙</span>
       </button>
@@ -953,7 +956,9 @@
     });
 
     // 첫 진입 시 OS 다크 모드 설정을 따름
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    const hostTheme = document.documentElement.getAttribute('data-theme');
+    if (hostTheme === 'dark' || (!hostTheme && window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       applyAppleTheme('dark');
     }
 

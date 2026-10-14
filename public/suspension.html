@@ -93,6 +93,12 @@
     font-size: 0.75rem; font-weight: 600; color: var(--fg-2);
     background: var(--fill); padding: 4px 10px; border-radius: 999px;
   }
+  .home-link {
+    color: var(--accent); background: var(--accent-soft); text-decoration: none;
+    transition: transform 0.18s var(--ease-out);
+  }
+  .home-link:active { transform: scale(0.95); }
+  .home-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .main { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
   @media (min-width: 920px) {
@@ -228,7 +234,6 @@
 </style>
 </head>
 <body>
-
 <div class="wrap">
   <header class="top">
     <div class="brand">
@@ -240,7 +245,10 @@
         <p class="sub">스프링과 쇼크업소버가 노면 충격을 어떻게 다루는지 직접 바꿔 보며 확인합니다</p>
       </div>
     </div>
-    <span class="model-tag">1/4 차량(쿼터카) 2자유도 모델</span>
+    <div class="btn-row">
+      <span class="model-tag">1/4 차량(쿼터카) 2자유도 모델</span>
+      <a class="model-tag home-link" href="lab.html">← 정비 학습 랩</a>
+    </div>
   </header>
 
   <div class="main">

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>정비 학습 랩</title>
+<style>
+  /* Layout: 소개 한 줄 → 시뮬레이터 카드 2장(학습 순서대로) → 준비 중 목록 */
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --fill: rgba(118, 118, 128, 0.12);
+    --fg: #1c1c1e;
+    --fg-2: #6e6e73;
+    --line: rgba(60, 60, 67, 0.14);
+    --accent: #007aff;
+    --accent-soft: rgba(0, 122, 255, 0.12);
+    --spring: #ff9500;
+    --bob: #ff3b30;
+    --steel: #8e8e93;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
+    --shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.05), 0 14px 34px rgba(0, 0, 0, 0.10);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+      --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+      --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+      --spring: #ff9f0a; --bob: #ff453a; --steel: #aeaeb2;
+      --shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+      --shadow-hover: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 14px 34px rgba(0, 0, 0, 0.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+    --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+    --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+    --spring: #ff9f0a; --bob: #ff453a; --steel: #aeaeb2;
+    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+    --shadow-hover: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 14px 34px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding-inline: 16px;
+    padding-block: 32px 48px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.55;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; display: grid; gap: 28px; }
+
+  header { display: grid; gap: 8px; }
+  .eyebrow { font-size: 0.78rem; font-weight: 600; color: var(--fg-2); letter-spacing: 0.02em; margin: 0; }
+  h1 { margin: 0; font-size: clamp(1.8rem, 5vw, 2.5rem); font-weight: 700; letter-spacing: -0.035em; line-height: 1.15; text-wrap: balance; }
+  .lead { margin: 0; color: var(--fg-2); max-width: 60ch; }
+
+  .section-title { font-size: 0.85rem; font-weight: 650; color: var(--fg-2); margin: 0 0 12px; }
+
+  /* 카드 = 링크 전체. 호버 시 살짝 떠오르고 화살표가 앞으로 → '이동한다'는 신호 */
+  .cards { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 720px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  .card {
+    display: grid; grid-template-rows: auto 1fr; min-width: 0;
+    background: var(--surface); border-radius: 22px; overflow: hidden;
+    box-shadow: var(--shadow); color: inherit; text-decoration: none;
+    transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out);
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+  .card:active { transform: translateY(0) scale(0.985); transition-duration: 0.12s; }
+  .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .preview { display: block; width: 100%; aspect-ratio: 16 / 8; background: var(--fill); }
+
+  .card-body { display: grid; gap: 10px; padding: 18px 20px 20px; align-content: start; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .step { font-size: 0.72rem; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+  .tag { font-size: 0.72rem; font-weight: 600; color: var(--fg-2); background: var(--fill); padding: 2px 8px; border-radius: 999px; }
+  .card h2 { margin: 0; font-size: 1.25rem; letter-spacing: -0.025em; }
+  .card p { margin: 0; font-size: 0.88rem; color: var(--fg-2); }
+  .formula {
+    font-size: 0.82rem; font-weight: 600; font-variant-numeric: tabular-nums;
+    padding: 8px 10px; border-radius: 10px; background: var(--fill); color: var(--fg);
+    overflow-x: auto; white-space: nowrap;
+  }
+  .learn { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 0.84rem; color: var(--fg-2); }
+  .open { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; font-weight: 650; color: var(--accent); margin-top: 4px; }
+  .open svg { width: 14px; height: 14px; transition: transform 0.3s var(--ease-out); }
+  .card:hover .open svg { transform: translateX(4px); }
+
+  /* 두 페이지를 잇는 개념 */
+  .bridge {
+    display: grid; gap: 6px; padding: 16px 20px; border-radius: 18px;
+    background: var(--surface); box-shadow: var(--shadow);
+  }
+  .bridge strong { font-size: 0.95rem; }
+  .bridge p { margin: 0; font-size: 0.86rem; color: var(--fg-2); }
+  .bridge code { font-family: inherit; font-weight: 650; color: var(--fg); }
+
+  /* 준비 중 */
+  .soon { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; background: var(--surface); border-radius: 18px; box-shadow: var(--shadow); }
+  .soon li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 18px; border-top: 1px solid var(--line); font-size: 0.9rem; }
+  .soon li:first-child { border-top: none; }
+  .soon span:first-child { min-width: 0; }
+  .soon small { display: block; color: var(--fg-2); font-size: 0.78rem; }
+  .soon .tag { flex-shrink: 0; }
+
+  footer { font-size: 0.78rem; color: var(--fg-2); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">자동차산업기사 · 인터랙티브 학습</p>
+    <h1>정비 학습 랩</h1>
+    <p class="lead">교재의 공식과 그림을 직접 움직여 보며 익히는 시뮬레이터 모음입니다. 값을 바꾸면 결과가 바로 보이니, 외우기 전에 먼저 눈으로 이해해 보세요.</p>
+  </header>
+
+  <section>
+    <h2 class="section-title">시뮬레이터</h2>
+    <div class="cards">
+      <a class="card" href="pendulum.html">
+        <canvas class="preview" id="pvPendulum" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="step">1단계</span><span class="tag">물리 기초</span><span class="tag">3D</span></div>
+          <h2>단진자 3D</h2>
+          <p>실의 길이, 중력, 질량, 공기 저항을 바꾸며 주기와 역학적 에너지 보존을 확인합니다.</p>
+          <div class="formula">T = 2π√(L / g)</div>
+          <ul class="learn">
+            <li>주기는 질량과 무관하고 길이와 중력에만 달라짐</li>
+            <li>운동·위치 에너지의 교환과 감쇠에 의한 손실</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a class="card" href="suspension.html">
+        <canvas class="preview" id="pvSuspension" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="step">2단계</span><span class="tag">섀시 · 현가장치</span><span class="tag">2D</span></div>
+          <h2>현가장치 시뮬레이터</h2>
+          <p>스프링 상수와 쇼크업소버 감쇠를 조절해 방지턱, 포트홀, 요철을 지날 때의 승차감과 접지력을 비교합니다.</p>
+          <div class="formula">ζ = c / (2√(k·m)) · f = (1/2π)√(k/m)</div>
+          <ul class="learn">
+            <li>부족·임계·과감쇠와 쇼크업소버 불량 증상</li>
+            <li>바운스 테스트, 공진, 스프링 아래 질량의 영향</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="bridge">
+    <strong>두 시뮬레이터는 같은 원리로 이어집니다</strong>
+    <p>단진자의 <code>공기 저항(Damping)</code>은 현가장치의 <code>쇼크업소버 감쇠 계수 c</code>와 같은 역할을 합니다. 둘 다 속도에 비례하는 저항으로 진동 에너지를 열로 바꿔 진폭을 줄입니다. 단진자에서 감쇠를 0으로 두면 계속 흔들리는 것처럼, 쇼크업소버가 불량이면 차체가 계속 출렁입니다.</p>
+  </section>
+
+  <section>
+    <h2 class="section-title">다음에 추가할 후보</h2>
+    <ul class="soon">
+      <li><span>브레이크 유압 배력<small>파스칼의 원리 · 마스터 실린더와 휠 실린더 면적비</small></span><span class="tag">준비 중</span></li>
+      <li><span>4행정 사이클 엔진<small>흡입·압축·폭발·배기와 밸브 타이밍</small></span><span class="tag">준비 중</span></li>
+      <li><span>조향 기하학<small>애커먼 장토식 · 캠버 · 캐스터 · 토인</small></span><span class="tag">준비 중</span></li>
+    </ul>
+  </section>
+
+  <footer>수치는 개념 이해를 위한 단순화 모델 기준입니다.</footer>
+</div>
+
+<script>
+(() => {
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let C = {};
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    ['fg', 'fg-2', 'line', 'accent', 'spring', 'bob', 'steel', 'surface'].forEach(t => { C[t] = cs.getPropertyValue('--' + t).trim(); });
+  }
+  readTokens();
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTokens);
+  new MutationObserver(readTokens).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  function setup(cv) {
+    const ctx = cv.getContext('2d');
+    const fit = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const r = cv.getBoundingClientRect();
+      cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cv._w = r.width; cv._h = r.height;
+    };
+    new ResizeObserver(fit).observe(cv);
+    fit();
+    return ctx;
+  }
+
+  const pv1 = document.getElementById('pvPendulum');
+  const pv2 = document.getElementById('pvSuspension');
+  const ctx1 = setup(pv1), ctx2 = setup(pv2);
+
+  // 단진자 미리보기: 감쇠 없이 일정하게 흔들림
+  function drawPendulum(t) {
+    const W = pv1._w, H = pv1._h, ctx = ctx1;
+    ctx.clearRect(0, 0, W, H);
+    const px = W / 2, py = H * 0.16, L = H * 0.6;
+    const a = (reduce ? 0.5 : Math.cos(t * 2.6)) * 0.55;
+    ctx.strokeStyle = C.steel; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(px - 70, py); ctx.lineTo(px + 70, py); ctx.stroke();
+    // 궤적 호
+    ctx.strokeStyle = C.accent; ctx.globalAlpha = 0.35; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(px, py, L, Math.PI / 2 - 0.55, Math.PI / 2 + 0.55); ctx.stroke();
+    ctx.globalAlpha = 1;
+    const bx = px + Math.sin(a) * L, by = py + Math.cos(a) * L;
+    ctx.strokeStyle = C['fg-2']; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.fillStyle = C.accent; ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.bob; ctx.beginPath(); ctx.arc(bx, by, Math.max(10, H * 0.07), 0, Math.PI * 2); ctx.fill();
+  }
+
+  // 현가장치 미리보기: 방지턱을 넘은 뒤 감쇠 진동 (ζ≈0.3)
+  function drawSuspension(t) {
+    const W = pv2._w, H = pv2._h, ctx = ctx2;
+    ctx.clearRect(0, 0, W, H);
+    const s = H / 150;
+    const groundY = H * 0.82, wx = W * 0.42;
+    const cycle = 3.2, local = reduce ? 1.4 : t % cycle;
+    // 차체 응답: 감쇠 정현파
+    const body = local < 0.25 ? Math.sin(local / 0.25 * Math.PI / 2) * 16 * s
+      : 16 * s * Math.exp(-2.4 * (local - 0.25)) * Math.cos(8.2 * (local - 0.25));
+    const wheel = local < 0.35 ? Math.sin(local / 0.35 * Math.PI) * 12 * s : 0;
+    // 노면과 지나간 방지턱
+    ctx.strokeStyle = C['fg-2']; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, groundY);
+    const bumpX = wx - local * 120 * s;
+    for (let x = 0; x <= W; x += 2) {
+      const d = x - bumpX;
+      const h = Math.abs(d) < 26 * s ? Math.cos(d / (26 * s) * Math.PI / 2) * 12 * s : 0;
+      ctx.lineTo(x, groundY - h);
+    }
+    ctx.stroke();
+    const R = 20 * s, hubY = groundY - R - wheel;
+    const bodyBottom = groundY - R - 34 * s - body;
+    // 스프링
+    const sx = wx - 6 * s, segs = 10, cw = 6 * s;
+    ctx.strokeStyle = C.spring; ctx.lineWidth = 2.5 * s; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(sx, hubY);
+    for (let i = 1; i < segs; i++) ctx.lineTo(sx + (i % 2 ? cw : -cw), hubY + (bodyBottom - hubY) * i / segs);
+    ctx.lineTo(sx, bodyBottom); ctx.stroke();
+    // 댐퍼
+    ctx.strokeStyle = C.steel; ctx.lineWidth = 2 * s;
+    ctx.beginPath(); ctx.moveTo(wx + 12 * s, bodyBottom); ctx.lineTo(wx + 12 * s, hubY); ctx.stroke();
+    ctx.fillStyle = C.steel; ctx.fillRect(wx + 8 * s, hubY - 18 * s, 8 * s, 18 * s);
+    // 바퀴
+    ctx.fillStyle = C.fg; ctx.beginPath(); ctx.arc(wx, hubY, R, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.steel; ctx.beginPath(); ctx.arc(wx, hubY, R * 0.55, 0, Math.PI * 2); ctx.fill();
+    // 차체
+    ctx.fillStyle = C.accent; ctx.globalAlpha = 0.9;
+    const bw = 120 * s, bh = 26 * s, x0 = wx - bw * 0.4, y0 = bodyBottom - bh, r = 8 * s;
+    ctx.beginPath();
+    ctx.moveTo(x0 + r, y0); ctx.arcTo(x0 + bw, y0, x0 + bw, y0 + bh, r); ctx.arcTo(x0 + bw, y0 + bh, x0, y0 + bh, r);
+    ctx.arcTo(x0, y0 + bh, x0, y0, r); ctx.arcTo(x0, y0, x0 + bw, y0, r); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // 화면에 보일 때만 애니메이션
+  const visible = new Set();
+  const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? visible.add(e.target) : visible.delete(e.target)));
+  io.observe(pv1); io.observe(pv2);
+
+  function loop(now) {
+    const t = now / 1000;
+    if (visible.has(pv1) || reduce) drawPendulum(t);
+    if (visible.has(pv2) || reduce) drawSuspension(t);
+    if (!reduce) requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
