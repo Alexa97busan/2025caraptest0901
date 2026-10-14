@@ -698,6 +698,7 @@
     drawTop(); drawCamber(); drawCaster(); drawToe();
   }
   updateText(); updateAlign();
+  if (location.hash === '#example') $('btnExample').click();
   requestAnimationFrame(loop);
 })();
 </script>

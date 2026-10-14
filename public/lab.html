@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>물리 시스템 알기</title>
 <style>
-  /* Layout: 소개 → 1단계 기초(넓은 카드) → 2~5단계 자동차 시스템(2×2 카드) → 연결 개념 */
+  /* Layout: 소개 → 문제 풀이 배너 → 시험 과목별 섹션(기초·엔진·섀시 2×2·전기) → 연결 개념 */
   :root {
     --bg: #f2f2f7;
     --surface: #ffffff;
@@ -115,6 +115,23 @@
   }
   .sections { display: grid; gap: 28px; }
 
+  .quiz-banner {
+    display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-radius: 20px;
+    background: var(--accent); color: #fff; text-decoration: none; box-shadow: var(--shadow);
+    transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out);
+  }
+  .quiz-banner:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+  .quiz-banner:active { transform: scale(0.985); transition-duration: 0.12s; }
+  .quiz-banner:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+  .quiz-icon { width: 40px; height: 40px; border-radius: 12px; background: rgba(255, 255, 255, 0.2); display: grid; place-items: center; flex-shrink: 0; }
+  .quiz-icon svg { width: 22px; height: 22px; }
+  .quiz-text { display: grid; gap: 2px; min-width: 0; flex: 1; }
+  .quiz-text strong { font-size: 1.05rem; }
+  .quiz-text small { font-size: 0.8rem; opacity: 0.85; }
+  .quiz-banner .open { color: #fff; margin: 0; flex-shrink: 0; }
+  .quiz-banner:hover .open svg { transform: translateX(4px); }
+  .meta:empty { display: none; }
+
   footer { font-size: 0.78rem; color: var(--fg-2); }
 
   @media (prefers-reduced-motion: reduce) {
@@ -127,16 +144,22 @@
   <header>
     <p class="eyebrow">자동차산업기사 · 인터랙티브 학습</p>
     <h1>물리 시스템 알기</h1>
-    <p class="lead">교재의 공식과 그림을 직접 움직여 보며 익히는 시뮬레이터 5개입니다. 값을 바꾸면 결과가 바로 보이니, 외우기 전에 먼저 눈으로 이해해 보세요.</p>
+    <p class="lead">교재의 공식과 그림을 직접 움직여 보며 익히는 시뮬레이터 7개와 연습 문제입니다. 섹션은 시험 과목 순서로 묶었습니다. 값을 바꾸면 결과가 바로 보이니, 외우기 전에 먼저 눈으로 이해해 보세요.</p>
   </header>
 
   <div class="sections">
+  <a class="quiz-banner" href="quiz.html">
+    <span class="quiz-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2 2 4-4"/><rect x="4" y="3" width="16" height="18" rx="2"/></svg></span>
+    <span class="quiz-text"><strong>기출 유형 문제 29개</strong><small>7개 단원 계산·개념 문제. 답을 고르면 해설과 해당 시뮬레이터로 연결됩니다</small></span>
+    <span class="open">풀기 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg></span>
+  </a>
+
   <section>
-    <h2 class="section-title">기초 · 진동과 에너지</h2>
+    <h2 class="section-title">기초 물리</h2>
       <a class="card wide" href="pendulum.html">
         <canvas class="preview" id="pvPendulum" aria-hidden="true"></canvas>
         <div class="card-body">
-          <div class="meta"><span class="step">1단계</span><span class="tag">물리 기초</span><span class="tag">3D</span></div>
+          <div class="meta"><span class="tag">진동과 에너지</span><span class="tag">3D</span></div>
           <h2>단진자 3D</h2>
           <p>실의 길이, 중력, 질량, 공기 저항을 바꾸며 주기와 역학적 에너지 보존을 확인합니다.</p>
           <div class="formula">T = 2π√(L / g)</div>
@@ -152,12 +175,32 @@
   </section>
 
   <section>
-    <h2 class="section-title">자동차 시스템</h2>
+    <h2 class="section-title">엔진</h2>
+      <a class="card wide" href="engine.html">
+        <canvas class="preview" id="pvEngine" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">4행정 사이클</span></div>
+          <h2>4행정 엔진 시뮬레이터</h2>
+          <p>흡입·압축·폭발·배기 행정과 밸브 타이밍 선도를 함께 보고, 배기량과 압축비를 계산합니다.</p>
+          <div class="formula">ε = (Vs + Vc) ÷ Vc · 오버랩 = IO + EC</div>
+          <ul class="learn">
+            <li>밸브 열림 기간과 오버랩 계산</li>
+            <li>배기량, 압축비, 평균 피스톤 속도, 폭발 간격</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+  </section>
+
+  <section>
+    <h2 class="section-title">섀시</h2>
     <div class="cards">
       <a class="card" href="suspension.html">
         <canvas class="preview" id="pvSuspension" aria-hidden="true"></canvas>
         <div class="card-body">
-          <div class="meta"><span class="step">2단계</span><span class="tag">섀시 · 현가장치</span></div>
+          <div class="meta"><span class="tag">현가장치</span></div>
           <h2>현가장치 시뮬레이터</h2>
           <p>스프링 상수와 쇼크업소버 감쇠를 조절해 방지턱, 포트홀, 요철을 지날 때의 승차감과 접지력을 비교합니다.</p>
           <div class="formula">ζ = c / (2√(k·m)) · f = (1/2π)√(k/m)</div>
@@ -173,7 +216,7 @@
       <a class="card" href="brake.html">
         <canvas class="preview" id="pvBrake" aria-hidden="true"></canvas>
         <div class="card-body">
-          <div class="meta"><span class="step">3단계</span><span class="tag">섀시 · 제동장치</span></div>
+          <div class="meta"><span class="tag">제동장치</span></div>
           <h2>브레이크 유압 시뮬레이터</h2>
           <p>페달력이 페달비와 배력장치, 유압을 거쳐 캘리퍼에서 몇 배로 커지는지 계산 과정과 함께 봅니다.</p>
           <div class="formula">P = F ÷ A · F휠 = P × A휠</div>
@@ -186,26 +229,10 @@
           </span>
         </div>
       </a>
-      <a class="card" href="engine.html">
-        <canvas class="preview" id="pvEngine" aria-hidden="true"></canvas>
-        <div class="card-body">
-          <div class="meta"><span class="step">4단계</span><span class="tag">엔진</span></div>
-          <h2>4행정 엔진 시뮬레이터</h2>
-          <p>흡입·압축·폭발·배기 행정과 밸브 타이밍 선도를 함께 보고, 배기량과 압축비를 계산합니다.</p>
-          <div class="formula">ε = (Vs + Vc) ÷ Vc · 오버랩 = IO + EC</div>
-          <ul class="learn">
-            <li>밸브 열림 기간과 오버랩 계산</li>
-            <li>배기량, 압축비, 평균 피스톤 속도, 폭발 간격</li>
-          </ul>
-          <span class="open">열기
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
-          </span>
-        </div>
-      </a>
       <a class="card" href="steering.html">
         <canvas class="preview" id="pvSteering" aria-hidden="true"></canvas>
         <div class="card-body">
-          <div class="meta"><span class="step">5단계</span><span class="tag">섀시 · 조향장치</span></div>
+          <div class="meta"><span class="tag">조향장치</span></div>
           <h2>조향 기하학 시뮬레이터</h2>
           <p>애커먼 장토식으로 네 바퀴가 한 회전 중심을 도는 원리와 캠버·캐스터·토의 역할을 확인합니다.</p>
           <div class="formula">R = L ÷ sin α + r</div>
@@ -218,12 +245,49 @@
           </span>
         </div>
       </a>
+      <a class="card" href="gearbox.html">
+        <canvas class="preview" id="pvGear" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">동력전달장치</span></div>
+          <h2>변속기 기어비 시뮬레이터</h2>
+          <p>변속비와 종감속비가 엔진 회전을 차속과 구동력으로 바꾸는 과정을 기어 애니메이션과 계산으로 봅니다.</p>
+          <div class="formula">총감속비 = 변속비 × 종감속비</div>
+          <ul class="learn">
+            <li>바퀴 회전수, 차속, 구동력 계산</li>
+            <li>차동장치: 좌 + 우 = 링기어 × 2</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
     </div>
   </section>
+
+  <section>
+    <h2 class="section-title">전기·전자</h2>
+      <a class="card wide" href="circuit.html">
+        <canvas class="preview" id="pvCircuit" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">옴의 법칙</span><span class="tag">진단</span></div>
+          <h2>전기회로 실습판</h2>
+          <p>전구 회로를 직렬·병렬로 바꾸고, 단선과 접촉 저항 고장을 멀티미터 전압 강하 시험으로 찾아봅니다.</p>
+          <div class="formula">V = I × R · P = V × I</div>
+          <ul class="learn">
+            <li>직렬·병렬 합성 저항과 전류 분배</li>
+            <li>단선 지점 양단에 전원 전압이 걸리는 이유</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+  </section>
+
   </div>
 
   <section class="bridge">
-    <strong>1단계와 2단계는 같은 원리로 이어집니다</strong>
+    <strong>단진자와 현가장치는 같은 원리로 이어집니다</strong>
     <p>단진자의 <code>공기 저항(Damping)</code>은 현가장치의 <code>쇼크업소버 감쇠 계수 c</code>와 같은 역할을 합니다. 둘 다 속도에 비례하는 저항으로 진동 에너지를 열로 바꿔 진폭을 줄입니다. 단진자에서 감쇠를 0으로 두면 계속 흔들리는 것처럼, 쇼크업소버가 불량이면 차체가 계속 출렁입니다.</p>
   </section>
 
@@ -249,7 +313,7 @@
       const r = cv.getBoundingClientRect();
       cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      cv._w = r.width; cv._h = r.height;
+      cv._w = r.width; cv._h = r.height; cv._dirty = true;  // 크기 재설정은 캔버스를 지우므로 다시 그리기 표시
     };
     new ResizeObserver(fit).observe(cv);
     fit();
@@ -261,7 +325,9 @@
   const pv3 = document.getElementById('pvBrake');
   const pv4 = document.getElementById('pvEngine');
   const pv5 = document.getElementById('pvSteering');
-  const ctx1 = setup(pv1), ctx2 = setup(pv2), ctx3 = setup(pv3), ctx4 = setup(pv4), ctx5 = setup(pv5);
+  const pvG = document.getElementById('pvGear');
+  const pvC = document.getElementById('pvCircuit');
+  const ctx1 = setup(pv1), ctx2 = setup(pv2), ctx3 = setup(pv3), ctx4 = setup(pv4), ctx5 = setup(pv5), ctxG = setup(pvG), ctxC = setup(pvC);
 
   // 단진자 미리보기: 감쇠 없이 일정하게 흔들림
   function drawPendulum(t) {
@@ -355,7 +421,7 @@
     const W = pv4._w, H = pv4._h, ctx = ctx4;
     ctx.clearRect(0, 0, W, H);
     const th = reduce ? 2.2 : t * 2.4;
-    const S = H * 0.3, r = S / 2, l = S * 1.5, cx = W / 2;
+    const S = H * 0.26, r = S / 2, l = S * 1.5, cx = W / 2;
     const top = H * 0.1, crankY = top + S * 0.3 + r + l + S * 0.2;
     const x = r * Math.cos(th) + Math.sqrt(l * l - Math.pow(r * Math.sin(th), 2));
     const pTop = crankY - x - S * 0.2;
@@ -398,20 +464,70 @@
     if (ox > 0) { ctx.fillStyle = C.accent; ctx.beginPath(); ctx.arc(ox, ry, 4, 0, Math.PI * 2); ctx.fill(); }
   }
 
+
+  // 변속기 미리보기: 크기가 다른 두 기어가 맞물려 회전 (작은 기어가 더 빨리)
+  function drawGear(t) {
+    const W = pvG._w, H = pvG._h, ctx = ctxG;
+    ctx.clearRect(0, 0, W, H);
+    const a = reduce ? 0.3 : t * 1.2;
+    const g = (cx, cy, z, m, ang, col) => {
+      const R = z * m / 2;
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang); ctx.fillStyle = col; ctx.beginPath();
+      for (let i = 0; i < z; i++) { const b = i / z * Math.PI * 2, w = Math.PI / z;
+        [[R - m * 0.45, b - w * 0.55], [R + m * 0.45, b - w * 0.3], [R + m * 0.45, b + w * 0.3], [R - m * 0.45, b + w * 0.55]]
+          .forEach(([r, q], j) => (i || j) ? ctx.lineTo(Math.cos(q) * r, Math.sin(q) * r) : ctx.moveTo(Math.cos(q) * r, Math.sin(q) * r)); }
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = C.surface; ctx.beginPath(); ctx.arc(0, 0, R * 0.2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    };
+    const m = H / 34, z1 = 12, z2 = 24;
+    const x1 = W / 2 - (z1 + z2) * m / 4 - z1 * m / 4, x2 = x1 + (z1 + z2) * m / 2;
+    g(x1, H / 2, z1, m, a, C.accent);
+    g(x2, H / 2, z2, m, -a * z1 / z2 + Math.PI / z2, C.steel);
+  }
+
+  // 전기회로 미리보기: 닫힌 회로를 도는 전류와 켜진 전구
+  function drawCircuit(t) {
+    const W = pvC._w, H = pvC._h, ctx = ctxC;
+    ctx.clearRect(0, 0, W, H);
+    const L = W * 0.2, R = W * 0.8, T = H * 0.28, B = H * 0.75;
+    ctx.strokeStyle = C['fg-2']; ctx.lineWidth = 2.5;
+    ctx.strokeRect(L, T, R - L, B - T);
+    const per = 2 * ((R - L) + (B - T));
+    const at = d => { d = ((d % per) + per) % per;
+      if (d < B - T) return [L, B - d]; d -= B - T;
+      if (d < R - L) return [L + d, T]; d -= R - L;
+      if (d < B - T) return [R, T + d]; d -= B - T; return [R - d, B]; };
+    ctx.fillStyle = C.accent;
+    const off = reduce ? 0 : t * 40;
+    for (let d = 0; d < per; d += 18) { const [x, y] = at(d + off); ctx.beginPath(); ctx.arc(x, y, 2.6, 0, Math.PI * 2); ctx.fill(); }
+    const bx = (L + R) / 2, r = H * 0.09;
+    const gr = ctx.createRadialGradient(bx, T, r * 0.3, bx, T, r * 2.8); gr.addColorStop(0, C.spring); gr.addColorStop(1, 'transparent');
+    ctx.globalAlpha = 0.6; ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(bx, T, r * 2.8, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.fillStyle = C.surface; ctx.strokeStyle = C.fg; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(bx, T, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.spring; ctx.beginPath(); ctx.arc(bx, T, r * 0.7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.surface; ctx.fillRect(L - 14, (T + B) / 2 - 10, 28, 20);
+    ctx.strokeStyle = C.fg; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(L - 14, (T + B) / 2 - 5); ctx.lineTo(L + 14, (T + B) / 2 - 5); ctx.stroke();
+    ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(L - 8, (T + B) / 2 + 5); ctx.lineTo(L + 8, (T + B) / 2 + 5); ctx.stroke();
+  }
+
   // 화면에 보일 때만 애니메이션
   const visible = new Set();
   const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? visible.add(e.target) : visible.delete(e.target)));
-  [pv1, pv2, pv3, pv4, pv5].forEach(c => io.observe(c));
+  [pv1, pv2, pv3, pv4, pv5, pvG, pvC].forEach(c => io.observe(c));
 
   let first = true;   // 첫 프레임은 화면 밖 카드도 그려 둠 (정지 상태로도 완성된 화면)
   function loop(now) {
     const t = now / 1000;
     const all = first || reduce; first = false;
-    if (visible.has(pv1) || all) drawPendulum(t);
-    if (visible.has(pv2) || all) drawSuspension(t);
-    if (visible.has(pv3) || all) drawBrake(t);
-    if (visible.has(pv4) || all) drawEngine(t);
-    if (visible.has(pv5) || all) drawSteering(t);
+    if (visible.has(pv1) || all || pv1._dirty) { drawPendulum(t); pv1._dirty = false; }
+    if (visible.has(pv2) || all || pv2._dirty) { drawSuspension(t); pv2._dirty = false; }
+    if (visible.has(pv3) || all || pv3._dirty) { drawBrake(t); pv3._dirty = false; }
+    if (visible.has(pv4) || all || pv4._dirty) { drawEngine(t); pv4._dirty = false; }
+    if (visible.has(pv5) || all || pv5._dirty) { drawSteering(t); pv5._dirty = false; }
+    if (visible.has(pvG) || all || pvG._dirty) { drawGear(t); pvG._dirty = false; }
+    if (visible.has(pvC) || all || pvC._dirty) { drawCircuit(t); pvC._dirty = false; }
     if (!reduce) requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>기출 유형 문제</title>
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --fill: rgba(118, 118, 128, 0.12);
+    --fg: #1c1c1e;
+    --fg-2: #6e6e73;
+    --line: rgba(60, 60, 67, 0.14);
+    --accent: #007aff;
+    --accent-soft: rgba(0, 122, 255, 0.12);
+    --good: #248a3d;
+    --good-soft: rgba(52, 199, 89, 0.16);
+    --warn: #c93400;
+    --warn-soft: rgba(255, 149, 0, 0.18);
+    --bad: #d70015;
+    --bad-soft: rgba(255, 59, 48, 0.14);
+    --steel: #9aa1ab;
+    --steel-dark: #636366;
+    --metal: #c9ced6;
+    --tire: #2c2c2e;
+    --hot: #ff9500;
+    --fire: #ff3b30;
+    --fluid: #af52de;
+    --cool: #5ac8fa;
+    --knob: #ffffff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+      --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+      --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+      --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+      --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+      --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+      --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+      --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+      --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+    --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+    --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+    --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+    --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+    --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+    --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+    --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding-inline: 16px;
+    padding-block: 20px 40px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-icon { width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0; background: var(--accent); display: grid; place-items: center; }
+  .brand-icon svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  h1 { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.025em; text-wrap: balance; }
+  .sub { margin: 0; font-size: 0.82rem; color: var(--fg-2); }
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .model-tag { font-size: 0.75rem; font-weight: 600; color: var(--fg-2); background: var(--fill); padding: 4px 10px; border-radius: 999px; }
+  .home-link { color: var(--accent); background: var(--accent-soft); text-decoration: none; transition: transform 0.18s var(--ease-out); }
+  .home-link:active { transform: scale(0.95); }
+  .home-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .main { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 920px) {
+    .main { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; }
+    .side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  }
+  .col { display: grid; gap: 14px; min-width: 0; }
+
+  .panel { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: 16px; min-width: 0; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .panel-title { font-size: 0.95rem; font-weight: 650; margin: 0; }
+  .hint { font-size: 0.75rem; color: var(--fg-2); margin: 0; }
+
+  .stage { position: relative; padding: 0; overflow: hidden; }
+  .stage canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
+  @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3.2; } }
+  .stage-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-top: 1px solid var(--line); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  button { font: inherit; color: inherit; }
+  .btn {
+    border: none; cursor: pointer; border-radius: 12px; padding: 9px 14px;
+    font-size: 0.85rem; font-weight: 600; background: var(--fill); color: var(--fg);
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: transform 0.18s var(--ease-out), background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  .btn:active, .btn.is-held { transform: scale(0.95); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-hold.is-held { background: var(--hot); color: #fff; }
+  .btn svg { width: 14px; height: 14px; fill: currentColor; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .metrics { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 700px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { background: var(--surface); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); display: grid; gap: 4px; min-width: 0; align-content: start; }
+  .tile-label { font-size: 0.72rem; font-weight: 600; color: var(--fg-2); }
+  .tile-value { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.15; overflow-wrap: anywhere; }
+  .tile-unit { font-size: 0.78rem; font-weight: 500; color: var(--fg-2); margin-left: 3px; letter-spacing: 0; }
+  .chip { justify-self: start; font-size: 0.7rem; font-weight: 650; padding: 2px 8px; border-radius: 999px; background: var(--fill); color: var(--fg-2); transition: background-color 0.25s var(--ease-out), color 0.25s var(--ease-out); }
+  .chip.good { background: var(--good-soft); color: var(--good); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .chip.info { background: var(--accent-soft); color: var(--accent); }
+
+  .calc { display: grid; gap: 6px; font-size: 0.84rem; font-variant-numeric: tabular-nums; }
+  .calc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--fill); align-items: baseline; }
+  .calc-row span:first-child { color: var(--fg-2); overflow-wrap: anywhere; }
+  .calc-row b { font-weight: 700; white-space: nowrap; }
+
+  .seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--fill); border-radius: 11px; padding: 2px; }
+  .seg-thumb { position: absolute; top: 2px; bottom: 2px; left: 0; width: 0; background: var(--knob); border-radius: 9px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); transition: transform 0.32s var(--ease-out), width 0.32s var(--ease-out), opacity 0.2s; }
+  .seg button { position: relative; z-index: 1; border: none; background: transparent; cursor: pointer; padding: 7px 2px; font-size: 0.78rem; font-weight: 500; border-radius: 9px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg button[aria-pressed="true"] { font-weight: 650; color: #1c1c1e; }
+  .seg-caption { margin-top: 8px; font-size: 0.76rem; color: var(--fg-2); min-height: 1.2em; }
+
+  .field { display: grid; gap: 4px; padding-block: 10px; border-top: 1px solid var(--line); }
+  .field:first-of-type { border-top: none; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field label { font-size: 0.86rem; font-weight: 600; }
+  .field small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .badge { font-size: 0.85rem; font-weight: 650; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 26px; background: transparent; cursor: pointer; margin: 0; }
+  input[type=range]::-webkit-slider-runnable-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8.5px; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); transition: transform 0.15s var(--ease-out); }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.18); }
+  input[type=range]::-moz-range-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border: none; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); }
+
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .switch-row label { font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+  .switch-row label small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .switch { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+  .switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--fill); transition: background-color 0.25s var(--ease-out); }
+  .switch span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15); transition: transform 0.3s var(--ease-out); }
+  .switch input:checked + span { background: var(--good); }
+  .switch input.danger:checked + span { background: var(--bad); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .notes { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 760px) { .notes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .note { min-width: 0; }
+  .note h3 { font-size: 0.9rem; margin: 0 0 6px; }
+  .note p, .note li { font-size: 0.84rem; color: var(--fg-2); margin: 0; }
+  .note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .note b { color: var(--fg); font-weight: 650; }
+  .note table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .note th, .note td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .note th { color: var(--fg-2); font-weight: 600; }
+  .note td { color: var(--fg); }
+  h2.section { font-size: 1.05rem; margin: 0; letter-spacing: -0.02em; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+
+  .wrap { max-width: 860px; }
+  .summary { display: grid; gap: 12px; }
+  .score-line { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .score { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .score small { font-size: 0.85rem; font-weight: 500; color: var(--fg-2); margin-left: 6px; letter-spacing: 0; }
+  .progress { position: relative; height: 10px; border-radius: 999px; background: var(--fill); overflow: hidden; }
+  .progress i { position: absolute; inset: 0 auto 0 0; width: 100%; transform-origin: left center; transform: scaleX(0); transition: transform 0.5s var(--ease-out); border-radius: 999px; }
+  .progress .ok { background: var(--good); }
+  .progress .ng { background: var(--bad); }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; }
+  .filter {
+    border: none; cursor: pointer; padding: 6px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+    background: var(--fill); color: var(--fg);
+    transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out), transform 0.18s var(--ease-out);
+  }
+  .filter:active { transform: scale(0.95); }
+  .filter[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  .filter .cnt { font-weight: 500; opacity: 0.75; margin-left: 4px; font-variant-numeric: tabular-nums; }
+
+  .qlist { display: grid; gap: 14px; }
+  .q { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: 18px; display: grid; gap: 12px; min-width: 0; }
+  .q[hidden] { display: none; }
+  .q-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .q-num { font-size: 0.75rem; font-weight: 700; color: var(--fg-2); font-variant-numeric: tabular-nums; }
+  .q-text { margin: 0; font-size: 1rem; font-weight: 600; line-height: 1.55; text-wrap: pretty; }
+  .opts { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 620px) { .opts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .opt {
+    display: flex; align-items: center; gap: 10px; text-align: left; cursor: pointer;
+    border: 1.5px solid var(--line); background: var(--surface); color: var(--fg);
+    border-radius: 14px; padding: 11px 12px; font-size: 0.9rem; font-weight: 500; min-width: 0;
+    transition: border-color 0.2s var(--ease-out), background-color 0.2s var(--ease-out), transform 0.18s var(--ease-out);
+  }
+  .opt:hover:not(:disabled) { border-color: var(--accent); }
+  .opt:active:not(:disabled) { transform: scale(0.98); }
+  .opt:disabled { cursor: default; }
+  .opt .no {
+    flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--fill); font-size: 0.78rem; font-weight: 700; color: var(--fg-2);
+    transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+  }
+  .opt.correct { border-color: var(--good); background: var(--good-soft); }
+  .opt.correct .no { background: var(--good); color: #fff; }
+  .opt.wrong { border-color: var(--bad); background: var(--bad-soft); animation: shake 0.32s var(--ease-out); }
+  .opt.wrong .no { background: var(--bad); color: #fff; }
+  .q.answered .opt:not(.correct):not(.wrong) { opacity: 0.55; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 60% { transform: translateX(3px); } }
+
+  /* 해설: 높이 0 → 내용 높이로 펼침 (grid 트릭) */
+  .explain { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.35s var(--ease-out); }
+  .q.answered .explain { grid-template-rows: 1fr; }
+  .explain > div { overflow: hidden; }
+  .explain-inner { margin-top: 2px; padding: 12px 14px; border-radius: 14px; background: var(--fill); display: grid; gap: 8px; }
+  .verdict { font-size: 0.85rem; font-weight: 700; }
+  .verdict.ok { color: var(--good); }
+  .verdict.ng { color: var(--bad); }
+  .explain p { margin: 0; font-size: 0.86rem; color: var(--fg-2); font-variant-numeric: tabular-nums; }
+  .explain a { font-size: 0.85rem; font-weight: 650; color: var(--accent); text-decoration: none; justify-self: start; }
+  .explain a:hover { text-decoration: underline; }
+  .empty { text-align: center; color: var(--fg-2); font-size: 0.9rem; padding: 24px; }
+
+  @media (prefers-reduced-motion: reduce) { .opt.wrong { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M9 11l2 2 4-4"/><rect x="4" y="3" width="16" height="18" rx="2"/></svg>
+      </div>
+      <div>
+        <h1>기출 유형 문제</h1>
+        <p class="sub">시뮬레이터 7개 단원의 계산·개념 문제. 답을 고르면 해설과 확인할 시뮬레이터 링크가 열립니다</p>
+      </div>
+    </div>
+    <div class="tag-row">
+      <span class="model-tag" id="totalTag">29문제</span>
+      <a class="model-tag home-link" href="lab.html">← 물리 시스템 알기</a>
+    </div>
+  </header>
+
+  <section class="panel summary">
+    <div class="score-line">
+      <div class="score" id="score">0 / 0<small>정답 / 푼 문제</small></div>
+      <div class="btn-row">
+        <button class="btn" id="btnWrong" aria-pressed="false">틀린 문제만</button>
+        <button class="btn" id="btnReset">다시 풀기</button>
+      </div>
+    </div>
+    <div class="progress" aria-hidden="true"><i class="ok" id="barOk"></i><i class="ng" id="barNg"></i></div>
+    <div class="filters" id="filters" role="group" aria-label="단원 선택"></div>
+    <p class="hint">기출 경향을 바탕으로 직접 만든 연습 문제입니다(실제 기출 원문 아님). 푼 기록은 이 브라우저에만 저장됩니다.</p>
+  </section>
+
+  <div class="qlist" id="qlist"></div>
+</div>
+
+<script>
+(() => {
+  // ---------- 공통: 테마 토큰, 캔버스, 세그먼트, 길게 누르기 ----------
+  const $ = id => document.getElementById(id);
+  const C = {};
+  const TOKEN_NAMES = ['bg', 'surface', 'fill', 'fg', 'fg-2', 'line', 'accent', 'good', 'warn', 'bad', 'steel', 'steel-dark', 'metal', 'tire', 'hot', 'fire', 'fluid', 'cool', 'knob'];
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    TOKEN_NAMES.forEach(t => { C[t] = cs.getPropertyValue('--' + t).trim(); });
+    C.font = getComputedStyle(document.body).fontFamily;
+  }
+  readTokens();
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTokens);
+  new MutationObserver(readTokens).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+  const REDUCE = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  function fitCanvas(cv) {
+    const ctx = cv.getContext('2d');
+    const fit = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const r = cv.getBoundingClientRect();
+      cv.width = Math.round(r.width * dpr);
+      cv.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cv._w = r.width; cv._h = r.height;
+    };
+    new ResizeObserver(fit).observe(cv);
+    fit();
+    return ctx;
+  }
+
+  function setChip(el, text, tone) {
+    el.textContent = text;
+    el.className = 'chip' + (tone ? ' ' + tone : '');
+  }
+
+  // 선택 표시가 미끄러져 이동하는 세그먼트 컨트롤
+  function initSeg(root, onPick) {
+    const thumb = root.querySelector('.seg-thumb');
+    const btns = [...root.querySelectorAll('button')];
+    function place(animate) {
+      const on = btns.find(b => b.getAttribute('aria-pressed') === 'true');
+      if (!animate) thumb.style.transition = 'none';
+      if (on) {
+        thumb.style.opacity = 1;
+        thumb.style.width = on.offsetWidth + 'px';
+        thumb.style.transform = `translateX(${on.offsetLeft}px)`;
+      } else {
+        thumb.style.opacity = 0;
+      }
+      if (!animate) { void thumb.offsetWidth; thumb.style.transition = ''; }
+    }
+    function select(v) {
+      btns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+      place(true);
+    }
+    btns.forEach(b => b.addEventListener('click', () => { select(b.dataset.v); onPick(b.dataset.v); }));
+    new ResizeObserver(() => place(false)).observe(root);
+    return { select, clear: () => select(null) };
+  }
+
+  // 누르고 있는 동안 on, 떼면 off (마우스·터치·키보드)
+  function holdButton(btn, onChange) {
+    const on = e => { if (e) e.preventDefault(); btn.classList.add('is-held'); onChange(true); };
+    const off = () => { if (!btn.classList.contains('is-held')) return; btn.classList.remove('is-held'); onChange(false); };
+    btn.addEventListener('pointerdown', e => { btn.setPointerCapture(e.pointerId); on(e); });
+    btn.addEventListener('pointerup', off);
+    btn.addEventListener('pointercancel', off);
+    btn.addEventListener('lostpointercapture', off);
+    btn.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) on(e); });
+    btn.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') off(); });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const DEG = Math.PI / 180;
+
+
+  const UNITS = {
+    pendulum:   { name: '단진자',   url: 'pendulum.html' },
+    suspension: { name: '현가장치', url: 'suspension.html' },
+    brake:      { name: '브레이크', url: 'brake.html' },
+    engine:     { name: '엔진',     url: 'engine.html' },
+    steering:   { name: '조향',     url: 'steering.html' },
+    gearbox:    { name: '변속기',   url: 'gearbox.html' },
+    circuit:    { name: '전기',     url: 'circuit.html' }
+  };
+
+  // a: 정답 번호(0부터), ex: 시뮬레이터 링크에 #example 붙일지
+  const QS = [
+    { u: 'pendulum', q: '길이 1m인 단진자의 주기는? (g = 9.8m/s²)', o: ['약 1.0초', '약 2.0초', '약 3.1초', '약 6.3초'], a: 1,
+      e: 'T = 2π√(L/g) = 2π√(1/9.8) ≈ 2π × 0.319 ≈ 2.0초.' },
+    { u: 'pendulum', q: '단진자에서 추의 질량만 2배로 하면 주기는?', o: ['2배', '√2배', '변하지 않는다', '1/2배'], a: 2,
+      e: '주기 공식 T = 2π√(L/g)에 질량이 없다. 주기는 길이와 중력가속도에만 관계한다.' },
+    { u: 'pendulum', q: '단진자의 실 길이를 4배로 하면 주기는?', o: ['4배', '2배', '1/2배', '16배'], a: 1,
+      e: 'T는 √L에 비례하므로 √4 = 2배.' },
+
+    { u: 'suspension', q: '쇼크업소버의 역할로 틀린 것은?', o: ['스프링의 자유진동을 감쇠한다', '승차감을 향상시킨다', '타이어 접지성을 향상시킨다', '차체 하중을 지지해 차고를 유지한다'], a: 3,
+      e: '차체 하중을 지지하는 것은 스프링의 역할이다. 쇼크업소버는 진동 에너지를 열로 바꿔 진동을 빨리 줄인다.' },
+    { u: 'suspension', q: '스프링 위 질량(차체)의 진동이 아닌 것은?', o: ['바운싱', '피칭', '롤링', '휠 홉'], a: 3,
+      e: '휠 홉, 휠 트램프, 와인드 업은 스프링 아래 질량의 진동이다.' },
+    { u: 'suspension', q: '스프링 상수 20,000N/m, 스프링 위 질량 300kg인 차체의 고유진동수는 약 얼마인가?', o: ['0.8Hz', '1.3Hz', '2.6Hz', '8.2Hz'], a: 1,
+      e: 'f = (1/2π)√(k/m) = (1/2π)√(66.7) ≈ 8.16 ÷ 6.28 ≈ 1.30Hz (약 78cpm).' },
+    { u: 'suspension', q: '감쇠비 ζ가 1보다 큰 과감쇠 상태의 특징은?', o: ['여러 번 진동하며 줄어든다', '진동 없이 천천히 원위치로 돌아온다', '진폭이 점점 커진다', '가장 빨리 진동 없이 원위치한다'], a: 1,
+      e: 'ζ > 1은 과감쇠로 진동은 없지만 복귀가 느리고 충격이 차체로 전해진다. 진동 없이 가장 빨리 복귀하는 것은 임계감쇠(ζ = 1).' },
+
+    { u: 'brake', ex: true, q: '페달 밟는 힘 30kgf, 페달비 5:1, 마스터 실린더 단면적 5cm²일 때 유압은? (배력장치 없음)', o: ['6 kgf/cm²', '30 kgf/cm²', '150 kgf/cm²', '750 kgf/cm²'], a: 1,
+      e: '푸시로드 힘 = 30 × 5 = 150kgf, 유압 = 150 ÷ 5 = 30kgf/cm².' },
+    { u: 'brake', ex: true, q: '유압 30kgf/cm²가 단면적 10cm²인 휠 실린더 피스톤에 작용할 때 피스톤 힘은?', o: ['3 kgf', '30 kgf', '300 kgf', '3,000 kgf'], a: 2,
+      e: '파스칼의 원리로 같은 압력이 전달되므로 F = P × A = 30 × 10 = 300kgf.' },
+    { u: 'brake', q: '베이퍼 록의 원인으로 틀린 것은?', o: ['긴 내리막에서 브레이크 과다 사용', '비등점이 높은 브레이크액 사용', '드럼과 라이닝의 끌림', '브레이크액의 수분 흡수'], a: 1,
+      e: '비등점이 낮을 때 베이퍼 록이 잘 생긴다. 비등점이 높은 브레이크액은 오히려 예방책이다.' },
+    { u: 'brake', q: '브레이크 공기빼기 작업 순서로 일반적인 것은?', o: ['마스터 실린더에서 가까운 바퀴부터', '마스터 실린더에서 먼 바퀴부터', '앞바퀴 좌우를 동시에', '순서와 관계없다'], a: 1,
+      e: '마스터 실린더에서 먼 바퀴부터 해야 라인에 남은 공기를 빠짐없이 밀어낼 수 있다.' },
+
+    { u: 'engine', q: '흡기 밸브가 BTDC 18°에 열리고 ABDC 48°에 닫힐 때 흡기 밸브 열림 기간은?', o: ['210°', '228°', '246°', '264°'], a: 2,
+      e: '18 + 180 + 48 = 246°.' },
+    { u: 'engine', q: '흡기 밸브 열림 BTDC 18°, 배기 밸브 닫힘 ATDC 13°일 때 밸브 오버랩은?', o: ['5°', '31°', '61°', '66°'], a: 1,
+      e: '오버랩 = 흡기 열림(BTDC) + 배기 닫힘(ATDC) = 18 + 13 = 31°.' },
+    { u: 'engine', q: '행정 체적 450cc, 연소실 체적 50cc인 엔진의 압축비는?', o: ['8', '9', '10', '11'], a: 2,
+      e: 'ε = (Vs + Vc) ÷ Vc = (450 + 50) ÷ 50 = 10.' },
+    { u: 'engine', q: '4행정 사이클 엔진이 1사이클을 완료하는 동안 크랭크축은 몇 회전하는가?', o: ['1회전', '2회전', '3회전', '4회전'], a: 1,
+      e: '4행정 = 크랭크축 2회전(720°) = 캠축 1회전.' },
+    { u: 'engine', q: '4행정 4기통 엔진의 폭발 간격(크랭크 각)은?', o: ['90°', '120°', '180°', '360°'], a: 2,
+      e: '720° ÷ 4기통 = 180°.' },
+
+    { u: 'steering', ex: true, q: '축거 2.5m, 바깥쪽 앞바퀴 조향각 30°, 킹핀 중심과 바퀴 중심 거리 0.2m일 때 최소 회전 반경은?', o: ['4.8m', '5.0m', '5.2m', '5.4m'], a: 2,
+      e: 'R = L ÷ sin α + r = 2.5 ÷ 0.5 + 0.2 = 5.2m.' },
+    { u: 'steering', q: '토인의 역할로 맞는 것은?', o: ['주행 중 직진성과 조향 복원성을 준다', '하중에 의한 앞차축의 휨을 방지한다', '캠버에 의한 토아웃을 방지하고 타이어 마모를 줄인다', '핸들 조작력을 줄인다'], a: 2,
+      e: '직진성·복원성은 캐스터, 앞차축 휨 방지는 캠버, 조작력 경감은 캠버와 킹핀 경사각의 역할이다.' },
+    { u: 'steering', q: '캐스터의 주된 역할은?', o: ['주행 중 직진성과 조향 후 복원성', '타이어 편마모 방지', '선회 시 안쪽 바퀴를 더 꺾음', '앞바퀴 아래쪽 벌어짐 방지'], a: 0,
+      e: '조향축이 접지점보다 앞에서 바퀴를 끌어 직진성과 복원력이 생긴다.' },
+    { u: 'steering', q: '애커먼 장토식 조향 기구에서 선회할 때 옳은 것은?', o: ['좌우 바퀴의 조향각이 같다', '안쪽 바퀴 조향각이 바깥쪽보다 크다', '바깥쪽 바퀴 조향각이 안쪽보다 크다', '뒷바퀴도 같은 각도로 꺾인다'], a: 1,
+      e: '안쪽 바퀴를 더 많이 꺾어 네 바퀴의 축 연장선이 한 회전 중심에서 만나게 한다.' },
+
+    { u: 'gearbox', ex: true, q: '변속비 1.5, 종감속비 4일 때 총감속비는?', o: ['2.5', '5.5', '6', '10'], a: 2,
+      e: '총감속비 = 변속비 × 종감속비 = 1.5 × 4 = 6.' },
+    { u: 'gearbox', ex: true, q: '엔진 3,000rpm, 총감속비 6, 타이어 반지름 0.3m일 때 차속은 약 얼마인가?', o: ['28.3km/h', '47.1km/h', '56.5km/h', '113.1km/h'], a: 2,
+      e: '바퀴 회전수 = 3000 ÷ 6 = 500rpm, V = 2π × 0.3 × 500 × 60 ÷ 1000 ≈ 56.5km/h.' },
+    { u: 'gearbox', q: '링기어 회전수 500rpm에서 왼쪽 바퀴가 400rpm으로 돌면 오른쪽 바퀴는?', o: ['100rpm', '400rpm', '500rpm', '600rpm'], a: 3,
+      e: '좌 + 우 = 링기어 × 2 → 오른쪽 = 1000 − 400 = 600rpm.' },
+    { u: 'gearbox', ex: true, q: '엔진 토크 20kgf·m, 총감속비 6, 타이어 반지름 0.3m일 때 구동력은? (효율 100%)', o: ['36kgf', '120kgf', '400kgf', '600kgf'], a: 2,
+      e: '바퀴 토크 = 20 × 6 = 120kgf·m, 구동력 = 120 ÷ 0.3 = 400kgf.' },
+
+    { u: 'circuit', q: '12V 전원에 4Ω 저항을 연결했을 때 흐르는 전류는?', o: ['0.33A', '3A', '16A', '48A'], a: 1,
+      e: 'I = V ÷ R = 12 ÷ 4 = 3A.' },
+    { u: 'circuit', q: '6Ω 저항 2개를 병렬로 연결한 합성 저항은?', o: ['3Ω', '6Ω', '12Ω', '36Ω'], a: 0,
+      e: '1/R = 1/6 + 1/6 = 1/3 → R = 3Ω. 같은 저항 n개 병렬이면 R/n.' },
+    { u: 'circuit', q: '12V 회로에 5A가 흐를 때 소비 전력은?', o: ['2.4W', '17W', '60W', '144W'], a: 2,
+      e: 'P = V × I = 12 × 5 = 60W.' },
+    { u: 'circuit', ex: true, q: '12V 전원에 2Ω과 4Ω 저항을 직렬 연결했을 때 4Ω 양단의 전압은?', o: ['2V', '4V', '6V', '8V'], a: 3,
+      e: '전류 = 12 ÷ (2 + 4) = 2A, 4Ω 양단 = 2 × 4 = 8V.' },
+    { u: 'circuit', q: '12V 직렬 전구 회로에서 전구 하나가 단선됐을 때, 그 전구 양 끝의 전압을 측정하면?', o: ['0V', '6V', '12V', '측정할 수 없다'], a: 2,
+      e: '전류가 0이라 다른 부품에서는 전압 강하가 없고, 끊어진 곳 양 끝에 전원 전압 12V가 그대로 걸린다.' }
+  ];
+  QS.forEach((q, i) => { q.id = `${q.u}-${i}`; });
+  $('totalTag').textContent = `${QS.length}문제`;
+
+  // ---------- 저장 (이 브라우저에만) ----------
+  const KEY = 'physics-quiz-v1';
+  let answers = {};
+  try { answers = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { answers = {}; }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) { /* 저장 불가 환경 */ } };
+
+  let unit = 'all', wrongOnly = false;
+
+  // ---------- 렌더 ----------
+  const list = $('qlist');
+  const NO = ['①', '②', '③', '④'];
+  QS.forEach((q, i) => {
+    const el = document.createElement('article');
+    el.className = 'q';
+    el.dataset.id = q.id;
+    const link = UNITS[q.u].url + (q.ex ? '#example' : '');
+    el.innerHTML = `
+      <div class="q-meta"><span class="q-num">Q${i + 1}</span><span class="chip info">${UNITS[q.u].name}</span></div>
+      <p class="q-text">${q.q}</p>
+      <div class="opts">${q.o.map((o, k) => `<button class="opt" data-k="${k}"><span class="no">${NO[k]}</span><span>${o}</span></button>`).join('')}</div>
+      <div class="explain" aria-live="polite"><div><div class="explain-inner">
+        <span class="verdict"></span>
+        <p>${q.e}</p>
+        <a href="${link}" >${UNITS[q.u].name} 시뮬레이터에서 확인 →</a>
+      </div></div></div>`;
+    el.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => {
+      if (answers[q.id] !== undefined) return;
+      answers[q.id] = +b.dataset.k;
+      save();
+      paint(el, q, true);
+      updateSummary();
+    }));
+    list.appendChild(el);
+    paint(el, q, false);
+  });
+  const empty = document.createElement('p');
+  empty.className = 'empty'; empty.hidden = true; empty.textContent = '조건에 맞는 문제가 없습니다. 틀린 문제가 없거나 아직 풀지 않았어요.';
+  list.appendChild(empty);
+
+  function paint(el, q, fresh) {
+    const pick = answers[q.id];
+    const done = pick !== undefined;
+    el.classList.toggle('answered', done);
+    el.querySelectorAll('.opt').forEach(b => {
+      const k = +b.dataset.k;
+      b.disabled = done;
+      b.classList.toggle('correct', done && k === q.a);
+      b.classList.toggle('wrong', done && k === pick && k !== q.a);
+      if (!fresh && b.classList.contains('wrong')) b.style.animation = 'none';  // 다시 열 때는 흔들지 않음
+    });
+    const v = el.querySelector('.verdict');
+    if (done) {
+      v.textContent = pick === q.a ? '정답입니다' : `오답 · 정답은 ${NO[q.a]}`;
+      v.className = 'verdict ' + (pick === q.a ? 'ok' : 'ng');
+    }
+  }
+
+  function updateSummary() {
+    const answered = QS.filter(q => answers[q.id] !== undefined);
+    const ok = answered.filter(q => answers[q.id] === q.a).length;
+    $('score').innerHTML = `${ok} / ${answered.length}<small>정답 / 푼 문제 · 전체 ${QS.length}</small>`;
+    $('barOk').style.transform = `scaleX(${ok / QS.length})`;
+    $('barNg').style.transform = `scaleX(${answered.length / QS.length})`;
+    $('barNg').style.zIndex = 0; $('barOk').style.zIndex = 1;
+    renderFilters();
+    applyFilter();
+  }
+
+  function renderFilters() {
+    const keys = ['all', ...Object.keys(UNITS)];
+    $('filters').innerHTML = keys.map(k => {
+      const qs = k === 'all' ? QS : QS.filter(q => q.u === k);
+      const done = qs.filter(q => answers[q.id] !== undefined).length;
+      return `<button class="filter" data-u="${k}" aria-pressed="${unit === k}">${k === 'all' ? '전체' : UNITS[k].name}<span class="cnt">${done}/${qs.length}</span></button>`;
+    }).join('');
+    $('filters').querySelectorAll('.filter').forEach(b => b.addEventListener('click', () => { unit = b.dataset.u; renderFilters(); applyFilter(); }));
+  }
+
+  function applyFilter() {
+    let shown = 0;
+    list.querySelectorAll('.q').forEach(el => {
+      const q = QS.find(x => x.id === el.dataset.id);
+      const pick = answers[q.id];
+      const okUnit = unit === 'all' || q.u === unit;
+      const okWrong = !wrongOnly || (pick !== undefined && pick !== q.a);
+      el.hidden = !(okUnit && okWrong);
+      if (!el.hidden) shown++;
+    });
+    empty.hidden = shown > 0;
+  }
+
+  const btnWrong = $('btnWrong');
+  btnWrong.addEventListener('click', () => {
+    wrongOnly = !wrongOnly;
+    btnWrong.setAttribute('aria-pressed', String(wrongOnly));
+    btnWrong.classList.toggle('btn-primary', wrongOnly);
+    applyFilter();
+  });
+
+  // 확인 단계를 페이지 안에 둠 (브라우저 confirm 대화상자는 쓰지 않음)
+  const btnReset = $('btnReset');
+  let armed = false, armTimer = null;
+  btnReset.addEventListener('click', () => {
+    if (!armed) {
+      armed = true; btnReset.textContent = '한 번 더 누르면 기록 삭제'; btnReset.classList.add('btn-hold', 'is-held');
+      armTimer = setTimeout(() => { armed = false; btnReset.textContent = '다시 풀기'; btnReset.classList.remove('btn-hold', 'is-held'); }, 3000);
+      return;
+    }
+    clearTimeout(armTimer); armed = false;
+    btnReset.textContent = '다시 풀기'; btnReset.classList.remove('btn-hold', 'is-held');
+    answers = {}; save();
+    list.querySelectorAll('.q').forEach(el => { paint(el, QS.find(x => x.id === el.dataset.id), false); el.querySelectorAll('.opt').forEach(b => { b.style.animation = ''; }); });
+    updateSummary();
+  });
+
+  updateSummary();
+})();
+</script>
+</body>
+</html>

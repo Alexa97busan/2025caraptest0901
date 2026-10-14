@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>전기회로 실습판</title>
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --fill: rgba(118, 118, 128, 0.12);
+    --fg: #1c1c1e;
+    --fg-2: #6e6e73;
+    --line: rgba(60, 60, 67, 0.14);
+    --accent: #007aff;
+    --accent-soft: rgba(0, 122, 255, 0.12);
+    --good: #248a3d;
+    --good-soft: rgba(52, 199, 89, 0.16);
+    --warn: #c93400;
+    --warn-soft: rgba(255, 149, 0, 0.18);
+    --bad: #d70015;
+    --bad-soft: rgba(255, 59, 48, 0.14);
+    --steel: #9aa1ab;
+    --steel-dark: #636366;
+    --metal: #c9ced6;
+    --tire: #2c2c2e;
+    --hot: #ff9500;
+    --fire: #ff3b30;
+    --fluid: #af52de;
+    --cool: #5ac8fa;
+    --knob: #ffffff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+      --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+      --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+      --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+      --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+      --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+      --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+      --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+      --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+    --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+    --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+    --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+    --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+    --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+    --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+    --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding-inline: 16px;
+    padding-block: 20px 40px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-icon { width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0; background: var(--accent); display: grid; place-items: center; }
+  .brand-icon svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  h1 { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.025em; text-wrap: balance; }
+  .sub { margin: 0; font-size: 0.82rem; color: var(--fg-2); }
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .model-tag { font-size: 0.75rem; font-weight: 600; color: var(--fg-2); background: var(--fill); padding: 4px 10px; border-radius: 999px; }
+  .home-link { color: var(--accent); background: var(--accent-soft); text-decoration: none; transition: transform 0.18s var(--ease-out); }
+  .home-link:active { transform: scale(0.95); }
+  .home-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .main { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 920px) {
+    .main { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; }
+    .side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  }
+  .col { display: grid; gap: 14px; min-width: 0; }
+
+  .panel { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: 16px; min-width: 0; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .panel-title { font-size: 0.95rem; font-weight: 650; margin: 0; }
+  .hint { font-size: 0.75rem; color: var(--fg-2); margin: 0; }
+
+  .stage { position: relative; padding: 0; overflow: hidden; }
+  .stage canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
+  @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3.2; } }
+  .stage-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-top: 1px solid var(--line); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  button { font: inherit; color: inherit; }
+  .btn {
+    border: none; cursor: pointer; border-radius: 12px; padding: 9px 14px;
+    font-size: 0.85rem; font-weight: 600; background: var(--fill); color: var(--fg);
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: transform 0.18s var(--ease-out), background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  .btn:active, .btn.is-held { transform: scale(0.95); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-hold.is-held { background: var(--hot); color: #fff; }
+  .btn svg { width: 14px; height: 14px; fill: currentColor; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .metrics { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 700px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { background: var(--surface); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); display: grid; gap: 4px; min-width: 0; align-content: start; }
+  .tile-label { font-size: 0.72rem; font-weight: 600; color: var(--fg-2); }
+  .tile-value { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.15; overflow-wrap: anywhere; }
+  .tile-unit { font-size: 0.78rem; font-weight: 500; color: var(--fg-2); margin-left: 3px; letter-spacing: 0; }
+  .chip { justify-self: start; font-size: 0.7rem; font-weight: 650; padding: 2px 8px; border-radius: 999px; background: var(--fill); color: var(--fg-2); transition: background-color 0.25s var(--ease-out), color 0.25s var(--ease-out); }
+  .chip.good { background: var(--good-soft); color: var(--good); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .chip.info { background: var(--accent-soft); color: var(--accent); }
+
+  .calc { display: grid; gap: 6px; font-size: 0.84rem; font-variant-numeric: tabular-nums; }
+  .calc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--fill); align-items: baseline; }
+  .calc-row span:first-child { color: var(--fg-2); overflow-wrap: anywhere; }
+  .calc-row b { font-weight: 700; white-space: nowrap; }
+
+  .seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--fill); border-radius: 11px; padding: 2px; }
+  .seg-thumb { position: absolute; top: 2px; bottom: 2px; left: 0; width: 0; background: var(--knob); border-radius: 9px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); transition: transform 0.32s var(--ease-out), width 0.32s var(--ease-out), opacity 0.2s; }
+  .seg button { position: relative; z-index: 1; border: none; background: transparent; cursor: pointer; padding: 7px 2px; font-size: 0.78rem; font-weight: 500; border-radius: 9px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg button[aria-pressed="true"] { font-weight: 650; color: #1c1c1e; }
+  .seg-caption { margin-top: 8px; font-size: 0.76rem; color: var(--fg-2); min-height: 1.2em; }
+
+  .field { display: grid; gap: 4px; padding-block: 10px; border-top: 1px solid var(--line); }
+  .field:first-of-type { border-top: none; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field label { font-size: 0.86rem; font-weight: 600; }
+  .field small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .badge { font-size: 0.85rem; font-weight: 650; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 26px; background: transparent; cursor: pointer; margin: 0; }
+  input[type=range]::-webkit-slider-runnable-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8.5px; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); transition: transform 0.15s var(--ease-out); }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.18); }
+  input[type=range]::-moz-range-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border: none; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); }
+
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .switch-row label { font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+  .switch-row label small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .switch { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+  .switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--fill); transition: background-color 0.25s var(--ease-out); }
+  .switch span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15); transition: transform 0.3s var(--ease-out); }
+  .switch input:checked + span { background: var(--good); }
+  .switch input.danger:checked + span { background: var(--bad); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .notes { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 760px) { .notes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .note { min-width: 0; }
+  .note h3 { font-size: 0.9rem; margin: 0 0 6px; }
+  .note p, .note li { font-size: 0.84rem; color: var(--fg-2); margin: 0; }
+  .note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .note b { color: var(--fg); font-weight: 650; }
+  .note table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .note th, .note td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .note th { color: var(--fg-2); font-weight: 600; }
+  .note td { color: var(--fg); }
+  h2.section { font-size: 1.05rem; margin: 0; letter-spacing: -0.02em; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+
+  .meter { display: grid; gap: 2px; padding: 12px 14px; border-radius: 16px; background: var(--tire); color: #f5f5f7; box-shadow: var(--shadow); }
+  .meter-label { font-size: 0.72rem; font-weight: 600; color: #98989f; }
+  .meter-value { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: #64d2ff; line-height: 1.1; }
+  .meter-note { font-size: 0.75rem; color: #c7c7cc; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>
+      </div>
+      <div>
+        <h1>전기회로 실습판</h1>
+        <p class="sub">전구 회로를 직렬·병렬로 바꾸고, 단선과 접촉 저항 고장을 멀티미터로 찾아봅니다</p>
+      </div>
+    </div>
+    <div class="tag-row">
+      <span class="model-tag">옴의 법칙 · 전압 강하 시험</span>
+      <a class="model-tag home-link" href="lab.html">← 물리 시스템 알기</a>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="col">
+      <section class="panel stage" aria-label="회로도">
+        <canvas id="stage" role="img" aria-label="배터리, 전구, 커넥터 접촉부로 이루어진 회로와 흐르는 전류, 멀티미터 측정 위치"></canvas>
+        <div class="stage-bar">
+          <span class="hint">점의 속도 = 전류의 크기, 전구 밝기 = 소비 전력</span>
+          <button class="btn" id="btnExample">시험 예제 불러오기</button>
+        </div>
+      </section>
+
+      <div class="metrics">
+        <div class="tile">
+          <span class="tile-label">합성 저항</span>
+          <span class="tile-value"><span id="mR">0</span><span class="tile-unit">Ω</span></span>
+          <span class="chip info" id="cR">직렬</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">전체 전류</span>
+          <span class="tile-value"><span id="mI">0</span><span class="tile-unit">A</span></span>
+          <span class="chip" id="cI">I = V ÷ R</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">전체 소비 전력</span>
+          <span class="tile-value"><span id="mP">0</span><span class="tile-unit">W</span></span>
+          <span class="chip" id="cP">P = V × I</span>
+        </div>
+        <div class="meter" aria-live="polite">
+          <span class="meter-label" id="meterLabel">멀티미터 · 전원 양단</span>
+          <span class="meter-value"><span id="meterV">12.00</span> V</span>
+          <span class="meter-note" id="meterNote">배터리 전압</span>
+        </div>
+      </div>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">계산 과정</h2></div>
+        <div class="calc" id="calc"></div>
+        <p class="hint" id="exampleText" style="margin-top:10px;">예제: 12V 전원에 2Ω과 4Ω 저항을 직렬로 연결했을 때 전류와 각 저항의 전압은?</p>
+      </section>
+    </div>
+
+    <aside class="col side">
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">회로 구성</h2></div>
+        <div class="seg" id="segMode" role="group" aria-label="연결 방식">
+          <span class="seg-thumb" aria-hidden="true"></span>
+          <button data-v="series" aria-pressed="true">직렬</button>
+          <button data-v="parallel" aria-pressed="false">병렬</button>
+        </div>
+        <div class="field" style="margin-top:6px;">
+          <div class="field-head"><label for="inV">전원 전압</label><span class="badge"><span id="vV">12.0</span> V</span></div>
+          <input type="range" id="inV" min="6" max="14.4" step="0.1" value="12">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inR1">전구 1 저항</label><span class="badge"><span id="vR1">6.0</span> Ω</span></div>
+          <input type="range" id="inR1" min="1" max="24" step="0.5" value="6">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inR2">전구 2 저항</label><span class="badge"><span id="vR2">6.0</span> Ω</span></div>
+          <input type="range" id="inR2" min="1" max="24" step="0.5" value="6">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inR3">전구 3 저항</label><span class="badge"><span id="vR3">12.0</span> Ω</span></div>
+          <input type="range" id="inR3" min="1" max="24" step="0.5" value="12">
+        </div>
+        <div class="switch-row">
+          <label for="inUse3">전구 3 연결</label>
+          <div class="switch"><input type="checkbox" id="inUse3" role="switch" checked><span></span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">고장 넣기</h2></div>
+        <div class="switch-row" style="border-top:none;padding-top:0;">
+          <label for="inOpen">전구 2 단선<small>필라멘트가 끊어진 상태</small></label>
+          <div class="switch"><input type="checkbox" id="inOpen" class="danger" role="switch"><span></span></div>
+        </div>
+        <div class="field" style="margin-top:6px;">
+          <div class="field-head"><label for="inRc">커넥터 접촉 저항<small>부식·헐거움. 정상은 거의 0</small></label><span class="badge"><span id="vRc">0.00</span> Ω</span></div>
+          <input type="range" id="inRc" min="0" max="3" step="0.05" value="0">
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">멀티미터 측정 위치</h2></div>
+        <div class="seg" id="segProbe" role="group" aria-label="측정 위치">
+          <span class="seg-thumb" aria-hidden="true"></span>
+          <button data-v="bat" aria-pressed="true">전원</button>
+          <button data-v="0" aria-pressed="false">전구1</button>
+          <button data-v="1" aria-pressed="false">전구2</button>
+          <button data-v="2" aria-pressed="false">전구3</button>
+          <button data-v="rc" aria-pressed="false">접촉부</button>
+        </div>
+        <div class="seg-caption">전압계는 측정할 부품 양 끝에 <b>병렬</b>로 대어 측정합니다.</div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2 class="section">자동차산업기사 시험 포인트</h2></div>
+    <div class="notes">
+      <div class="note">
+        <h3>옴의 법칙과 전력</h3>
+        <ul>
+          <li><b>V = I × R</b>. 전류는 전압에 비례하고 저항에 반비례한다.</li>
+          <li>전력 <b>P = V × I = I²R = V²/R</b> (W). 12V 21W 전구의 저항은 약 144 ÷ 21 ≈ 6.9Ω.</li>
+          <li>전력량 = 전력 × 시간 (Wh). 축전지 용량은 Ah(전류 × 시간)로 표시한다.</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>직렬과 병렬</h3>
+        <ul>
+          <li><b>직렬</b>: 합성 저항 = R1 + R2 + …, 전류는 어디서나 같고 전압은 저항에 비례해 나뉜다.</li>
+          <li><b>병렬</b>: 1/R = 1/R1 + 1/R2 + …, 각 가지의 전압이 같고 전류가 나뉜다. 자동차 전장품은 대부분 병렬.</li>
+          <li>키르히호프 1법칙: 한 점에 들어오는 전류의 합 = 나가는 전류의 합. 2법칙: 닫힌 회로에서 기전력의 합 = 전압 강하의 합.</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>전압 강하 시험과 단선 진단</h3>
+        <ul>
+          <li>회로가 작동하는 상태(전류가 흐를 때)에서 배선·커넥터 양 끝의 전압을 잰다. 정상 접점은 강하가 <b>매우 작다</b>(대략 0.1~0.2V 이하).</li>
+          <li>접촉 저항이 크면 그곳에서 전압이 빠져 전구가 어두워진다.</li>
+          <li>직렬 회로에서 단선된 부품 양 끝을 재면 <b>전원 전압이 그대로</b> 나온다. 전류가 0이라 다른 곳에서는 강하가 없기 때문이다.</li>
+          <li>퓨즈는 회로에 <b>직렬</b>로 연결해 과전류를 차단한다.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ---------- 공통: 테마 토큰, 캔버스, 세그먼트, 길게 누르기 ----------
+  const $ = id => document.getElementById(id);
+  const C = {};
+  const TOKEN_NAMES = ['bg', 'surface', 'fill', 'fg', 'fg-2', 'line', 'accent', 'good', 'warn', 'bad', 'steel', 'steel-dark', 'metal', 'tire', 'hot', 'fire', 'fluid', 'cool', 'knob'];
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    TOKEN_NAMES.forEach(t => { C[t] = cs.getPropertyValue('--' + t).trim(); });
+    C.font = getComputedStyle(document.body).fontFamily;
+  }
+  readTokens();
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTokens);
+  new MutationObserver(readTokens).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+  const REDUCE = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  function fitCanvas(cv) {
+    const ctx = cv.getContext('2d');
+    const fit = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const r = cv.getBoundingClientRect();
+      cv.width = Math.round(r.width * dpr);
+      cv.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cv._w = r.width; cv._h = r.height;
+    };
+    new ResizeObserver(fit).observe(cv);
+    fit();
+    return ctx;
+  }
+
+  function setChip(el, text, tone) {
+    el.textContent = text;
+    el.className = 'chip' + (tone ? ' ' + tone : '');
+  }
+
+  // 선택 표시가 미끄러져 이동하는 세그먼트 컨트롤
+  function initSeg(root, onPick) {
+    const thumb = root.querySelector('.seg-thumb');
+    const btns = [...root.querySelectorAll('button')];
+    function place(animate) {
+      const on = btns.find(b => b.getAttribute('aria-pressed') === 'true');
+      if (!animate) thumb.style.transition = 'none';
+      if (on) {
+        thumb.style.opacity = 1;
+        thumb.style.width = on.offsetWidth + 'px';
+        thumb.style.transform = `translateX(${on.offsetLeft}px)`;
+      } else {
+        thumb.style.opacity = 0;
+      }
+      if (!animate) { void thumb.offsetWidth; thumb.style.transition = ''; }
+    }
+    function select(v) {
+      btns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+      place(true);
+    }
+    btns.forEach(b => b.addEventListener('click', () => { select(b.dataset.v); onPick(b.dataset.v); }));
+    new ResizeObserver(() => place(false)).observe(root);
+    return { select, clear: () => select(null) };
+  }
+
+  // 누르고 있는 동안 on, 떼면 off (마우스·터치·키보드)
+  function holdButton(btn, onChange) {
+    const on = e => { if (e) e.preventDefault(); btn.classList.add('is-held'); onChange(true); };
+    const off = () => { if (!btn.classList.contains('is-held')) return; btn.classList.remove('is-held'); onChange(false); };
+    btn.addEventListener('pointerdown', e => { btn.setPointerCapture(e.pointerId); on(e); });
+    btn.addEventListener('pointerup', off);
+    btn.addEventListener('pointercancel', off);
+    btn.addEventListener('lostpointercapture', off);
+    btn.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) on(e); });
+    btn.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') off(); });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const DEG = Math.PI / 180;
+
+
+  const P = { mode: 'series', V: 12, R: [6, 6, 12], use3: true, open2: false, Rc: 0, probe: 'bat' };
+
+  // ---------- 회로 계산 ----------
+  function solve() {
+    const n = P.use3 ? 3 : 2;
+    const loads = P.R.slice(0, n).map((r, i) => ({ r, open: i === 1 && P.open2 }));
+    let Rt, I, branch = [], drops = [], vc;
+    if (P.mode === 'series') {
+      const anyOpen = loads.some(l => l.open);
+      Rt = anyOpen ? Infinity : loads.reduce((s, l) => s + l.r, 0) + P.Rc;
+      I = anyOpen ? 0 : P.V / Rt;
+      // 단선이면 끊어진 부품 양 끝에 전원 전압이 걸림
+      drops = loads.map(l => l.open ? P.V : I * l.r);
+      branch = loads.map(() => I);
+      vc = I * P.Rc;
+    } else {
+      const g = loads.reduce((s, l) => s + (l.open ? 0 : 1 / l.r), 0);
+      const Rp = g > 0 ? 1 / g : Infinity;
+      Rt = Rp + P.Rc;
+      I = isFinite(Rt) ? P.V / Rt : 0;
+      const Vp = isFinite(Rp) ? I * Rp : P.V;
+      drops = loads.map(() => Vp);
+      branch = loads.map(l => l.open ? 0 : Vp / l.r);
+      vc = I * P.Rc;
+    }
+    const power = loads.map((l, i) => l.open ? 0 : drops[i] * branch[i]);
+    return { n, loads, Rt, I, branch, drops, vc, power, Ptot: P.V * I };
+  }
+
+  const f = (v, d = 2) => isFinite(v) ? v.toFixed(d) : '∞';
+
+  function updateText() {
+    const s = solve();
+    $('vV').textContent = P.V.toFixed(1);
+    P.R.forEach((r, i) => { $('vR' + (i + 1)).textContent = r.toFixed(1); });
+    $('vRc').textContent = P.Rc.toFixed(2);
+    $('mR').textContent = f(s.Rt);
+    setChip($('cR'), P.mode === 'series' ? '직렬' : '병렬', 'info');
+    $('mI').textContent = f(s.I);
+    setChip($('cI'), s.I === 0 ? '전류 없음 · 회로 끊김' : 'I = V ÷ R', s.I === 0 ? 'bad' : '');
+    $('mP').textContent = f(s.Ptot, 1);
+    setChip($('cP'), P.Rc > 0.001 ? `접촉부 손실 ${f(s.vc * s.I, 1)}W` : 'P = V × I', P.Rc > 0.2 ? 'warn' : '');
+
+    // 멀티미터
+    let label, v, note;
+    if (P.probe === 'bat') { label = '전원 양단'; v = P.V; note = '배터리 전압'; }
+    else if (P.probe === 'rc') {
+      label = '커넥터 접촉부 양단'; v = s.vc;
+      note = s.I === 0 ? '전류가 없으면 강하도 0 · 작동 상태에서 측정' : v > 0.2 ? '강하 큼 → 접촉 불량 의심' : '정상 범위';
+    } else {
+      const k = +P.probe;
+      if (k >= s.n) { label = `전구 ${k + 1}`; v = 0; note = '연결되지 않은 부품'; }
+      else {
+        label = `전구 ${k + 1} 양단`; v = s.drops[k];
+        note = s.loads[k].open ? (P.mode === 'series' ? '단선된 곳 → 전원 전압이 그대로 걸림' : '단선됐지만 병렬이라 전압은 걸림 · 전류 0') :
+          (s.I === 0 ? '다른 곳이 끊겨 전류 없음 → 0V' : `전류 ${f(s.branch[k])}A × ${s.loads[k].r}Ω`);
+      }
+    }
+    $('meterLabel').textContent = `멀티미터 · ${label}`;
+    $('meterV').textContent = v.toFixed(2);
+    $('meterNote').textContent = note;
+
+    // 계산 과정
+    const rows = [];
+    if (P.mode === 'series') {
+      const parts = s.loads.map(l => l.open ? '∞(단선)' : l.r).join(' + ') + (P.Rc > 0 ? ` + ${P.Rc}` : '');
+      rows.push([`① 합성 저항 = ${parts}`, `${f(s.Rt)} Ω`]);
+      rows.push([`② 전류 = ${P.V.toFixed(1)} ÷ ${f(s.Rt)}`, `${f(s.I)} A`]);
+      s.loads.forEach((l, i) => rows.push([`③ 전구${i + 1} 전압 = ${l.open ? '단선 → 전원 전압' : `${f(s.I)} × ${l.r}`}`, `${f(s.drops[i])} V`]));
+    } else {
+      const inv = s.loads.map(l => l.open ? '0(단선)' : `1/${l.r}`).join(' + ');
+      const Rp = isFinite(s.Rt) ? s.Rt - P.Rc : Infinity;
+      rows.push([`① 병렬 합성 1/R = ${inv}`, `${f(Rp)} Ω`]);
+      if (P.Rc > 0) rows.push([`  + 접촉 저항 ${P.Rc} (직렬)`, `${f(s.Rt)} Ω`]);
+      rows.push([`② 전체 전류 = ${P.V.toFixed(1)} ÷ ${f(s.Rt)}`, `${f(s.I)} A`]);
+      s.loads.forEach((l, i) => rows.push([`③ 전구${i + 1} 전류 = ${f(s.drops[i])}V ÷ ${l.open ? '∞' : l.r}`, `${f(s.branch[i])} A`]));
+    }
+    rows.push([`④ 전력 = ${P.V.toFixed(1)} × ${f(s.I)}`, `${f(s.Ptot, 1)} W`]);
+    $('calc').innerHTML = rows.map(([a, b]) => `<div class="calc-row"><span>${a}</span><b>${b}</b></div>`).join('');
+    buildSegments();
+  }
+
+  const modeSeg = initSeg($('segMode'), v => { P.mode = v; updateText(); });
+  const probeSeg = initSeg($('segProbe'), v => { P.probe = v; updateText(); });
+  $('inV').addEventListener('input', e => { P.V = parseFloat(e.target.value); updateText(); });
+  [0, 1, 2].forEach(i => $('inR' + (i + 1)).addEventListener('input', e => { P.R[i] = parseFloat(e.target.value); updateText(); }));
+  $('inUse3').addEventListener('change', e => { P.use3 = e.target.checked; updateText(); });
+  $('inOpen').addEventListener('change', e => { P.open2 = e.target.checked; updateText(); });
+  $('inRc').addEventListener('input', e => { P.Rc = parseFloat(e.target.value); updateText(); });
+
+  function loadExample() {
+    Object.assign(P, { mode: 'series', V: 12, R: [2, 4, P.R[2]], use3: false, open2: false, Rc: 0, probe: '1' });
+    modeSeg.select('series'); probeSeg.select('1');
+    $('inV').value = 12; $('inR1').value = 2; $('inR2').value = 4; $('inUse3').checked = false; $('inOpen').checked = false; $('inRc').value = 0;
+    updateText();
+    $('exampleText').textContent = '예제 풀이: 합성 저항 2 + 4 = 6Ω, 전류 12 ÷ 6 = 2A, 2Ω 양단 2 × 2 = 4V, 4Ω 양단 2 × 4 = 8V (합 12V = 전원 전압, 키르히호프 2법칙).';
+  }
+  $('btnExample').addEventListener('click', loadExample);
+
+  // ---------- 회로도 ----------
+  const stage = $('stage'), ctx = fitCanvas(stage);
+  let G = null;           // 화면 좌표 (크기 바뀌면 다시 계산)
+  let segs = [];          // 전류 점 애니메이션 구간 {a, b, i, phase}
+
+  function layout() {
+    const W = stage._w, H = stage._h;
+    const L = W * 0.12, R = W * 0.9, T = H * 0.24, B = H * 0.8;
+    const s = solve();
+    const xs = [];
+    for (let k = 0; k < s.n; k++) xs.push(L + (R - L) * (0.3 + 0.62 * k / Math.max(1, s.n - 1)));
+    return { W, H, L, R, T, B, xs, s, u: Math.min(W, H) / 100 };
+  }
+
+  function buildSegments() {
+    if (!stage._w) return;
+    G = layout();
+    const { L, R, T, B, xs, s } = G;
+    const old = segs;
+    const list = [];
+    const xc = L + (xs[0] - L) * 0.45;               // 접촉부 위치 (아래 선)
+    if (P.mode === 'series') {
+      list.push([[L, B], [L, T], s.I], [[L, T], [R, T], s.I], [[R, T], [R, B], s.I], [[R, B], [L, B], s.I]);
+    } else {
+      list.push([[L, B], [L, T], s.I]);
+      let rem = s.I, prev = L;
+      xs.forEach((x, k) => { list.push([[prev, T], [x, T], rem]); rem -= s.branch[k]; prev = x; });
+      xs.forEach((x, k) => list.push([[x, T], [x, B], s.branch[k]]));
+      let acc = 0;
+      for (let k = xs.length - 1; k >= 0; k--) { acc += s.branch[k]; list.push([[xs[k], B], [k ? xs[k - 1] : L, B], acc]); }
+    }
+    segs = list.map(([a, b, i], idx) => ({ a, b, i, phase: old[idx] ? old[idx].phase : 0 }));
+    G.xc = xc;
+  }
+  new ResizeObserver(buildSegments).observe(stage);
+
+  function bulb(x, y, r, bright, open, label, sub) {
+    const u = G.u;
+    if (bright > 0.01) {
+      const g = ctx.createRadialGradient(x, y, r * 0.3, x, y, r * 3);
+      g.addColorStop(0, C.hot); g.addColorStop(1, 'transparent');
+      ctx.globalAlpha = clamp(bright, 0, 1) * 0.7; ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, y, r * 3, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = C.surface; ctx.strokeStyle = C.fg; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.globalAlpha = 0.25 + 0.75 * clamp(bright, 0, 1);
+    ctx.fillStyle = C.hot; ctx.beginPath(); ctx.arc(x, y, r * 0.75, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    // 필라멘트 (단선이면 끊김)
+    ctx.strokeStyle = C.fg; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (open) { ctx.moveTo(x - r * 0.6, y + r * 0.2); ctx.lineTo(x - r * 0.15, y - r * 0.3); ctx.moveTo(x + r * 0.15, y - r * 0.1); ctx.lineTo(x + r * 0.6, y + r * 0.2); }
+    else { ctx.moveTo(x - r * 0.6, y + r * 0.2); ctx.quadraticCurveTo(x, y - r * 0.9, x + r * 0.6, y + r * 0.2); }
+    ctx.stroke();
+    ctx.fillStyle = open ? C.bad : C.fg; ctx.font = `650 ${Math.max(11, u * 3)}px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(label, x, y + r + 6);
+    ctx.fillStyle = C['fg-2']; ctx.font = `500 ${Math.max(10, u * 2.6)}px ${C.font}`;
+    ctx.fillText(sub, x, y + r + 6 + Math.max(13, u * 3.4));
+  }
+
+  function draw() {
+    if (!G || G.W !== stage._w || G.H !== stage._h) buildSegments();
+    if (!G) return;
+    const { W, H, L, R, T, B, xs, u } = G;
+    const s = solve();
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = C.surface; ctx.fillRect(0, 0, W, H);
+
+    // 배선
+    ctx.strokeStyle = C['steel-dark']; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    segs.forEach(sg => { ctx.beginPath(); ctx.moveTo(...sg.a); ctx.lineTo(...sg.b); ctx.stroke(); });
+
+    // 전류 점: 구간마다 전류에 비례한 속도
+    const gap = Math.max(14, u * 4);
+    ctx.fillStyle = C.accent;
+    segs.forEach(sg => {
+      if (sg.i <= 1e-6) return;
+      const len = Math.hypot(sg.b[0] - sg.a[0], sg.b[1] - sg.a[1]);
+      for (let d = sg.phase % gap; d < len; d += gap) {
+        const t = d / len;
+        ctx.beginPath(); ctx.arc(lerp(sg.a[0], sg.b[0], t), lerp(sg.a[1], sg.b[1], t), Math.max(2, u * 0.7), 0, Math.PI * 2); ctx.fill();
+      }
+    });
+
+    // 배터리 (+ 위쪽)
+    const by = (T + B) / 2, bw = Math.max(18, u * 6);
+    ctx.fillStyle = C.surface; ctx.fillRect(L - bw, by - u * 5, bw * 2, u * 10);
+    ctx.strokeStyle = C.fg; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(L - bw, by - u * 2); ctx.lineTo(L + bw, by - u * 2); ctx.stroke();
+    ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(L - bw * 0.55, by + u * 2); ctx.lineTo(L + bw * 0.55, by + u * 2); ctx.stroke();
+    ctx.fillStyle = C.fg; ctx.font = `700 ${Math.max(11, u * 3)}px ${C.font}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText('+', L - bw - 4, by - u * 2);
+    ctx.fillText('−', L - bw - 4, by + u * 2);
+    ctx.textAlign = 'left';
+    ctx.fillText(`${P.V.toFixed(1)}V`, L + bw + 6, by);
+
+    // 접촉부
+    const xc = G.xc;
+    const bad = P.Rc > 0.001;
+    ctx.fillStyle = C.surface; ctx.fillRect(xc - u * 4, B - u * 3, u * 8, u * 6);
+    ctx.strokeStyle = bad ? C.bad : C['steel-dark']; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(xc - u * 4, B);
+    for (let k = 0; k <= 6; k++) ctx.lineTo(xc - u * 3 + k * u, B + (k % 2 ? -u * 1.6 : u * 1.6));
+    ctx.lineTo(xc + u * 4, B); ctx.stroke();
+    ctx.fillStyle = bad ? C.bad : C['fg-2']; ctx.font = `600 ${Math.max(10, u * 2.6)}px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(bad ? `접촉부 ${P.Rc.toFixed(2)}Ω` : '커넥터', xc, B + u * 3);
+
+    // 전구
+    const r = Math.max(12, u * 5);
+    const pos = P.mode === 'series' ? xs.map(x => [x, T]) : xs.map(x => [x, (T + B) / 2]);
+    s.loads.forEach((l, k) => {
+      const rated = 144 / l.r;                            // 12V 기준 정격 전력
+      const bright = l.open ? 0 : s.power[k] / rated;
+      bulb(pos[k][0], pos[k][1], r, bright, l.open, `전구${k + 1} ${l.r}Ω`, l.open ? '단선' : `${f(s.branch[k])}A · ${f(s.power[k], 1)}W`);
+    });
+
+    // 멀티미터 탐침
+    let pa = null, pb = null;
+    if (P.probe === 'bat') { pa = [L, by - u * 2]; pb = [L, by + u * 2]; }
+    else if (P.probe === 'rc') { pa = [xc - u * 4, B]; pb = [xc + u * 4, B]; }
+    else if (+P.probe < s.n) {
+      const [x, y] = pos[+P.probe];
+      if (P.mode === 'series') { pa = [x - r, y]; pb = [x + r, y]; } else { pa = [x, y - r]; pb = [x, y + r]; }
+    }
+    if (pa) {
+      const mx = W - Math.max(70, u * 20), my = H * 0.06;
+      [[pa, C.fire], [pb, C.fg]].forEach(([p, col], i) => {
+        ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(mx + 14 + i * 22, my + 26); ctx.quadraticCurveTo(p[0], my + 30, p[0], p[1]); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(p[0], p[1], 4, 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.fillStyle = C.tire; roundRect(ctx, mx, my, Math.max(64, u * 18), 26, 7); ctx.fill();
+      ctx.fillStyle = C.cool; ctx.font = `700 13px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText($('meterV').textContent + ' V', mx + Math.max(64, u * 18) / 2, my + 13);
+    }
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    requestAnimationFrame(loop);
+    const dt = Math.min((now - last) / 1000, 0.05); last = now;
+    // 1A당 초당 약 18px 이동 (전류가 클수록 빠름)
+    if (!REDUCE) segs.forEach(sg => { sg.phase += sg.i * 18 * dt; });
+    draw();
+  }
+  updateText();
+  if (location.hash === '#example') loadExample();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>변속기 기어비 시뮬레이터</title>
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --fill: rgba(118, 118, 128, 0.12);
+    --fg: #1c1c1e;
+    --fg-2: #6e6e73;
+    --line: rgba(60, 60, 67, 0.14);
+    --accent: #007aff;
+    --accent-soft: rgba(0, 122, 255, 0.12);
+    --good: #248a3d;
+    --good-soft: rgba(52, 199, 89, 0.16);
+    --warn: #c93400;
+    --warn-soft: rgba(255, 149, 0, 0.18);
+    --bad: #d70015;
+    --bad-soft: rgba(255, 59, 48, 0.14);
+    --steel: #9aa1ab;
+    --steel-dark: #636366;
+    --metal: #c9ced6;
+    --tire: #2c2c2e;
+    --hot: #ff9500;
+    --fire: #ff3b30;
+    --fluid: #af52de;
+    --cool: #5ac8fa;
+    --knob: #ffffff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+      --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+      --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+      --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+      --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+      --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+      --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+      --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+      --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+    --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+    --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+    --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+    --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+    --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+    --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+    --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding-inline: 16px;
+    padding-block: 20px 40px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-icon { width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0; background: var(--accent); display: grid; place-items: center; }
+  .brand-icon svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  h1 { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.025em; text-wrap: balance; }
+  .sub { margin: 0; font-size: 0.82rem; color: var(--fg-2); }
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .model-tag { font-size: 0.75rem; font-weight: 600; color: var(--fg-2); background: var(--fill); padding: 4px 10px; border-radius: 999px; }
+  .home-link { color: var(--accent); background: var(--accent-soft); text-decoration: none; transition: transform 0.18s var(--ease-out); }
+  .home-link:active { transform: scale(0.95); }
+  .home-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .main { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 920px) {
+    .main { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; }
+    .side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  }
+  .col { display: grid; gap: 14px; min-width: 0; }
+
+  .panel { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: 16px; min-width: 0; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .panel-title { font-size: 0.95rem; font-weight: 650; margin: 0; }
+  .hint { font-size: 0.75rem; color: var(--fg-2); margin: 0; }
+
+  .stage { position: relative; padding: 0; overflow: hidden; }
+  .stage canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
+  @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3.2; } }
+  .stage-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-top: 1px solid var(--line); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  button { font: inherit; color: inherit; }
+  .btn {
+    border: none; cursor: pointer; border-radius: 12px; padding: 9px 14px;
+    font-size: 0.85rem; font-weight: 600; background: var(--fill); color: var(--fg);
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: transform 0.18s var(--ease-out), background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  .btn:active, .btn.is-held { transform: scale(0.95); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-hold.is-held { background: var(--hot); color: #fff; }
+  .btn svg { width: 14px; height: 14px; fill: currentColor; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .metrics { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 700px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { background: var(--surface); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); display: grid; gap: 4px; min-width: 0; align-content: start; }
+  .tile-label { font-size: 0.72rem; font-weight: 600; color: var(--fg-2); }
+  .tile-value { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.15; overflow-wrap: anywhere; }
+  .tile-unit { font-size: 0.78rem; font-weight: 500; color: var(--fg-2); margin-left: 3px; letter-spacing: 0; }
+  .chip { justify-self: start; font-size: 0.7rem; font-weight: 650; padding: 2px 8px; border-radius: 999px; background: var(--fill); color: var(--fg-2); transition: background-color 0.25s var(--ease-out), color 0.25s var(--ease-out); }
+  .chip.good { background: var(--good-soft); color: var(--good); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .chip.info { background: var(--accent-soft); color: var(--accent); }
+
+  .calc { display: grid; gap: 6px; font-size: 0.84rem; font-variant-numeric: tabular-nums; }
+  .calc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--fill); align-items: baseline; }
+  .calc-row span:first-child { color: var(--fg-2); overflow-wrap: anywhere; }
+  .calc-row b { font-weight: 700; white-space: nowrap; }
+
+  .seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--fill); border-radius: 11px; padding: 2px; }
+  .seg-thumb { position: absolute; top: 2px; bottom: 2px; left: 0; width: 0; background: var(--knob); border-radius: 9px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); transition: transform 0.32s var(--ease-out), width 0.32s var(--ease-out), opacity 0.2s; }
+  .seg button { position: relative; z-index: 1; border: none; background: transparent; cursor: pointer; padding: 7px 2px; font-size: 0.78rem; font-weight: 500; border-radius: 9px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg button[aria-pressed="true"] { font-weight: 650; color: #1c1c1e; }
+  .seg-caption { margin-top: 8px; font-size: 0.76rem; color: var(--fg-2); min-height: 1.2em; }
+
+  .field { display: grid; gap: 4px; padding-block: 10px; border-top: 1px solid var(--line); }
+  .field:first-of-type { border-top: none; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field label { font-size: 0.86rem; font-weight: 600; }
+  .field small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .badge { font-size: 0.85rem; font-weight: 650; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 26px; background: transparent; cursor: pointer; margin: 0; }
+  input[type=range]::-webkit-slider-runnable-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8.5px; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); transition: transform 0.15s var(--ease-out); }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.18); }
+  input[type=range]::-moz-range-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border: none; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); }
+
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .switch-row label { font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+  .switch-row label small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .switch { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+  .switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--fill); transition: background-color 0.25s var(--ease-out); }
+  .switch span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15); transition: transform 0.3s var(--ease-out); }
+  .switch input:checked + span { background: var(--good); }
+  .switch input.danger:checked + span { background: var(--bad); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .notes { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 760px) { .notes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .note { min-width: 0; }
+  .note h3 { font-size: 0.9rem; margin: 0 0 6px; }
+  .note p, .note li { font-size: 0.84rem; color: var(--fg-2); margin: 0; }
+  .note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .note b { color: var(--fg); font-weight: 650; }
+  .note table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .note th, .note td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .note th { color: var(--fg-2); font-weight: 600; }
+  .note td { color: var(--fg); }
+  h2.section { font-size: 1.05rem; margin: 0; letter-spacing: -0.02em; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+
+  .gear-table { display: grid; gap: 8px; }
+  .gear-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: center; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+  .gear-row.head { font-size: 0.72rem; font-weight: 600; color: var(--fg-2); }
+  .gear-name { font-weight: 700; text-align: center; padding: 4px 0; border-radius: 8px; background: var(--fill); transition: background-color 0.25s var(--ease-out), color 0.25s var(--ease-out); }
+  .gear-row.on .gear-name { background: var(--accent); color: #fff; }
+  .bar { position: relative; height: 22px; border-radius: 6px; background: var(--fill); overflow: hidden; }
+  .bar i { position: absolute; inset: 0 auto 0 0; width: 100%; transform-origin: left center; border-radius: 6px; transition: transform 0.4s var(--ease-out); }
+  .bar.speed i { background: var(--accent); opacity: 0.85; }
+  .bar.force i { background: var(--hot); opacity: 0.85; }
+  .bar span { position: relative; z-index: 1; display: block; padding: 0 8px; line-height: 22px; font-weight: 600; color: var(--fg); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="4"/><circle cx="17" cy="12" r="3"/><path d="M8 6V4M8 20v-2M2 12h2M12 12h2M17 7.5V6M17 18v-1.5"/></svg>
+      </div>
+      <div>
+        <h1>변속기 기어비 시뮬레이터</h1>
+        <p class="sub">변속비와 종감속비가 엔진 회전을 어떻게 차속과 구동력으로 바꾸는지 확인합니다</p>
+      </div>
+    </div>
+    <div class="tag-row">
+      <span class="model-tag">수동 변속기 · 종감속 및 차동장치</span>
+      <a class="model-tag home-link" href="lab.html">← 물리 시스템 알기</a>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="col">
+      <section class="panel stage" aria-label="기어 회전 애니메이션">
+        <canvas id="stage" role="img" aria-label="엔진 쪽 기어, 변속기 출력 기어, 종감속 피니언과 링기어, 바퀴가 맞물려 도는 모습"></canvas>
+        <div class="stage-bar">
+          <span class="hint">기어 크기는 잇수에 비례합니다. 회전 속도는 실제보다 느리게 보여줍니다.</span>
+          <button class="btn" id="btnExample">시험 예제 불러오기</button>
+        </div>
+      </section>
+
+      <div class="metrics">
+        <div class="tile">
+          <span class="tile-label">총감속비</span>
+          <span class="tile-value"><span id="mTotal">6.00</span></span>
+          <span class="chip info" id="cTotal">1.50 × 4.00</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">바퀴 회전수</span>
+          <span class="tile-value"><span id="mNw">500</span><span class="tile-unit">rpm</span></span>
+          <span class="chip" id="cNw">엔진의 1/6</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">차속</span>
+          <span class="tile-value"><span id="mV">56.5</span><span class="tile-unit">km/h</span></span>
+          <span class="chip" id="cV">타이어 반지름 0.30m</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">구동력 (바퀴 접지면)</span>
+          <span class="tile-value"><span id="mF">400</span><span class="tile-unit">kgf</span></span>
+          <span class="chip" id="cF">구동 토크 120 kgf·m</span>
+        </div>
+      </div>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">계산 과정</h2></div>
+        <div class="calc" id="calc"></div>
+        <p class="hint" id="exampleText" style="margin-top:10px;">예제: 엔진 3000rpm, 3단 변속비 1.5, 종감속비 4, 타이어 반지름 0.3m, 엔진 토크 20kgf·m일 때 차속과 구동력은? (전달 효율 100%)</p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">기어별 비교 (현재 엔진 회전수·토크 기준)</h2>
+        </div>
+        <div class="gear-table" id="gearTable"></div>
+        <p class="hint" style="margin-top:10px;">저단일수록 구동력이 크고 차속이 낮습니다. 기어를 바꿔도 출력(힘 × 속도)은 같습니다.</p>
+      </section>
+    </div>
+
+    <aside class="col side">
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">기어 선택</h2></div>
+        <div class="seg" id="segGear" role="group" aria-label="변속 단수">
+          <span class="seg-thumb" aria-hidden="true"></span>
+          <button data-v="0" aria-pressed="false">1단</button>
+          <button data-v="1" aria-pressed="false">2단</button>
+          <button data-v="2" aria-pressed="true">3단</button>
+          <button data-v="3" aria-pressed="false">4단</button>
+          <button data-v="4" aria-pressed="false">5단</button>
+          <button data-v="5" aria-pressed="false">R</button>
+        </div>
+        <div class="field" style="margin-top:6px;">
+          <div class="field-head">
+            <label for="inRatio">선택한 단의 변속비<small id="ratioHint">입력축 회전수 ÷ 출력축 회전수</small></label>
+            <span class="badge"><span id="vRatio">1.50</span></span>
+          </div>
+          <input type="range" id="inRatio" min="0.6" max="4.5" step="0.01" value="1.5">
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">엔진과 차량</h2></div>
+        <div class="field">
+          <div class="field-head"><label for="inRpm">엔진 회전수</label><span class="badge"><span id="vRpm">3000</span> rpm</span></div>
+          <input type="range" id="inRpm" min="800" max="6500" step="50" value="3000">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inTq">엔진 토크</label><span class="badge"><span id="vTq">20.0</span> kgf·m</span></div>
+          <input type="range" id="inTq" min="5" max="45" step="0.5" value="20">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inFinal">종감속비<small>링기어 잇수 ÷ 구동 피니언 잇수</small></label><span class="badge"><span id="vFinal">4.00</span></span></div>
+          <input type="range" id="inFinal" min="2.5" max="6" step="0.01" value="4">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inR">타이어 반지름<small>동하중 반경</small></label><span class="badge"><span id="vR">0.300</span> m</span></div>
+          <input type="range" id="inR" min="0.25" max="0.4" step="0.005" value="0.3">
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">차동장치 (선회)</h2></div>
+        <div class="field">
+          <div class="field-head"><label for="inLeft">왼쪽 바퀴 회전수<small>링기어 회전수 대비</small></label><span class="badge"><span id="vLeft">100</span> %</span></div>
+          <input type="range" id="inLeft" min="0" max="100" step="1" value="100">
+        </div>
+        <div class="calc" id="diffCalc"></div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2 class="section">자동차산업기사 시험 포인트</h2></div>
+    <div class="notes">
+      <div class="note">
+        <h3>변속비와 총감속비</h3>
+        <ul>
+          <li>변속비 = <b>입력축 회전수 ÷ 출력축 회전수</b> = 피동 기어 잇수 ÷ 구동 기어 잇수.</li>
+          <li><b>총감속비 = 변속비 × 종감속비</b>.</li>
+          <li>바퀴 토크 = 엔진 토크 × 총감속비 × 전달 효율. 구동력 = 바퀴 토크 ÷ 타이어 반지름.</li>
+          <li>변속비가 1보다 작은 단은 <b>오버드라이브</b>(출력축이 더 빨리 돈다).</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>차속 계산</h3>
+        <ul>
+          <li>바퀴 회전수 Nw = <b>엔진 회전수 ÷ 총감속비</b>.</li>
+          <li>차속 V(km/h) = <b>2πr × Nw × 60 ÷ 1000</b> (r: m, Nw: rpm).</li>
+          <li>지름 D로 주어지면 πD × Nw × 60 ÷ 1000.</li>
+          <li>문제에 슬립률이나 전달 효율이 주어지면 마지막에 곱해 준다.</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>종감속·차동장치</h3>
+        <ul>
+          <li>종감속 기어: 회전을 줄여 토크를 키우고 동력 방향을 직각으로 바꾼다(하이포이드 기어 등).</li>
+          <li>차동장치: 선회 시 <b>바깥 바퀴를 더 빨리</b> 돌게 한다. 래크와 피니언 원리.</li>
+          <li><b>좌 + 우 = 링기어 회전수 × 2</b>. 한쪽 바퀴를 들고 돌리면 반대쪽은 링기어의 2배로 돈다.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ---------- 공통: 테마 토큰, 캔버스, 세그먼트, 길게 누르기 ----------
+  const $ = id => document.getElementById(id);
+  const C = {};
+  const TOKEN_NAMES = ['bg', 'surface', 'fill', 'fg', 'fg-2', 'line', 'accent', 'good', 'warn', 'bad', 'steel', 'steel-dark', 'metal', 'tire', 'hot', 'fire', 'fluid', 'cool', 'knob'];
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    TOKEN_NAMES.forEach(t => { C[t] = cs.getPropertyValue('--' + t).trim(); });
+    C.font = getComputedStyle(document.body).fontFamily;
+  }
+  readTokens();
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTokens);
+  new MutationObserver(readTokens).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+  const REDUCE = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  function fitCanvas(cv) {
+    const ctx = cv.getContext('2d');
+    const fit = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const r = cv.getBoundingClientRect();
+      cv.width = Math.round(r.width * dpr);
+      cv.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cv._w = r.width; cv._h = r.height;
+    };
+    new ResizeObserver(fit).observe(cv);
+    fit();
+    return ctx;
+  }
+
+  function setChip(el, text, tone) {
+    el.textContent = text;
+    el.className = 'chip' + (tone ? ' ' + tone : '');
+  }
+
+  // 선택 표시가 미끄러져 이동하는 세그먼트 컨트롤
+  function initSeg(root, onPick) {
+    const thumb = root.querySelector('.seg-thumb');
+    const btns = [...root.querySelectorAll('button')];
+    function place(animate) {
+      const on = btns.find(b => b.getAttribute('aria-pressed') === 'true');
+      if (!animate) thumb.style.transition = 'none';
+      if (on) {
+        thumb.style.opacity = 1;
+        thumb.style.width = on.offsetWidth + 'px';
+        thumb.style.transform = `translateX(${on.offsetLeft}px)`;
+      } else {
+        thumb.style.opacity = 0;
+      }
+      if (!animate) { void thumb.offsetWidth; thumb.style.transition = ''; }
+    }
+    function select(v) {
+      btns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+      place(true);
+    }
+    btns.forEach(b => b.addEventListener('click', () => { select(b.dataset.v); onPick(b.dataset.v); }));
+    new ResizeObserver(() => place(false)).observe(root);
+    return { select, clear: () => select(null) };
+  }
+
+  // 누르고 있는 동안 on, 떼면 off (마우스·터치·키보드)
+  function holdButton(btn, onChange) {
+    const on = e => { if (e) e.preventDefault(); btn.classList.add('is-held'); onChange(true); };
+    const off = () => { if (!btn.classList.contains('is-held')) return; btn.classList.remove('is-held'); onChange(false); };
+    btn.addEventListener('pointerdown', e => { btn.setPointerCapture(e.pointerId); on(e); });
+    btn.addEventListener('pointerup', off);
+    btn.addEventListener('pointercancel', off);
+    btn.addEventListener('lostpointercapture', off);
+    btn.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) on(e); });
+    btn.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') off(); });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const DEG = Math.PI / 180;
+
+
+  const GEARS = ['1단', '2단', '3단', '4단', '5단', 'R'];
+  // 3단 변속비를 예제 값(1.5)으로 두어 첫 화면 숫자가 예제와 같게 함
+  const P = { ratios: [3.5, 2.1, 1.5, 1.0, 0.8, 3.2], gear: 2, rpm: 3000, tq: 20, final: 4, r: 0.3, left: 100 };
+
+  const res = g => {
+    const it = P.ratios[g], total = it * P.final;
+    const nw = P.rpm / total;
+    const v = 2 * Math.PI * P.r * nw * 60 / 1000;
+    const tw = P.tq * total;
+    return { it, total, nw, v, tw, F: tw / P.r };
+  };
+  const f = (v, d) => v.toLocaleString('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+  function updateText() {
+    const g = P.gear, r = res(g);
+    $('vRatio').textContent = r.it.toFixed(2);
+    $('ratioHint').textContent = r.it < 1 ? '1보다 작음 · 오버드라이브' : g === 5 ? '후진 · 출력축 반대 방향' : '입력축 회전수 ÷ 출력축 회전수';
+    $('vRpm').textContent = P.rpm; $('vTq').textContent = P.tq.toFixed(1);
+    $('vFinal').textContent = P.final.toFixed(2); $('vR').textContent = P.r.toFixed(3);
+    $('mTotal').textContent = r.total.toFixed(2);
+    $('cTotal').textContent = `${r.it.toFixed(2)} × ${P.final.toFixed(2)}`;
+    $('mNw').textContent = f(r.nw, 0);
+    $('cNw').textContent = `엔진의 1/${+r.total.toFixed(2)}`;
+    $('mV').textContent = f(r.v, 1);
+    setChip($('cV'), g === 5 ? '후진' : `타이어 반지름 ${P.r.toFixed(2)}m`, g === 5 ? 'warn' : '');
+    $('mF').textContent = f(r.F, 0);
+    setChip($('cF'), `구동 토크 ${f(r.tw, 1)} kgf·m`, 'info');
+
+    $('calc').innerHTML = `
+      <div class="calc-row"><span>① 총감속비 = 변속비 × 종감속비 = ${r.it.toFixed(2)} × ${P.final.toFixed(2)}</span><b>${r.total.toFixed(2)}</b></div>
+      <div class="calc-row"><span>② 바퀴 회전수 = ${P.rpm} ÷ ${r.total.toFixed(2)}</span><b>${f(r.nw, 1)} rpm</b></div>
+      <div class="calc-row"><span>③ 차속 = 2π × ${P.r.toFixed(3)} × ${f(r.nw, 1)} × 60 ÷ 1000</span><b>${f(r.v, 2)} km/h</b></div>
+      <div class="calc-row"><span>④ 바퀴 토크 = ${P.tq.toFixed(1)} × ${r.total.toFixed(2)}</span><b>${f(r.tw, 1)} kgf·m</b></div>
+      <div class="calc-row"><span>⑤ 구동력 = ④ ÷ ${P.r.toFixed(3)}</span><b>${f(r.F, 1)} kgf</b></div>`;
+
+    // 기어별 비교 막대
+    const all = GEARS.map((_, i) => res(i));
+    const vMax = Math.max(...all.map(x => x.v)), fMax = Math.max(...all.map(x => x.F));
+    $('gearTable').innerHTML = `<div class="gear-row head"><span></span><span>차속</span><span>구동력</span></div>` +
+      all.map((x, i) => `<div class="gear-row${i === g ? ' on' : ''}">
+        <span class="gear-name">${GEARS[i]}</span>
+        <div class="bar speed"><i style="transform:scaleX(${x.v / vMax})"></i><span>${f(x.v, 1)} km/h</span></div>
+        <div class="bar force"><i style="transform:scaleX(${x.F / fMax})"></i><span>${f(x.F, 0)} kgf</span></div>
+      </div>`).join('');
+
+    // 차동장치
+    const ring = r.nw, left = ring * P.left / 100, right = 2 * ring - left;
+    $('vLeft').textContent = P.left;
+    $('diffCalc').innerHTML = `
+      <div class="calc-row"><span>링기어 회전수</span><b>${f(ring, 0)} rpm</b></div>
+      <div class="calc-row"><span>왼쪽 바퀴</span><b>${f(left, 0)} rpm</b></div>
+      <div class="calc-row"><span>오른쪽 = 링기어 × 2 − 왼쪽 = ${f(ring * 2, 0)} − ${f(left, 0)}</span><b>${f(right, 0)} rpm</b></div>`;
+  }
+
+  const gearSeg = initSeg($('segGear'), v => {
+    P.gear = parseInt(v, 10);
+    $('inRatio').value = P.ratios[P.gear];
+    updateText();
+  });
+  $('inRatio').addEventListener('input', e => { P.ratios[P.gear] = parseFloat(e.target.value); updateText(); });
+  const bind = (id, key) => $(id).addEventListener('input', e => { P[key] = parseFloat(e.target.value); updateText(); });
+  bind('inRpm', 'rpm'); bind('inTq', 'tq'); bind('inFinal', 'final'); bind('inR', 'r'); bind('inLeft', 'left');
+
+  function loadExample() {
+    Object.assign(P, { gear: 2, rpm: 3000, tq: 20, final: 4, r: 0.3 });
+    P.ratios[2] = 1.5;
+    gearSeg.select('2');
+    $('inRatio').value = 1.5; $('inRpm').value = 3000; $('inTq').value = 20; $('inFinal').value = 4; $('inR').value = 0.3;
+    updateText();
+    $('exampleText').textContent = '예제 풀이: 총감속비 1.5 × 4 = 6, 바퀴 3000 ÷ 6 = 500rpm, 차속 2π × 0.3 × 500 × 60 ÷ 1000 ≈ 56.55km/h, 바퀴 토크 20 × 6 = 120kgf·m, 구동력 120 ÷ 0.3 = 400kgf.';
+  }
+  $('btnExample').addEventListener('click', loadExample);
+
+  // ---------- 기어 애니메이션 ----------
+  const stage = $('stage'), ctx = fitCanvas(stage);
+  let rot = 0;   // 엔진 축 회전각 (rad)
+
+  function gear(cx, cy, teeth, module, angle, fill, label, sub) {
+    const R = teeth * module / 2, h = module * 0.9;
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(angle);
+    ctx.beginPath();
+    for (let i = 0; i < teeth; i++) {
+      const a = i / teeth * Math.PI * 2, w = Math.PI / teeth;
+      const p = (r, t) => [Math.cos(t) * r, Math.sin(t) * r];
+      const pts = [p(R - h / 2, a - w * 0.55), p(R + h / 2, a - w * 0.3), p(R + h / 2, a + w * 0.3), p(R - h / 2, a + w * 0.55)];
+      pts.forEach(([x, y], j) => (i === 0 && j === 0) ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+    }
+    ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+    ctx.fillStyle = C.surface;
+    ctx.beginPath(); ctx.arc(0, 0, Math.max(3, R * 0.18), 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = C.surface; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(R * 0.25, 0); ctx.lineTo(R * 0.7, 0); ctx.stroke();   // 회전이 보이도록 표시선
+    ctx.restore();
+    ctx.fillStyle = C.fg; ctx.font = `650 12px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(label, cx, cy + R + h + 6);
+    ctx.fillStyle = C['fg-2']; ctx.font = `500 11px ${C.font}`;
+    ctx.fillText(sub, cx, cy + R + h + 22);
+  }
+
+  function draw() {
+    const W = stage._w, H = stage._h;
+    if (!W) return;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = C.surface; ctx.fillRect(0, 0, W, H);
+    const r = res(P.gear);
+    // 잇수: 변속 구동 기어 16개, 피동 = 16 × 변속비 / 종감속 피니언 10개, 링기어 = 10 × 종감속비
+    const zIn = 16, zOut = Math.max(8, Math.round(zIn * r.it));
+    const zPin = 10, zRing = Math.max(20, Math.round(zPin * P.final));
+    const narrow = W < 520;
+    // 모듈(잇수당 크기)을 화면에 맞춤
+    const totalW = (zIn + zOut) + (zPin + zRing) * 0.75;
+    const m = Math.min((W * 0.86) / totalW, (H * 0.62) / Math.max(zOut, zRing * 0.75));
+    const cy = H * 0.42;
+    const x1 = W * 0.07 + zIn * m / 2;
+    const x2 = x1 + (zIn + zOut) * m / 2;
+    const m2 = m * 0.75;
+    const xPin = x2 + zOut * m / 2 + (narrow ? 6 : 16) + zPin * m2 / 2;
+    const xRing = xPin + (zPin + zRing) * m2 / 2;
+
+    const a1 = rot;
+    const a2 = -rot * zIn / zOut + Math.PI / zOut;
+    const shaft = rot / r.it;                    // 출력축 각 (부호 무시)
+    const a3 = shaft;                            // 피니언은 출력축과 같은 축
+    const a4 = -shaft * zPin / zRing + Math.PI / zRing;
+
+    // 출력축 → 피니언 연결선
+    ctx.strokeStyle = C.steel; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(x2, cy); ctx.lineTo(xPin, cy); ctx.stroke();
+    gear(x1, cy, zIn, m, a1, C.accent, '엔진 쪽', `${f(P.rpm, 0)} rpm`);
+    gear(x2, cy, zOut, m, a2, C['steel-dark'], `${GEARS[P.gear]} 피동`, `${f(P.rpm / r.it, 0)} rpm`);
+    gear(xPin, cy, zPin, m2, a3, C['steel-dark'], '피니언', `${zPin}T`);
+    gear(xRing, cy, zRing, m2, a4, C.hot, '링기어', `${f(r.nw, 0)} rpm`);
+
+    ctx.fillStyle = C['fg-2']; ctx.font = `600 11px ${C.font}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(`변속비 ${r.it.toFixed(2)} = ${zOut}T ÷ ${zIn}T (근사)`, 12, 10);
+    ctx.textAlign = 'right';
+    ctx.fillText(`종감속비 ${P.final.toFixed(2)} ≈ ${zRing}T ÷ ${zPin}T`, W - 12, 10);
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    requestAnimationFrame(loop);
+    const dt = Math.min((now - last) / 1000, 0.05); last = now;
+    // 엔진 rpm에 비례하되 눈에 보이는 속도로 (3000rpm → 초당 0.5회전)
+    if (!REDUCE) rot += (P.rpm / 3000) * 0.5 * Math.PI * 2 * dt;
+    draw();
+  }
+  updateText();
+  if (location.hash === '#example') loadExample();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
