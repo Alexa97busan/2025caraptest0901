@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>4행정 엔진 시뮬레이터</title>
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --fill: rgba(118, 118, 128, 0.12);
+    --fg: #1c1c1e;
+    --fg-2: #6e6e73;
+    --line: rgba(60, 60, 67, 0.14);
+    --accent: #007aff;
+    --accent-soft: rgba(0, 122, 255, 0.12);
+    --good: #248a3d;
+    --good-soft: rgba(52, 199, 89, 0.16);
+    --warn: #c93400;
+    --warn-soft: rgba(255, 149, 0, 0.18);
+    --bad: #d70015;
+    --bad-soft: rgba(255, 59, 48, 0.14);
+    --steel: #9aa1ab;
+    --steel-dark: #636366;
+    --metal: #c9ced6;
+    --tire: #2c2c2e;
+    --hot: #ff9500;
+    --fire: #ff3b30;
+    --fluid: #af52de;
+    --cool: #5ac8fa;
+    --knob: #ffffff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+      --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+      --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+      --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+      --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+      --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+      --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+      --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+      --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+    --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+    --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+    --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+    --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+    --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+    --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+    --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding-inline: 16px;
+    padding-block: 20px 40px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-icon { width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0; background: var(--accent); display: grid; place-items: center; }
+  .brand-icon svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  h1 { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.025em; text-wrap: balance; }
+  .sub { margin: 0; font-size: 0.82rem; color: var(--fg-2); }
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .model-tag { font-size: 0.75rem; font-weight: 600; color: var(--fg-2); background: var(--fill); padding: 4px 10px; border-radius: 999px; }
+  .home-link { color: var(--accent); background: var(--accent-soft); text-decoration: none; transition: transform 0.18s var(--ease-out); }
+  .home-link:active { transform: scale(0.95); }
+  .home-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .main { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 920px) {
+    .main { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; }
+    .side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  }
+  .col { display: grid; gap: 14px; min-width: 0; }
+
+  .panel { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: 16px; min-width: 0; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .panel-title { font-size: 0.95rem; font-weight: 650; margin: 0; }
+  .hint { font-size: 0.75rem; color: var(--fg-2); margin: 0; }
+
+  .stage { position: relative; padding: 0; overflow: hidden; }
+  .stage canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
+  @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3.2; } }
+  .stage-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-top: 1px solid var(--line); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  button { font: inherit; color: inherit; }
+  .btn {
+    border: none; cursor: pointer; border-radius: 12px; padding: 9px 14px;
+    font-size: 0.85rem; font-weight: 600; background: var(--fill); color: var(--fg);
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: transform 0.18s var(--ease-out), background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  .btn:active, .btn.is-held { transform: scale(0.95); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-hold.is-held { background: var(--hot); color: #fff; }
+  .btn svg { width: 14px; height: 14px; fill: currentColor; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .metrics { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 700px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { background: var(--surface); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); display: grid; gap: 4px; min-width: 0; align-content: start; }
+  .tile-label { font-size: 0.72rem; font-weight: 600; color: var(--fg-2); }
+  .tile-value { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.15; overflow-wrap: anywhere; }
+  .tile-unit { font-size: 0.78rem; font-weight: 500; color: var(--fg-2); margin-left: 3px; letter-spacing: 0; }
+  .chip { justify-self: start; font-size: 0.7rem; font-weight: 650; padding: 2px 8px; border-radius: 999px; background: var(--fill); color: var(--fg-2); transition: background-color 0.25s var(--ease-out), color 0.25s var(--ease-out); }
+  .chip.good { background: var(--good-soft); color: var(--good); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .chip.info { background: var(--accent-soft); color: var(--accent); }
+
+  .calc { display: grid; gap: 6px; font-size: 0.84rem; font-variant-numeric: tabular-nums; }
+  .calc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--fill); align-items: baseline; }
+  .calc-row span:first-child { color: var(--fg-2); overflow-wrap: anywhere; }
+  .calc-row b { font-weight: 700; white-space: nowrap; }
+
+  .seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--fill); border-radius: 11px; padding: 2px; }
+  .seg-thumb { position: absolute; top: 2px; bottom: 2px; left: 0; width: 0; background: var(--knob); border-radius: 9px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); transition: transform 0.32s var(--ease-out), width 0.32s var(--ease-out), opacity 0.2s; }
+  .seg button { position: relative; z-index: 1; border: none; background: transparent; cursor: pointer; padding: 7px 2px; font-size: 0.78rem; font-weight: 500; border-radius: 9px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg button[aria-pressed="true"] { font-weight: 650; color: #1c1c1e; }
+  .seg-caption { margin-top: 8px; font-size: 0.76rem; color: var(--fg-2); min-height: 1.2em; }
+
+  .field { display: grid; gap: 4px; padding-block: 10px; border-top: 1px solid var(--line); }
+  .field:first-of-type { border-top: none; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field label { font-size: 0.86rem; font-weight: 600; }
+  .field small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .badge { font-size: 0.85rem; font-weight: 650; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 26px; background: transparent; cursor: pointer; margin: 0; }
+  input[type=range]::-webkit-slider-runnable-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8.5px; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); transition: transform 0.15s var(--ease-out); }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.18); }
+  input[type=range]::-moz-range-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border: none; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); }
+
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .switch-row label { font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+  .switch-row label small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .switch { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+  .switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--fill); transition: background-color 0.25s var(--ease-out); }
+  .switch span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15); transition: transform 0.3s var(--ease-out); }
+  .switch input:checked + span { background: var(--good); }
+  .switch input.danger:checked + span { background: var(--bad); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .notes { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 760px) { .notes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .note { min-width: 0; }
+  .note h3 { font-size: 0.9rem; margin: 0 0 6px; }
+  .note p, .note li { font-size: 0.84rem; color: var(--fg-2); margin: 0; }
+  .note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .note b { color: var(--fg); font-weight: 650; }
+  .note table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .note th, .note td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .note th { color: var(--fg-2); font-weight: 600; }
+  .note td { color: var(--fg); }
+  h2.section { font-size: 1.05rem; margin: 0; letter-spacing: -0.02em; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+
+  .engine-grid { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 640px) { .engine-grid { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); } }
+  .stage canvas#cyl { aspect-ratio: 4 / 4.6; }
+  #timing { display: block; width: 100%; aspect-ratio: 1 / 1; }
+  .strokes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .stroke-pill {
+    text-align: center; padding: 8px 4px; border-radius: 12px; background: var(--fill);
+    font-size: 0.8rem; font-weight: 600; color: var(--fg-2);
+    transition: background-color 0.25s var(--ease-out), color 0.25s var(--ease-out), transform 0.25s var(--ease-out);
+  }
+  .stroke-pill small { display: block; font-size: 0.68rem; font-weight: 500; }
+  .stroke-pill.on { background: var(--accent); color: #fff; transform: translateY(-1px); }
+  .stroke-pill.on.power { background: var(--fire); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="9" rx="1"/><path d="M12 12v4"/><circle cx="12" cy="18" r="3"/></svg>
+      </div>
+      <div>
+        <h1>4행정 엔진 시뮬레이터</h1>
+        <p class="sub">흡입·압축·폭발·배기 행정과 밸브 타이밍, 배기량과 압축비를 한 화면에서 봅니다</p>
+      </div>
+    </div>
+    <div class="tag-row">
+      <span class="model-tag">가솔린 4행정 사이클 · 크랭크 2회전 = 1사이클</span>
+      <a class="model-tag home-link" href="lab.html">← 물리 시스템 알기</a>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="col">
+      <div class="strokes" aria-live="polite">
+        <div class="stroke-pill" data-s="0">① 흡입<small>0~180°</small></div>
+        <div class="stroke-pill" data-s="1">② 압축<small>180~360°</small></div>
+        <div class="stroke-pill power" data-s="2">③ 폭발<small>360~540°</small></div>
+        <div class="stroke-pill" data-s="3">④ 배기<small>540~720°</small></div>
+      </div>
+
+      <div class="engine-grid">
+        <section class="panel stage" aria-label="실린더 단면 애니메이션">
+          <canvas id="cyl" role="img" aria-label="피스톤, 커넥팅 로드, 크랭크축, 흡기·배기 밸브가 움직이는 실린더 단면"></canvas>
+          <div class="stage-bar">
+            <div class="btn-row">
+              <button class="btn btn-primary" id="btnPlay" aria-pressed="false">일시정지</button>
+              <button class="btn" id="btnStep">다음 행정 ▸</button>
+            </div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title">밸브 타이밍 선도</h2>
+            <span class="hint" id="revLabel">크랭크 1회전째</span>
+          </div>
+          <canvas id="timing" role="img" aria-label="상사점과 하사점을 기준으로 흡기와 배기 밸브가 열려 있는 크랭크 각도 구간을 그린 원형 선도"></canvas>
+          <p class="hint" style="margin-top:8px;">안쪽 파랑 = 흡기 밸브 열림, 바깥쪽 주황 = 배기 밸브 열림. 위쪽에서 두 구간이 겹치는 부분이 밸브 오버랩입니다.</p>
+        </section>
+      </div>
+
+      <div class="metrics">
+        <div class="tile">
+          <span class="tile-label">흡기 밸브 열림 기간</span>
+          <span class="tile-value"><span id="mIn">246</span><span class="tile-unit">°</span></span>
+          <span class="chip info" id="cIn">18 + 180 + 48</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">배기 밸브 열림 기간</span>
+          <span class="tile-value"><span id="mEx">241</span><span class="tile-unit">°</span></span>
+          <span class="chip info" id="cEx">48 + 180 + 13</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">밸브 오버랩</span>
+          <span class="tile-value"><span id="mOv">31</span><span class="tile-unit">°</span></span>
+          <span class="chip" id="cOv">18 + 13</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">현재 크랭크 각</span>
+          <span class="tile-value"><span id="mTheta">0</span><span class="tile-unit">°</span></span>
+          <span class="chip" id="cTheta">캠축 0°</span>
+        </div>
+      </div>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">계산 과정</h2></div>
+        <div class="calc" id="calc"></div>
+      </section>
+    </div>
+
+    <aside class="col side">
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">애니메이션 속도</h2></div>
+        <div class="seg" id="segSpeed" role="group" aria-label="애니메이션 속도">
+          <span class="seg-thumb" aria-hidden="true"></span>
+          <button data-v="0.12" aria-pressed="false">아주 느리게</button>
+          <button data-v="0.35" aria-pressed="true">느리게</button>
+          <button data-v="1" aria-pressed="false">보통</button>
+        </div>
+        <div class="seg-caption">실제 엔진은 3000rpm에서 1초에 50회전합니다. 눈으로 보도록 느리게 돌립니다.</div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">밸브 타이밍</h2></div>
+        <div class="field">
+          <div class="field-head"><label for="inIO">흡기 열림<small>상사점 전 (BTDC)</small></label><span class="badge"><span id="vIO">18</span>°</span></div>
+          <input type="range" id="inIO" min="0" max="40" step="1" value="18">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inIC">흡기 닫힘<small>하사점 후 (ABDC)</small></label><span class="badge"><span id="vIC">48</span>°</span></div>
+          <input type="range" id="inIC" min="10" max="80" step="1" value="48">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inEO">배기 열림<small>하사점 전 (BBDC)</small></label><span class="badge"><span id="vEO">48</span>°</span></div>
+          <input type="range" id="inEO" min="10" max="80" step="1" value="48">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inEC">배기 닫힘<small>상사점 후 (ATDC)</small></label><span class="badge"><span id="vEC">13</span>°</span></div>
+          <input type="range" id="inEC" min="0" max="40" step="1" value="13">
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">엔진 제원</h2></div>
+        <div class="field">
+          <div class="field-head"><label for="inBore">실린더 안지름 (보어)</label><span class="badge"><span id="vBore">86</span> mm</span></div>
+          <input type="range" id="inBore" min="60" max="100" step="1" value="86">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inStroke">행정 (스트로크)</label><span class="badge"><span id="vStroke">86</span> mm</span></div>
+          <input type="range" id="inStroke" min="60" max="100" step="1" value="86">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inVc">연소실 체적<small>상사점에서 남는 공간</small></label><span class="badge"><span id="vVc">55</span> cc</span></div>
+          <input type="range" id="inVc" min="30" max="100" step="1" value="55">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inRpm">엔진 회전수<small>평균 피스톤 속도 계산용</small></label><span class="badge"><span id="vRpm">3000</span> rpm</span></div>
+          <input type="range" id="inRpm" min="600" max="7000" step="100" value="3000">
+        </div>
+        <div class="field">
+          <div class="field-head"><label>기통 수</label></div>
+          <div class="seg" id="segCyl" role="group" aria-label="기통 수">
+            <span class="seg-thumb" aria-hidden="true"></span>
+            <button data-v="1" aria-pressed="false">1</button>
+            <button data-v="2" aria-pressed="false">2</button>
+            <button data-v="3" aria-pressed="false">3</button>
+            <button data-v="4" aria-pressed="true">4</button>
+            <button data-v="6" aria-pressed="false">6</button>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2 class="section">자동차산업기사 시험 포인트</h2></div>
+    <div class="notes">
+      <div class="note">
+        <h3>4행정 사이클</h3>
+        <ul>
+          <li>1사이클 = 피스톤 <b>4행정</b> = 크랭크축 <b>2회전(720°)</b> = 캠축 <b>1회전</b>. 크랭크 기어와 캠 기어의 잇수비는 1 : 2.</li>
+          <li>동력은 폭발 행정에서만 나온다. 다기통 엔진의 폭발 간격 = <b>720° ÷ 기통 수</b>.</li>
+          <li>4기통 점화 순서는 보통 <b>1-3-4-2</b> 또는 1-2-4-3.</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>밸브 타이밍</h3>
+        <ul>
+          <li>흡기 열림 기간 = <b>열림 BTDC + 180° + 닫힘 ABDC</b>.</li>
+          <li>배기 열림 기간 = <b>열림 BBDC + 180° + 닫힘 ATDC</b>.</li>
+          <li>밸브 오버랩 = <b>흡기 열림 BTDC + 배기 닫힘 ATDC</b>. 상사점 부근에서 두 밸브가 함께 열려 배기 관성으로 흡입 효율을 높인다.</li>
+          <li>밸브를 일찍 열고 늦게 닫는 이유: 가스의 <b>관성</b>을 이용해 충전 효율을 높이기 위해.</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>배기량과 압축비</h3>
+        <ul>
+          <li>행정 체적 Vs = <b>π/4 × D² × S</b>. 총 배기량 = Vs × 기통 수.</li>
+          <li>압축비 ε = <b>(Vs + Vc) ÷ Vc</b> = 1 + Vs/Vc.</li>
+          <li>평균 피스톤 속도 = <b>2 × N × S ÷ 60</b> (m/s, S는 m).</li>
+          <li>보어 = 행정이면 스퀘어, 보어 &gt; 행정이면 단행정(오버스퀘어) 엔진.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ---------- 공통: 테마 토큰, 캔버스, 세그먼트, 길게 누르기 ----------
+  const $ = id => document.getElementById(id);
+  const C = {};
+  const TOKEN_NAMES = ['bg', 'surface', 'fill', 'fg', 'fg-2', 'line', 'accent', 'good', 'warn', 'bad', 'steel', 'steel-dark', 'metal', 'tire', 'hot', 'fire', 'fluid', 'cool', 'knob'];
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    TOKEN_NAMES.forEach(t => { C[t] = cs.getPropertyValue('--' + t).trim(); });
+    C.font = getComputedStyle(document.body).fontFamily;
+  }
+  readTokens();
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTokens);
+  new MutationObserver(readTokens).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+  const REDUCE = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  function fitCanvas(cv) {
+    const ctx = cv.getContext('2d');
+    const fit = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const r = cv.getBoundingClientRect();
+      cv.width = Math.round(r.width * dpr);
+      cv.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cv._w = r.width; cv._h = r.height;
+    };
+    new ResizeObserver(fit).observe(cv);
+    fit();
+    return ctx;
+  }
+
+  function setChip(el, text, tone) {
+    el.textContent = text;
+    el.className = 'chip' + (tone ? ' ' + tone : '');
+  }
+
+  // 선택 표시가 미끄러져 이동하는 세그먼트 컨트롤
+  function initSeg(root, onPick) {
+    const thumb = root.querySelector('.seg-thumb');
+    const btns = [...root.querySelectorAll('button')];
+    function place(animate) {
+      const on = btns.find(b => b.getAttribute('aria-pressed') === 'true');
+      if (!animate) thumb.style.transition = 'none';
+      if (on) {
+        thumb.style.opacity = 1;
+        thumb.style.width = on.offsetWidth + 'px';
+        thumb.style.transform = `translateX(${on.offsetLeft}px)`;
+      } else {
+        thumb.style.opacity = 0;
+      }
+      if (!animate) { void thumb.offsetWidth; thumb.style.transition = ''; }
+    }
+    function select(v) {
+      btns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+      place(true);
+    }
+    btns.forEach(b => b.addEventListener('click', () => { select(b.dataset.v); onPick(b.dataset.v); }));
+    new ResizeObserver(() => place(false)).observe(root);
+    return { select, clear: () => select(null) };
+  }
+
+  // 누르고 있는 동안 on, 떼면 off (마우스·터치·키보드)
+  function holdButton(btn, onChange) {
+    const on = e => { if (e) e.preventDefault(); btn.classList.add('is-held'); onChange(true); };
+    const off = () => { if (!btn.classList.contains('is-held')) return; btn.classList.remove('is-held'); onChange(false); };
+    btn.addEventListener('pointerdown', e => { btn.setPointerCapture(e.pointerId); on(e); });
+    btn.addEventListener('pointerup', off);
+    btn.addEventListener('pointercancel', off);
+    btn.addEventListener('lostpointercapture', off);
+    btn.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) on(e); });
+    btn.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') off(); });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const DEG = Math.PI / 180;
+
+
+  const P = { IO: 18, IC: 48, EO: 48, EC: 13, bore: 86, stroke: 86, vc: 55, rpm: 3000, cyl: 4, speed: 0.35 };
+  const STROKES = ['흡입', '압축', '폭발', '배기'];
+  let theta = 0;              // 0~720, 0 = 흡입 행정 시작 상사점
+  let running = true;
+  let stepTarget = null;      // '다음 행정' 이동 목표 각도
+
+  function geom() {
+    const Vs = Math.PI / 4 * Math.pow(P.bore / 10, 2) * (P.stroke / 10);
+    const cr = (Vs + P.vc) / P.vc;
+    const vp = 2 * P.rpm * (P.stroke / 1000) / 60;
+    return { Vs, total: Vs * P.cyl, cr, vp, firing: 720 / P.cyl };
+  }
+
+  // 밸브 리프트 0~1 (열림 구간 안에서 사인 곡선)
+  function lift(th, start, dur) {
+    const rel = ((th - start) % 720 + 720) % 720;
+    return rel < dur ? Math.sin(Math.PI * rel / dur) : 0;
+  }
+  const intakeLift = th => lift(th, 720 - P.IO, P.IO + 180 + P.IC);
+  const exhaustLift = th => lift(th, 540 - P.EO, P.EO + 180 + P.EC);
+
+  // ---------- 텍스트 ----------
+  function updateText() {
+    ['IO', 'IC', 'EO', 'EC'].forEach(k => { $('v' + k).textContent = P[k]; });
+    $('vBore').textContent = P.bore; $('vStroke').textContent = P.stroke;
+    $('vVc').textContent = P.vc; $('vRpm').textContent = P.rpm;
+    const inDur = P.IO + 180 + P.IC, exDur = P.EO + 180 + P.EC, ov = P.IO + P.EC;
+    $('mIn').textContent = inDur; $('cIn').textContent = `${P.IO} + 180 + ${P.IC}`;
+    $('mEx').textContent = exDur; $('cEx').textContent = `${P.EO} + 180 + ${P.EC}`;
+    $('mOv').textContent = ov;
+    setChip($('cOv'), `${P.IO} + ${P.EC}` + (ov === 0 ? ' · 오버랩 없음' : ''), ov > 60 ? 'warn' : 'info');
+    const g = geom();
+    const type = P.bore > P.stroke ? '단행정(오버스퀘어)' : P.bore < P.stroke ? '장행정(언더스퀘어)' : '스퀘어';
+    $('calc').innerHTML = `
+      <div class="calc-row"><span>행정 체적 Vs = π/4 × ${(P.bore / 10).toFixed(1)}² × ${(P.stroke / 10).toFixed(1)} (cm)</span><b>${g.Vs.toFixed(1)} cc</b></div>
+      <div class="calc-row"><span>총 배기량 = ${g.Vs.toFixed(1)} × ${P.cyl}기통</span><b>${Math.round(g.total).toLocaleString('ko-KR')} cc</b></div>
+      <div class="calc-row"><span>압축비 ε = (${g.Vs.toFixed(1)} + ${P.vc}) ÷ ${P.vc}</span><b>${g.cr.toFixed(1)} : 1</b></div>
+      <div class="calc-row"><span>평균 피스톤 속도 = 2 × ${P.rpm} × ${(P.stroke / 1000).toFixed(3)} ÷ 60</span><b>${g.vp.toFixed(2)} m/s</b></div>
+      <div class="calc-row"><span>폭발 간격 = 720° ÷ ${P.cyl}기통</span><b>${+g.firing.toFixed(1)}°</b></div>
+      <div class="calc-row"><span>보어 ${P.bore} : 행정 ${P.stroke}</span><b>${type}</b></div>`;
+  }
+
+  const bind = (id, key) => $(id).addEventListener('input', e => { P[key] = parseInt(e.target.value, 10); updateText(); });
+  bind('inIO', 'IO'); bind('inIC', 'IC'); bind('inEO', 'EO'); bind('inEC', 'EC');
+  bind('inBore', 'bore'); bind('inStroke', 'stroke'); bind('inVc', 'vc'); bind('inRpm', 'rpm');
+  initSeg($('segSpeed'), v => { P.speed = parseFloat(v); });
+  initSeg($('segCyl'), v => { P.cyl = parseInt(v, 10); updateText(); });
+
+  const btnPlay = $('btnPlay');
+  btnPlay.addEventListener('click', () => {
+    running = !running;
+    stepTarget = null;
+    btnPlay.textContent = running ? '일시정지' : '재생';
+    btnPlay.setAttribute('aria-pressed', String(!running));
+  });
+  // 다음 행정 경계(180° 단위)까지 감속하며 이동 후 정지
+  $('btnStep').addEventListener('click', () => {
+    running = false;
+    btnPlay.textContent = '재생'; btnPlay.setAttribute('aria-pressed', 'true');
+    const base = stepTarget !== null ? stepTarget : theta;
+    stepTarget = (Math.floor(base / 180 + 1e-6) + 1) * 180;
+  });
+
+  // ---------- 실린더 그리기 ----------
+  const cyl = $('cyl'), cctx = fitCanvas(cyl);
+  const tim = $('timing'), tctx = fitCanvas(tim);
+
+  function gasStyle(th) {
+    const s = Math.floor((th % 720) / 180), k = (th % 180) / 180;
+    if (s === 0) return { color: C.cool, alpha: 0.18 + 0.12 * k };
+    if (s === 1) return { color: C.cool, alpha: 0.3 + 0.35 * k };
+    if (s === 2) return { color: k < 0.5 ? C.fire : C.hot, alpha: 0.75 - 0.45 * k };
+    return { color: C.steel, alpha: 0.4 - 0.25 * k };
+  }
+
+  function drawCylinder() {
+    const W = cyl._w, H = cyl._h, ctx = cctx;
+    if (!W) return;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = C.surface; ctx.fillRect(0, 0, W, H);
+    const g = geom();
+    const S = Math.min(H / 4.5, W / 2.6);             // 행정 길이(px)
+    const boreW = S * (P.bore / P.stroke) * 1.0;
+    const cx = W / 2;
+    const r = S / 2, l = S * 1.65;
+    const chamberH = Math.max(S / (g.cr - 1), 4);       // 압축비에 맞춘 연소실 높이
+    const headY = H * 0.17;
+    const topTDC = headY + chamberH;                    // 상사점에서 피스톤 윗면
+    const pistonH = S * 0.55;
+    const th = theta * DEG;
+    const x = r * Math.cos(th) + Math.sqrt(l * l - Math.pow(r * Math.sin(th), 2));
+    const dispFromTDC = (r + l) - x;
+    const pistonTop = topTDC + dispFromTDC;
+    const pinY = pistonTop + pistonH * 0.5;
+    const crankY = topTDC + pistonH * 0.5 + r + l;
+    const crankX = cx + r * Math.sin(th), crankPinY = crankY - r * Math.cos(th);
+
+    // 실린더 벽
+    const wall = Math.max(6, S * 0.08);
+    const cylBottom = topTDC + S + pistonH * 0.9;
+    ctx.fillStyle = C.metal;
+    ctx.fillRect(cx - boreW / 2 - wall, headY - S * 0.35, wall, cylBottom - headY + S * 0.35);
+    ctx.fillRect(cx + boreW / 2, headY - S * 0.35, wall, cylBottom - headY + S * 0.35);
+    // 헤드
+    ctx.fillRect(cx - boreW / 2 - wall, headY - S * 0.35, boreW + wall * 2, S * 0.35);
+
+    // 가스
+    const gs = gasStyle(theta);
+    ctx.globalAlpha = gs.alpha; ctx.fillStyle = gs.color;
+    ctx.fillRect(cx - boreW / 2, headY, boreW, pistonTop - headY);
+    ctx.globalAlpha = 1;
+
+    // 상사점 / 하사점 표시
+    ctx.strokeStyle = C['fg-2']; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    [[topTDC, '상사점'], [topTDC + S, '하사점']].forEach(([y, t]) => {
+      ctx.beginPath(); ctx.moveTo(cx + boreW / 2 + wall + 4, y); ctx.lineTo(cx + boreW / 2 + wall + 18, y); ctx.stroke();
+      ctx.fillStyle = C['fg-2']; ctx.font = `600 11px ${C.font}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(t, cx + boreW / 2 + wall + 22, y);
+    });
+    ctx.setLineDash([]);
+
+    // 밸브 (흡기 왼쪽, 배기 오른쪽)
+    const maxLift = chamberH * 0.85;
+    const vw = boreW * 0.3;
+    [[cx - boreW * 0.25, intakeLift(theta), C.cool, '흡기'], [cx + boreW * 0.25, exhaustLift(theta), C.hot, '배기']].forEach(([vx, lv, col, label]) => {
+      const vy = headY + lv * maxLift;
+      // 포트 (열려 있으면 색 표시)
+      ctx.globalAlpha = lv > 0.01 ? 0.25 + 0.5 * lv : 0.12;
+      ctx.fillStyle = col;
+      ctx.fillRect(vx - vw / 2, headY - S * 0.35, vw, S * 0.35);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = C['steel-dark']; ctx.lineWidth = Math.max(2, S * 0.03);
+      ctx.beginPath(); ctx.moveTo(vx, headY - S * 0.45); ctx.lineTo(vx, vy); ctx.stroke();
+      ctx.fillStyle = C['steel-dark'];
+      ctx.beginPath(); ctx.moveTo(vx - vw / 2, vy + 3); ctx.lineTo(vx + vw / 2, vy + 3); ctx.lineTo(vx + vw * 0.15, vy - 3); ctx.lineTo(vx - vw * 0.15, vy - 3); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = lv > 0.01 ? col : C['fg-2'];
+      ctx.font = `650 11px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(label + (lv > 0.01 ? ' 열림' : ''), vx, headY - S * 0.47);
+    });
+
+    // 점화 플러그 + 불꽃 (압축 상사점 직전 ~ 직후)
+    ctx.fillStyle = C.fg;
+    ctx.fillRect(cx - 2, headY - S * 0.3, 4, S * 0.3 + 2);
+    const tm = theta % 720;
+    if (tm > 350 && tm < 385) {
+      const k = 1 - Math.abs(tm - 362) / 25;
+      ctx.globalAlpha = clamp(k, 0, 1);
+      ctx.fillStyle = C.fire;
+      ctx.beginPath(); ctx.arc(cx, headY + 4, 4 + 10 * clamp(k, 0, 1), 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // 피스톤
+    ctx.fillStyle = C['steel-dark'];
+    roundRect(ctx, cx - boreW / 2 + 1, pistonTop, boreW - 2, pistonH, 4); ctx.fill();
+    ctx.fillStyle = C.metal;
+    for (let i = 0; i < 3; i++) ctx.fillRect(cx - boreW / 2 + 1, pistonTop + 5 + i * 5, boreW - 2, 1.5);
+    // 커넥팅 로드
+    ctx.strokeStyle = C.steel; ctx.lineWidth = Math.max(5, S * 0.09); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cx, pinY); ctx.lineTo(crankX, crankPinY); ctx.stroke();
+    ctx.fillStyle = C.surface;
+    ctx.beginPath(); ctx.arc(cx, pinY, Math.max(3, S * 0.05), 0, Math.PI * 2); ctx.fill();
+    // 크랭크
+    ctx.fillStyle = C.metal;
+    ctx.beginPath(); ctx.arc(cx, crankY, r * 1.35, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = C['steel-dark']; ctx.lineWidth = Math.max(6, S * 0.1);
+    ctx.beginPath(); ctx.moveTo(cx, crankY); ctx.lineTo(crankX, crankPinY); ctx.stroke();
+    ctx.fillStyle = C.fg;
+    ctx.beginPath(); ctx.arc(cx, crankY, Math.max(3, S * 0.05), 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.accent;
+    ctx.beginPath(); ctx.arc(crankX, crankPinY, Math.max(3, S * 0.05), 0, Math.PI * 2); ctx.fill();
+
+  }
+
+  // ---------- 밸브 타이밍 선도 ----------
+  function drawTiming() {
+    const W = tim._w, H = tim._h, ctx = tctx;
+    if (!W) return;
+    ctx.clearRect(0, 0, W, H);
+    const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.36;
+    const toRad = phi => (phi - 90) * DEG;  // 0° = 위(상사점), 시계 방향
+    const pt = (phi, rr) => [cx + rr * Math.cos(toRad(phi)), cy + rr * Math.sin(toRad(phi))];
+
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(cx, cy - R * 1.2); ctx.lineTo(cx, cy + R * 1.2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    const arc = (from, to, rr, color, w) => {
+      ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(cx, cy, rr, toRad(from), toRad(to)); ctx.stroke();
+    };
+    const wArc = Math.max(6, R * 0.09);
+    arc(-P.IO, 180 + P.IC, R * 0.8, C.accent, wArc);
+    arc(180 - P.EO, 360 + P.EC, R, C.hot, wArc);
+    // 오버랩 강조
+    ctx.globalAlpha = 0.18; ctx.fillStyle = C.fire;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R * 1.08, toRad(-P.IO), toRad(P.EC)); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    const fs = Math.max(10, R * 0.12);
+    ctx.font = `650 ${fs}px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = C.fg;
+    ctx.fillText('상사점 (TDC)', cx, cy - R * 1.28);
+    ctx.fillText('하사점 (BDC)', cx, cy + R * 1.28);
+    ctx.font = `600 ${fs * 0.85}px ${C.font}`;
+    const label = (phi, rr, text, color) => { const [x, y] = pt(phi, rr); ctx.fillStyle = color; ctx.fillText(text, x, y); };
+    label(-P.IO - 14, R * 0.6, `IO ${P.IO}°`, C.accent);
+    label(180 + P.IC + 8, R * 0.58, `IC ${P.IC}°`, C.accent);
+    label(180 - P.EO - 6, R * 1.17, `EO ${P.EO}°`, C.hot);
+    label(P.EC + 14, R * 1.17, `EC ${P.EC}°`, C.hot);
+    label(0, R * 0.35, `오버랩 ${P.IO + P.EC}°`, C.fire);
+
+    // 현재 크랭크 위치 바늘
+    const phi = theta % 360;
+    const [nx, ny] = pt(phi, R * 1.05);
+    ctx.strokeStyle = C.fg; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(nx, ny); ctx.stroke();
+    ctx.fillStyle = C.fg;
+    ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(nx, ny, 4, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // ---------- 상태 표시 ----------
+  const pills = [...document.querySelectorAll('.stroke-pill')];
+  let lastStroke = -1, uiTimer = 0;
+  function updateLive(dt) {
+    const tm = theta % 720;
+    const s = Math.floor(tm / 180);
+    if (s !== lastStroke) {
+      pills.forEach((p, i) => p.classList.toggle('on', i === s));
+      lastStroke = s;
+    }
+    uiTimer += dt;
+    if (uiTimer > 0.08) {
+      uiTimer = 0;
+      $('mTheta').textContent = Math.floor(tm);
+      $('cTheta').textContent = `캠축 ${Math.floor(tm / 2)}°`;
+      $('revLabel').textContent = tm < 360 ? '크랭크 1회전째 (흡입·압축)' : '크랭크 2회전째 (폭발·배기)';
+    }
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    requestAnimationFrame(loop);
+    const dt = Math.min((now - last) / 1000, 0.05); last = now;
+    if (running) {
+      theta = (theta + 360 * P.speed * dt) % 720;
+    } else if (stepTarget !== null) {
+      // 남은 각도의 비율로 다가가는 감속 이동 → 행정 경계에서 부드럽게 멈춤
+      const remain = stepTarget - theta;
+      if (remain < 0.3 || REDUCE) { theta = stepTarget % 720; stepTarget = null; }
+      else theta += remain * (1 - Math.exp(-7 * dt)) + 8 * dt;
+      if (stepTarget !== null && theta >= stepTarget) { theta = stepTarget % 720; stepTarget = null; }
+    }
+    drawCylinder();
+    drawTiming();
+    updateLive(dt);
+  }
+  updateText();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
