@@ -185,6 +185,7 @@
     *, *::before, *::after { transition-duration: 0.01ms !important; }
   }
 
+  #stage { touch-action: none; }
   .meter { display: grid; gap: 2px; padding: 12px 14px; border-radius: 16px; background: var(--tire); color: #f5f5f7; box-shadow: var(--shadow); }
   .meter-label { font-size: 0.72rem; font-weight: 600; color: #98989f; }
   .meter-value { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: #64d2ff; line-height: 1.1; }
@@ -214,7 +215,7 @@
       <section class="panel stage" aria-label="회로도">
         <canvas id="stage" role="img" aria-label="배터리, 전구, 커넥터 접촉부로 이루어진 회로와 흐르는 전류, 멀티미터 측정 위치"></canvas>
         <div class="stage-bar">
-          <span class="hint">점의 속도 = 전류의 크기, 전구 밝기 = 소비 전력</span>
+          <span class="hint">빨강·검정 탐침을 끌어 회로의 ○ 측정점에 꽂으세요. 점을 탭해도 탐침이 번갈아 옮겨집니다.</span>
           <button class="btn" id="btnExample">시험 예제 불러오기</button>
         </div>
       </section>
@@ -236,7 +237,7 @@
           <span class="chip" id="cP">P = V × I</span>
         </div>
         <div class="meter" aria-live="polite">
-          <span class="meter-label" id="meterLabel">멀티미터 · 전원 양단</span>
+          <span class="meter-label" id="meterLabel">멀티미터 · 빨강 − 검정</span>
           <span class="meter-value"><span id="meterV">12.00</span> V</span>
           <span class="meter-note" id="meterNote">배터리 전압</span>
         </div>
@@ -292,7 +293,7 @@
       </section>
 
       <section class="panel">
-        <div class="panel-head"><h2 class="panel-title">멀티미터 측정 위치</h2></div>
+        <div class="panel-head"><h2 class="panel-title">멀티미터 빠른 배치</h2></div>
         <div class="seg" id="segProbe" role="group" aria-label="측정 위치">
           <span class="seg-thumb" aria-hidden="true"></span>
           <button data-v="bat" aria-pressed="true">전원</button>
@@ -301,7 +302,7 @@
           <button data-v="2" aria-pressed="false">전구3</button>
           <button data-v="rc" aria-pressed="false">접촉부</button>
         </div>
-        <div class="seg-caption">전압계는 측정할 부품 양 끝에 <b>병렬</b>로 대어 측정합니다.</div>
+        <div class="seg-caption">회로도에서 탐침을 직접 끌어 원하는 곳에 꽂을 수 있습니다. 버튼은 자주 재는 위치로 바로 옮깁니다. 표시값은 <b>빨강 전위 − 검정 전위</b>입니다.</div>
       </section>
     </aside>
   </div>
@@ -427,7 +428,7 @@
   const DEG = Math.PI / 180;
 
 
-  const P = { mode: 'series', V: 12, R: [6, 6, 12], use3: true, open2: false, Rc: 0, probe: 'bat' };
+  const P = { mode: 'series', V: 12, R: [6, 6, 12], use3: true, open2: false, Rc: 0 };
 
   // ---------- 회로 계산 ----------
   function solve() {
@@ -470,25 +471,6 @@
     $('mP').textContent = f(s.Ptot, 1);
     setChip($('cP'), P.Rc > 0.001 ? `접촉부 손실 ${f(s.vc * s.I, 1)}W` : 'P = V × I', P.Rc > 0.2 ? 'warn' : '');
 
-    // 멀티미터
-    let label, v, note;
-    if (P.probe === 'bat') { label = '전원 양단'; v = P.V; note = '배터리 전압'; }
-    else if (P.probe === 'rc') {
-      label = '커넥터 접촉부 양단'; v = s.vc;
-      note = s.I === 0 ? '전류가 없으면 강하도 0 · 작동 상태에서 측정' : v > 0.2 ? '강하 큼 → 접촉 불량 의심' : '정상 범위';
-    } else {
-      const k = +P.probe;
-      if (k >= s.n) { label = `전구 ${k + 1}`; v = 0; note = '연결되지 않은 부품'; }
-      else {
-        label = `전구 ${k + 1} 양단`; v = s.drops[k];
-        note = s.loads[k].open ? (P.mode === 'series' ? '단선된 곳 → 전원 전압이 그대로 걸림' : '단선됐지만 병렬이라 전압은 걸림 · 전류 0') :
-          (s.I === 0 ? '다른 곳이 끊겨 전류 없음 → 0V' : `전류 ${f(s.branch[k])}A × ${s.loads[k].r}Ω`);
-      }
-    }
-    $('meterLabel').textContent = `멀티미터 · ${label}`;
-    $('meterV').textContent = v.toFixed(2);
-    $('meterNote').textContent = note;
-
     // 계산 과정
     const rows = [];
     if (P.mode === 'series') {
@@ -507,10 +489,11 @@
     rows.push([`④ 전력 = ${P.V.toFixed(1)} × ${f(s.I)}`, `${f(s.Ptot, 1)} W`]);
     $('calc').innerHTML = rows.map(([a, b]) => `<div class="calc-row"><span>${a}</span><b>${b}</b></div>`).join('');
     buildSegments();
+    updateMeter();
   }
 
   const modeSeg = initSeg($('segMode'), v => { P.mode = v; updateText(); });
-  const probeSeg = initSeg($('segProbe'), v => { P.probe = v; updateText(); });
+  const probeSeg = initSeg($('segProbe'), v => { setPreset(v); });
   $('inV').addEventListener('input', e => { P.V = parseFloat(e.target.value); updateText(); });
   [0, 1, 2].forEach(i => $('inR' + (i + 1)).addEventListener('input', e => { P.R[i] = parseFloat(e.target.value); updateText(); }));
   $('inUse3').addEventListener('change', e => { P.use3 = e.target.checked; updateText(); });
@@ -518,10 +501,11 @@
   $('inRc').addEventListener('input', e => { P.Rc = parseFloat(e.target.value); updateText(); });
 
   function loadExample() {
-    Object.assign(P, { mode: 'series', V: 12, R: [2, 4, P.R[2]], use3: false, open2: false, Rc: 0, probe: '1' });
+    Object.assign(P, { mode: 'series', V: 12, R: [2, 4, P.R[2]], use3: false, open2: false, Rc: 0 });
     modeSeg.select('series'); probeSeg.select('1');
     $('inV').value = 12; $('inR1').value = 2; $('inR2').value = 4; $('inUse3').checked = false; $('inOpen').checked = false; $('inRc').value = 0;
     updateText();
+    setPreset('1');
     $('exampleText').textContent = '예제 풀이: 합성 저항 2 + 4 = 6Ω, 전류 12 ÷ 6 = 2A, 2Ω 양단 2 × 2 = 4V, 4Ω 양단 2 × 4 = 8V (합 12V = 전원 전압, 키르히호프 2법칙).';
   }
   $('btnExample').addEventListener('click', loadExample);
@@ -537,7 +521,10 @@
     const s = solve();
     const xs = [];
     for (let k = 0; k < s.n; k++) xs.push(L + (R - L) * (0.3 + 0.62 * k / Math.max(1, s.n - 1)));
-    return { W, H, L, R, T, B, xs, s, u: Math.min(W, H) / 100 };
+    const u = Math.min(W, H) / 100;
+    const by = (T + B) / 2, bw = Math.max(18, u * 6), r = Math.max(12, u * 5);
+    const pos = P.mode === 'series' ? xs.map(x => [x, T]) : xs.map(x => [x, (T + B) / 2]);
+    return { W, H, L, R, T, B, xs, s, u, by, bw, r, pos };
   }
 
   function buildSegments() {
@@ -560,7 +547,205 @@
     segs = list.map(([a, b, i], idx) => ({ a, b, i, phase: old[idx] ? old[idx].phase : 0 }));
     G.xc = xc;
   }
-  new ResizeObserver(buildSegments).observe(stage);
+  new ResizeObserver(() => { buildSegments(); updateMeter(); }).observe(stage);
+
+
+  // ---------- 측정점과 전위 ----------
+  // 회로의 각 점은 하나의 '마디(node)'에 속함. 멀티미터는 두 마디의 전위차(빨강 − 검정)를 읽음
+  function nodeVoltages(s) {
+    const NV = { P: P.V, G: 0 };
+    if (P.mode === 'series') {
+      let cur = P.V;
+      s.loads.forEach((l, k) => {
+        // 단선이면 전류가 0 → 끊어진 곳 아래쪽은 모두 접지(0V)와 같은 전위
+        cur = l.open ? 0 : cur - s.I * l.r;
+        NV['n' + k] = Math.abs(cur) < 1e-9 ? 0 : cur;
+      });
+    } else {
+      NV.B = s.I * P.Rc;          // 아래 레일 = 접촉 저항만큼 떠 있음
+    }
+    return NV;
+  }
+
+  function testPoints() {
+    if (!G) return [];
+    const { L, R, T, B, xs, u, by, bw, r, pos, s } = G;
+    const xc = G.xc;
+    const pts = [
+      { id: 'bp', x: L + bw * 0.75, y: by - u * 2, node: 'P', name: '배터리 +' },
+      { id: 'bn', x: L + bw * 0.4, y: by + u * 2, node: 'G', name: '배터리 −' },
+      { id: 'tl', x: L, y: T, node: 'P', name: '왼쪽 위 배선' }
+    ];
+    const last = P.mode === 'series' ? 'n' + (s.n - 1) : 'B';
+    pos.forEach(([x, y], k) => {
+      if (P.mode === 'series') {
+        pts.push({ id: `k${k}a`, x: x - r, y, node: k ? 'n' + (k - 1) : 'P', name: `전구${k + 1} 왼쪽 단자` });
+        pts.push({ id: `k${k}b`, x: x + r, y, node: 'n' + k, name: `전구${k + 1} 오른쪽 단자` });
+      } else {
+        pts.push({ id: `k${k}a`, x, y: y - r, node: 'P', name: `전구${k + 1} 위 단자` });
+        pts.push({ id: `k${k}b`, x, y: y + r, node: 'B', name: `전구${k + 1} 아래 단자` });
+      }
+    });
+    const xr = P.mode === 'series' ? R : xs[xs.length - 1];
+    pts.push(
+      { id: 'tr', x: xr, y: T, node: P.mode === 'series' ? last : 'P', name: '오른쪽 위 배선' },
+      { id: 'br', x: xr, y: B, node: last, name: '오른쪽 아래 배선' },
+      { id: 'cr', x: xc + u * 4, y: B, node: last, name: '커넥터 오른쪽' },
+      { id: 'cl', x: xc - u * 4, y: B, node: 'G', name: '커넥터 왼쪽' },
+      { id: 'bl', x: L, y: B, node: 'G', name: '왼쪽 아래 배선' }
+    );
+    return pts;
+  }
+
+  const probes = {
+    red: { pt: 'bp', x: 0, y: 0, ready: false },
+    black: { pt: 'bn', x: 0, y: 0, ready: false }
+  };
+  let drag = null, hover = null, lastMoved = 'black';
+
+  function meterBox() {
+    const w = Math.max(64, G.u * 18);
+    return { x: G.W - w - 10, y: G.H * 0.05, w, h: 26 };
+  }
+  function parkPos(key) {
+    const m = meterBox();
+    return key === 'red' ? [m.x + m.w * 0.3, m.y + m.h + 22] : [m.x + m.w * 0.7, m.y + m.h + 22];
+  }
+  const findPt = id => testPoints().find(t => t.id === id);
+
+  function setPreset(v) {
+    if (v === 'bat') { probes.red.pt = 'bp'; probes.black.pt = 'bn'; }
+    else if (v === 'rc') { probes.red.pt = 'cr'; probes.black.pt = 'cl'; }
+    else { probes.red.pt = `k${v}a`; probes.black.pt = `k${v}b`; }
+    updateMeter();
+  }
+
+  function updateMeter() {
+    if (!G) return;
+    const s = solve();
+    const NV = nodeVoltages(s);
+    const pts = testPoints();
+    ['red', 'black'].forEach(k => { if (probes[k].pt && !pts.find(t => t.id === probes[k].pt)) probes[k].pt = null; });
+    const rp = pts.find(t => t.id === probes.red.pt), bp = pts.find(t => t.id === probes.black.pt);
+    if (!rp || !bp) {
+      $('meterLabel').textContent = '멀티미터 · 탐침 연결 대기';
+      $('meterV').textContent = '- - -';
+      $('meterNote').textContent = !rp && !bp ? '빨강·검정 탐침을 회로의 점에 꽂으세요' : `${rp ? '검정' : '빨강'} 탐침도 꽂아야 전압이 나옵니다`;
+      return;
+    }
+    const v = NV[rp.node] - NV[bp.node];
+    $('meterLabel').textContent = `빨강 ${rp.name} · 검정 ${bp.name}`;
+    $('meterV').textContent = (Math.abs(v) < 0.005 ? 0 : v).toFixed(2);
+    let note;
+    const pair = [rp.id, bp.id].sort().join();
+    const k = rp.id[0] === 'k' && bp.id[0] === 'k' && rp.id[1] === bp.id[1] ? +rp.id[1] : -1;
+    if (rp.node === bp.node) note = '같은 마디(사이에 부품 없음) → 전위차 0V';
+    else if (pair === 'cl,cr') note = s.I === 0 ? '전류가 없으면 강하도 0 · 작동 상태에서 재세요' : Math.abs(v) > 0.2 ? '강하가 큼 → 접촉 불량 의심' : '강하가 작음 → 정상 접점';
+    else if (k >= 0 && s.loads[k] && s.loads[k].open) note = P.mode === 'series' ? '단선된 곳 → 전원 전압이 그대로 걸림' : '병렬이라 단선돼도 전압은 걸림 · 전류 0';
+    else if (k >= 0 && s.I === 0) note = '다른 곳이 끊겨 전류 없음 → 강하 0V';
+    else if (v < -0.005) note = '음(−)의 값 → 탐침 극성이 반대. 빨강을 전위가 높은 쪽(+)에';
+    else if (k >= 0) note = `이 전구의 전압 강하 = ${f(s.branch[k])}A × ${s.loads[k].r}Ω`;
+    else note = '두 점 사이 부품들의 전압 강하 합';
+    $('meterNote').textContent = note;
+  }
+
+  function nearestPoint(x, y, max) {
+    let best = null, bd = max;
+    testPoints().forEach(t => { const d = Math.hypot(t.x - x, t.y - y); if (d < bd) { bd = d; best = t; } });
+    return best;
+  }
+  const localXY = e => { const r = stage.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+
+  stage.addEventListener('pointerdown', e => {
+    if (!G) return;
+    const [x, y] = localXY(e);
+    let hit = null, best = 26;
+    ['red', 'black'].forEach(k => { const d = Math.hypot(probes[k].x - x, probes[k].y - y); if (d < best) { best = d; hit = k; } });
+    if (hit) {
+      e.preventDefault();
+      drag = hit; hover = nearestPoint(x, y, 30);
+      stage.setPointerCapture(e.pointerId);
+      probes[hit].x = x; probes[hit].y = y;
+      return;
+    }
+    const tp = nearestPoint(x, y, 24);
+    if (tp) {
+      // 점을 탭하면: 빠져 있는 탐침이 있으면 그것부터, 둘 다 꽂혀 있으면 직전에 옮기지 않은 쪽이 이동
+      const key = !probes.red.pt ? 'red' : !probes.black.pt ? 'black' : (lastMoved === 'red' ? 'black' : 'red');
+      probes[key].pt = tp.id; lastMoved = key;
+      probeSeg.clear(); updateMeter();
+    }
+  });
+  stage.addEventListener('pointermove', e => {
+    if (!G) return;
+    const [x, y] = localXY(e);
+    if (drag) {
+      probes[drag].x = x; probes[drag].y = y;
+      hover = nearestPoint(x, y, 30);
+    } else {
+      const near = ['red', 'black'].some(k => Math.hypot(probes[k].x - x, probes[k].y - y) < 26) || nearestPoint(x, y, 24);
+      stage.style.cursor = near ? 'pointer' : 'default';
+    }
+  });
+  const endDrag = () => {
+    if (!drag) return;
+    probes[drag].pt = hover ? hover.id : null;   // 점 근처에서 놓으면 꽂히고, 아니면 멀티미터 쪽으로 돌아감
+    lastMoved = drag; drag = null; hover = null;
+    probeSeg.clear(); updateMeter();
+  };
+  stage.addEventListener('pointerup', endDrag);
+  stage.addEventListener('pointercancel', endDrag);
+
+  // 탐침 끝은 목표 위치로 감속하며 이동 (꽂힐 때 '착' 붙는 느낌)
+  function animateProbes(dt) {
+    if (!G) return;
+    const k = REDUCE ? 1 : 1 - Math.exp(-16 * dt);
+    ['red', 'black'].forEach(key => {
+      const p = probes[key];
+      if (drag === key) return;
+      const tp = p.pt && findPt(p.pt);
+      const [tx, ty] = tp ? [tp.x, tp.y] : parkPos(key);
+      if (!p.ready) { p.x = tx; p.y = ty; p.ready = true; return; }
+      p.x += (tx - p.x) * k; p.y += (ty - p.y) * k;
+    });
+  }
+
+  function drawProbes() {
+    const { u } = G;
+    const pts = testPoints();
+    // 측정점
+    pts.forEach(t => {
+      const isHover = hover && hover.id === t.id;
+      ctx.lineWidth = isHover ? 2.5 : 1.5;
+      ctx.strokeStyle = isHover ? C.accent : C['fg-2'];
+      ctx.fillStyle = C.surface;
+      ctx.beginPath(); ctx.arc(t.x, t.y, isHover ? 9 : (drag ? 5.5 : 4.5), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    });
+    if (hover && drag) {
+      ctx.fillStyle = C.accent; ctx.font = `650 ${Math.max(11, u * 2.8)}px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(hover.name, hover.x, hover.y - 13);
+    }
+    // 멀티미터 본체
+    const m = meterBox();
+    ctx.fillStyle = C.tire; roundRect(ctx, m.x, m.y, m.w, m.h, 7); ctx.fill();
+    ctx.fillStyle = C.cool; ctx.font = `700 13px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const val = $('meterV').textContent;
+    ctx.fillText(val === '- - -' ? '- - - V' : val + ' V', m.x + m.w / 2, m.y + m.h / 2);
+    // 리드선과 탐침 (드래그 중인 것을 위에)
+    const order = drag === 'red' ? ['black', 'red'] : ['red', 'black'];
+    order.forEach(key => {
+      const p = probes[key], col = key === 'red' ? C.fire : C.fg;
+      const jx = m.x + m.w * (key === 'red' ? 0.3 : 0.7), jy = m.y + m.h;
+      ctx.strokeStyle = col; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(jx, jy); ctx.quadraticCurveTo(jx, (jy + p.y) / 2 + 20, p.x, p.y); ctx.stroke();
+      const big = drag === key ? 10 : 7.5;
+      if (drag === key) { ctx.fillStyle = col; ctx.globalAlpha = 0.18; ctx.beginPath(); ctx.arc(p.x, p.y, 18, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+      ctx.fillStyle = col; ctx.strokeStyle = C.surface; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(p.x, p.y, big, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = C.surface; ctx.font = `800 ${big + 2}px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(key === 'red' ? '+' : '−', p.x, p.y + 0.5);
+    });
+  }
 
   function bulb(x, y, r, bright, open, label, sub) {
     const u = G.u;
@@ -644,26 +829,7 @@
       bulb(pos[k][0], pos[k][1], r, bright, l.open, `전구${k + 1} ${l.r}Ω`, l.open ? '단선' : `${f(s.branch[k])}A · ${f(s.power[k], 1)}W`);
     });
 
-    // 멀티미터 탐침
-    let pa = null, pb = null;
-    if (P.probe === 'bat') { pa = [L, by - u * 2]; pb = [L, by + u * 2]; }
-    else if (P.probe === 'rc') { pa = [xc - u * 4, B]; pb = [xc + u * 4, B]; }
-    else if (+P.probe < s.n) {
-      const [x, y] = pos[+P.probe];
-      if (P.mode === 'series') { pa = [x - r, y]; pb = [x + r, y]; } else { pa = [x, y - r]; pb = [x, y + r]; }
-    }
-    if (pa) {
-      const mx = W - Math.max(70, u * 20), my = H * 0.06;
-      [[pa, C.fire], [pb, C.fg]].forEach(([p, col], i) => {
-        ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
-        ctx.beginPath(); ctx.moveTo(mx + 14 + i * 22, my + 26); ctx.quadraticCurveTo(p[0], my + 30, p[0], p[1]); ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(p[0], p[1], 4, 0, Math.PI * 2); ctx.fill();
-      });
-      ctx.fillStyle = C.tire; roundRect(ctx, mx, my, Math.max(64, u * 18), 26, 7); ctx.fill();
-      ctx.fillStyle = C.cool; ctx.font = `700 13px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText($('meterV').textContent + ' V', mx + Math.max(64, u * 18) / 2, my + 13);
-    }
+    drawProbes();
   }
 
   let last = performance.now();
@@ -672,6 +838,7 @@
     const dt = Math.min((now - last) / 1000, 0.05); last = now;
     // 1A당 초당 약 18px 이동 (전류가 클수록 빠름)
     if (!REDUCE) segs.forEach(sg => { sg.phase += sg.i * 18 * dt; });
+    animateProbes(dt);
     draw();
   }
   updateText();
