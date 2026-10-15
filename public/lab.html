@@ -144,13 +144,13 @@
   <header>
     <p class="eyebrow">자동차산업기사 · 인터랙티브 학습</p>
     <h1>물리 시스템 알기</h1>
-    <p class="lead">교재의 공식과 그림을 직접 움직여 보며 익히는 시뮬레이터 7개와 연습 문제입니다. 섹션은 시험 과목 순서로 묶었습니다. 값을 바꾸면 결과가 바로 보이니, 외우기 전에 먼저 눈으로 이해해 보세요.</p>
+    <p class="lead">교재의 공식과 그림을 직접 움직여 보며 익히는 시뮬레이터 8개와 연습 문제입니다. 섹션은 시험 과목 순서로 묶었습니다. 값을 바꾸면 결과가 바로 보이니, 외우기 전에 먼저 눈으로 이해해 보세요.</p>
   </header>
 
   <div class="sections">
   <a class="quiz-banner" href="quiz.html">
     <span class="quiz-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2 2 4-4"/><rect x="4" y="3" width="16" height="18" rx="2"/></svg></span>
-    <span class="quiz-text"><strong>기출 유형 문제 29개</strong><small>7개 단원 계산·개념 문제. 답을 고르면 해설과 해당 시뮬레이터로 연결됩니다</small></span>
+    <span class="quiz-text"><strong>기출 유형 문제 32개</strong><small>8개 단원 계산·개념 문제. 답을 고르면 해설과 해당 시뮬레이터로 연결됩니다</small></span>
     <span class="open">풀기 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg></span>
   </a>
 
@@ -266,7 +266,8 @@
 
   <section>
     <h2 class="section-title">전기·전자</h2>
-      <a class="card wide" href="circuit.html">
+    <div class="cards">
+      <a class="card" href="circuit.html">
         <canvas class="preview" id="pvCircuit" aria-hidden="true"></canvas>
         <div class="card-body">
           <div class="meta"><span class="tag">옴의 법칙</span><span class="tag">진단</span></div>
@@ -282,8 +283,24 @@
           </span>
         </div>
       </a>
+      <a class="card" href="relay.html">
+        <canvas class="preview" id="pvRelay" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">릴레이</span><span class="tag">진단 연습</span></div>
+          <h2>릴레이 회로 시뮬레이터</h2>
+          <p>경음기 릴레이 회로에서 작은 제어 전류가 큰 부하 전류를 켜는 과정을 보고, 숨겨진 고장을 멀티미터로 찾아냅니다.</p>
+          <div class="formula">85·86 코일 → 30·87 접점</div>
+          <ul class="learn">
+            <li>릴레이 단자 역할과 딸깍 소리의 의미</li>
+            <li>퓨즈·코일·접점·접지 고장 진단 연습</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+    </div>
   </section>
-
   </div>
 
   <section class="bridge">
@@ -327,7 +344,8 @@
   const pv5 = document.getElementById('pvSteering');
   const pvG = document.getElementById('pvGear');
   const pvC = document.getElementById('pvCircuit');
-  const ctx1 = setup(pv1), ctx2 = setup(pv2), ctx3 = setup(pv3), ctx4 = setup(pv4), ctx5 = setup(pv5), ctxG = setup(pvG), ctxC = setup(pvC);
+  const pvR = document.getElementById('pvRelay');
+  const ctx1 = setup(pv1), ctx2 = setup(pv2), ctx3 = setup(pv3), ctx4 = setup(pv4), ctx5 = setup(pv5), ctxG = setup(pvG), ctxC = setup(pvC), ctxR = setup(pvR);
 
   // 단진자 미리보기: 감쇠 없이 일정하게 흔들림
   function drawPendulum(t) {
@@ -512,10 +530,39 @@
     ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(L - 8, (T + B) / 2 + 5); ctx.lineTo(L + 8, (T + B) / 2 + 5); ctx.stroke();
   }
 
+
+  // 릴레이 미리보기: 코일이 켜지면 접점이 붙고 부하 쪽 전류가 흐름
+  function drawRelay(t) {
+    const W = pvR._w, H = pvR._h, ctx = ctxR;
+    ctx.clearRect(0, 0, W, H);
+    const on = reduce ? true : (t % 2.4) < 1.4;
+    const s = H / 150, cx = W / 2;
+    const bx = cx - 70 * s, bw = 140 * s, by = 30 * s, bh = 90 * s;
+    ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = C['fg-2']; ctx.lineWidth = 1.2;
+    ctx.strokeRect(bx, by, bw, bh); ctx.restore();
+    // 코일
+    const kx = bx + 40 * s;
+    ctx.strokeStyle = on ? C.accent : C.fg; ctx.lineWidth = on ? 3 : 2;
+    ctx.beginPath(); ctx.moveTo(kx, by); ctx.lineTo(kx, by + 20 * s);
+    for (let k = 0; k < 4; k++) ctx.arc(kx, by + 26 * s + k * 12 * s, 6 * s, -Math.PI / 2, Math.PI / 2);
+    ctx.lineTo(kx, by + bh); ctx.stroke();
+    // 접점
+    const jx = bx + 100 * s;
+    ctx.strokeStyle = C.fg; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(jx, by); ctx.lineTo(jx, by + 18 * s); ctx.lineTo(on ? jx : jx + 18 * s, by + 66 * s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(jx - 8 * s, by + 70 * s); ctx.lineTo(jx + 8 * s, by + 70 * s); ctx.moveTo(jx, by + 70 * s); ctx.lineTo(jx, by + bh); ctx.stroke();
+    ctx.save(); ctx.setLineDash([2, 3]); ctx.strokeStyle = on ? C.accent : C['fg-2']; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(kx + 10 * s, by + 45 * s); ctx.lineTo(jx - 4 * s, by + 45 * s); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = C.fg; ctx.font = `700 ${Math.max(10, 12 * s)}px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('86', kx, by - 4); ctx.fillText('30', jx, by - 4);
+    ctx.textBaseline = 'top'; ctx.fillText('85', kx, by + bh + 4); ctx.fillText('87', jx, by + bh + 4);
+    if (on) { ctx.fillStyle = C.spring; ctx.textBaseline = 'middle'; ctx.fillText('딸깍', (kx + jx) / 2, by + 75 * s); }
+  }
+
   // 화면에 보일 때만 애니메이션
   const visible = new Set();
   const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? visible.add(e.target) : visible.delete(e.target)));
-  [pv1, pv2, pv3, pv4, pv5, pvG, pvC].forEach(c => io.observe(c));
+  [pv1, pv2, pv3, pv4, pv5, pvG, pvC, pvR].forEach(c => io.observe(c));
 
   let first = true;   // 첫 프레임은 화면 밖 카드도 그려 둠 (정지 상태로도 완성된 화면)
   function loop(now) {
@@ -528,6 +575,7 @@
     if (visible.has(pv5) || all || pv5._dirty) { drawSteering(t); pv5._dirty = false; }
     if (visible.has(pvG) || all || pvG._dirty) { drawGear(t); pvG._dirty = false; }
     if (visible.has(pvC) || all || pvC._dirty) { drawCircuit(t); pvC._dirty = false; }
+    if (visible.has(pvR) || all || pvR._dirty) { drawRelay(t); pvR._dirty = false; }
     if (!reduce) requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
