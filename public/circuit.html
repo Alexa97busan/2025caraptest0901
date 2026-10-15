@@ -270,6 +270,7 @@
           <span class="seg-thumb" aria-hidden="true"></span>
           <button data-v="calc" aria-pressed="true">계산 문제</button>
           <button data-v="diag" aria-pressed="false">고장 진단</button>
+          <button data-v="auto" aria-pressed="false">자동차 문제</button>
         </div>
         <div class="prob-body">
           <p class="prob-q" id="probQ"></p>
@@ -473,7 +474,7 @@
   const isDiag = () => Q && Q.type === 'diag';
   const RcEff = () => P.Rc + (isDiag() ? Q.rc : 0);                       // 숨은 접촉 저항 포함
   const masked = () => Q && !Q.answered;                                  // 답 고르기 전
-  const maskNums = () => masked() && Q.type === 'calc';                   // 계산 문제는 숫자까지 가림
+  const maskNums = () => masked() && (Q.type === 'calc' || Q.mask);      // 계산·회로형 문제는 숫자까지 가림
 
   // ---------- 회로 계산 ----------
   function solve() {
@@ -521,17 +522,17 @@
     // 계산 과정
     const rows = [];
     if (P.mode === 'series') {
-      const parts = s.loads.map(l => l.open ? '∞(단선)' : l.r).join(' + ') + (RcEff() > 0 ? ` + ${RcEff()}` : '');
+      const parts = s.loads.map(l => l.open ? '∞(단선)' : +l.r.toFixed(2)).join(' + ') + (RcEff() > 0 ? ` + ${RcEff()}` : '');
       rows.push([`① 합성 저항 = ${parts}`, `${f(s.Rt)} Ω`]);
       rows.push([`② 전류 = ${P.V.toFixed(1)} ÷ ${f(s.Rt)}`, `${f(s.I)} A`]);
-      s.loads.forEach((l, i) => rows.push([`③ 전구${i + 1} 전압 = ${l.open ? '단선 → 전원 전압' : `${f(s.I)} × ${l.r}`}`, `${f(s.drops[i])} V`]));
+      s.loads.forEach((l, i) => rows.push([`③ 전구${i + 1} 전압 = ${l.open ? '단선 → 전원 전압' : `${f(s.I)} × ${+l.r.toFixed(2)}`}`, `${f(s.drops[i])} V`]));
     } else {
-      const inv = s.loads.map(l => l.open ? '0(단선)' : `1/${l.r}`).join(' + ');
+      const inv = s.loads.map(l => l.open ? '0(단선)' : `1/${+l.r.toFixed(2)}`).join(' + ');
       const Rp = isFinite(s.Rt) ? s.Rt - RcEff() : Infinity;
       rows.push([`① 병렬 합성 1/R = ${inv}`, `${f(Rp)} Ω`]);
       if (RcEff() > 0) rows.push([`  + 접촉 저항 ${RcEff()} (직렬)`, `${f(s.Rt)} Ω`]);
       rows.push([`② 전체 전류 = ${P.V.toFixed(1)} ÷ ${f(s.Rt)}`, `${f(s.I)} A`]);
-      s.loads.forEach((l, i) => rows.push([`③ 전구${i + 1} 전류 = ${f(s.drops[i])}V ÷ ${l.open ? '∞' : l.r}`, `${f(s.branch[i])} A`]));
+      s.loads.forEach((l, i) => rows.push([`③ 전구${i + 1} 전류 = ${f(s.drops[i])}V ÷ ${l.open ? '∞' : +l.r.toFixed(2)}`, `${f(s.branch[i])} A`]));
     }
     rows.push([`④ 전력 = ${P.V.toFixed(1)} × ${f(s.I)}`, `${f(s.Ptot, 1)} W`]);
     $('calc').innerHTML = masked()
@@ -699,7 +700,7 @@
     else if (k >= 0 && s.loads[k] && s.loads[k].open) note = P.mode === 'series' ? '단선된 곳 → 전원 전압이 그대로 걸림' : '병렬이라 단선돼도 전압은 걸림 · 전류 0';
     else if (k >= 0 && s.I === 0) note = '다른 곳이 끊겨 전류 없음 → 강하 0V';
     else if (v < -0.005) note = '음(−)의 값 → 탐침 극성이 반대. 빨강을 전위가 높은 쪽(+)에';
-    else if (k >= 0) note = `이 전구의 전압 강하 = ${f(s.branch[k])}A × ${s.loads[k].r}Ω`;
+    else if (k >= 0) note = `이 전구의 전압 강하 = ${f(s.branch[k])}A × ${+s.loads[k].r.toFixed(2)}Ω`;
     else note = '두 점 사이 부품들의 전압 강하 합';
     $('meterNote').textContent = note;
   }
@@ -883,7 +884,7 @@
       const rated = 144 / l.r;                            // 12V 기준 정격 전력
       const bright = l.open ? 0 : s.power[k] / rated;
       const showOpen = l.open && !(masked() && isDiag() && !(k === 1 && P.open2));
-      bulb(pos[k][0], pos[k][1], r, bright, showOpen, `전구${k + 1} ${l.r}Ω`, masked() ? '' : showOpen ? '단선' : `${f(s.branch[k])}A · ${f(s.power[k], 1)}W`);
+      bulb(pos[k][0], pos[k][1], r, bright, showOpen, `전구${k + 1} ${+l.r.toFixed(2)}Ω`, masked() ? '' : showOpen ? '단선' : `${f(s.branch[k])}A · ${f(s.power[k], 1)}W`);
     });
 
     drawProbes();
@@ -985,12 +986,70 @@
         : `끊어진 것은 전구${k}입니다. 병렬이라 전구${k}만 꺼집니다. 양 끝에 전압은 걸리는데 전류가 0이므로 전구 자체의 단선입니다.`;
   }
 
+
+  // ---------- 자동차 전기 문제 ----------
+  // setup이 있으면 실습판 회로를 그 상황으로 바꾸고, 답하기 전까지 숫자를 가림
+  const R55 = 144 / 55, R21 = 144 / 21, R10 = 144 / 10;   // 12V 기준 전구 저항 (R = V² ÷ P)
+  const AUTO = [
+    { q: '12V 55W 전조등 전구의 저항은 약 얼마인가?', o: ['2.62Ω', '4.58Ω', '0.22Ω', '660Ω'], a: 0,
+      setup: { mode: 'parallel', R: [R55, R55] },
+      e: 'P = V²/R → R = V² ÷ P = 144 ÷ 55 ≈ 2.62Ω. 회로가 전조등 2개 병렬로 바뀌었습니다. 전구 하나 양단을 재면 12V입니다.' },
+    { q: '좌우 전조등(12V 55W 2개)을 병렬로 켰을 때 배터리에서 나오는 전체 전류는?', o: ['4.58A', '9.17A', '18.33A', '2.29A'], a: 1,
+      setup: { mode: 'parallel', R: [R55, R55] },
+      e: '전체 전력 55 × 2 = 110W → I = P ÷ V = 110 ÷ 12 ≈ 9.17A. 전구 하나에는 약 4.58A씩 흐릅니다.' },
+    { q: '제동등(12V 21W 2개 병렬) 회로의 커넥터에 접촉 저항 0.5Ω이 생겼다. 전구 양단 전압은 약 얼마가 되는가?', o: ['12V', '10.5V', '6V', '1.5V'], a: 1,
+      setup: { mode: 'parallel', R: [R21, R21], Rc: 0.5 },
+      e: '전구 병렬 합성 6.86 ÷ 2 ≈ 3.43Ω, 접촉 저항을 더하면 3.93Ω → I = 12 ÷ 3.93 ≈ 3.05A. 접촉부에서 3.05 × 0.5 ≈ 1.5V가 빠져 전구에는 약 10.5V만 걸리고 어두워집니다. 멀티미터로 커넥터 양쪽을 재 보세요.' },
+    { q: '12V 21W 전구 2개를 실수로 직렬 연결했다. 전구 하나가 소비하는 전력은?', o: ['21W', '10.5W', '5.25W', '42W'], a: 2,
+      setup: { mode: 'series', R: [R21, R21] },
+      e: '전구마다 6V씩 나뉘어 걸림 → P = V²/R = 36 ÷ 6.86 ≈ 5.25W. 전압이 절반이면 전력은 1/4이 되어 매우 어둡습니다.' },
+    { q: '방향지시등(12V 21W 2개 병렬)에서 전구 하나가 단선되면 점멸은 어떻게 되는가?', o: ['점멸이 빨라진다', '점멸이 느려진다', '변화 없다', '양쪽 모두 꺼진다'], a: 0,
+      setup: { mode: 'parallel', R: [R21, R21], open2: true },
+      e: '흐르는 전류가 약 3.5A에서 1.75A로 줄어듭니다. 플래셔 유닛이 전류 감소를 감지해 점멸을 빠르게 해서 운전자에게 전구 단선을 알립니다. 실습판에서 전구2가 단선된 상태입니다.' },
+    { q: '60Ah 배터리로 미등(총 20W)을 켜 둔 채 방치했다. 배터리가 완전히 방전될 때까지 이론상 약 몇 시간인가?', o: ['3시간', '12시간', '36시간', '72시간'], a: 2,
+      setup: { mode: 'parallel', R: [R10, R10] },
+      e: '전류 I = 20 ÷ 12 ≈ 1.67A → 60Ah ÷ 1.67A ≈ 36시간. 실제로는 시동이 걸리지 않는 시점이 훨씬 빠릅니다.' },
+    { q: '12V 60Ah 배터리 2개를 직렬로 연결하면?', o: ['12V 120Ah', '24V 60Ah', '24V 120Ah', '12V 60Ah'], a: 1,
+      e: '직렬은 전압이 더해지고 용량(Ah)은 그대로입니다 → 24V 60Ah. 대형 트럭·버스의 24V 전기장치가 이 방식입니다.' },
+    { q: '12V 60Ah 배터리 2개를 병렬로 연결하면?', o: ['12V 120Ah', '24V 60Ah', '24V 120Ah', '12V 60Ah'], a: 0,
+      e: '병렬은 전압이 그대로이고 용량(Ah)이 더해집니다 → 12V 120Ah.' },
+    { q: '시동 전동기가 12V에서 150A를 소비할 때 소비 전력은?', o: ['12.5W', '162W', '1.8kW', '18kW'], a: 2,
+      e: 'P = V × I = 12 × 150 = 1800W = 1.8kW. 큰 전류가 흐르므로 배터리 단자와 시동 회로 배선이 굵습니다.' },
+    { q: '경음기 전류 4A가 저항 0.05Ω인 배선을 지날 때 배선에서 생기는 전압 강하는?', o: ['0.02V', '0.2V', '2V', '80V'], a: 1,
+      e: 'V = I × R = 4 × 0.05 = 0.2V. 전류가 큰 회로일수록 작은 저항에서도 강하가 커집니다.' },
+    { q: '전조등을 켠 상태에서 배터리 단자는 12.6V, 전조등 단자는 11.4V였다. 올바른 판단은?', o: ['정상 범위다', '배선·커넥터·접지에서 강하가 커서 점검이 필요하다', '전구 자체 불량이다', '배터리 과충전이다'], a: 1,
+      e: '배터리와 부하 사이에서 1.2V가 빠졌습니다. 작동 상태에서 구간별로 전압 강하를 재서 강하가 큰 커넥터·스위치·접지를 찾아 수리합니다.' },
+    { q: '12V 21W 전구를 꺼진 상태에서 멀티미터 저항 모드로 재면, 계산값(약 6.86Ω)과 비교해 어떻게 측정되는가?', o: ['훨씬 작게 측정된다', '똑같이 측정된다', '훨씬 크게 측정된다', '측정되지 않는다(무한대)'], a: 0,
+      e: '텅스텐 필라멘트는 온도가 오르면 저항이 커집니다. 6.86Ω은 켜져서 뜨거울 때의 값이고, 차가운 상태에서는 그보다 훨씬 작게(대략 1Ω 안팎) 측정됩니다. 무한대가 나오면 단선입니다.' },
+    { q: '미등 전구(12V 5W) 4개를 병렬로 켰을 때 전체 전류는?', o: ['0.42A', '1.67A', '6.67A', '20A'], a: 1,
+      e: '전체 전력 5 × 4 = 20W → I = 20 ÷ 12 ≈ 1.67A. 전구 하나에는 약 0.42A가 흐릅니다.' },
+    { q: '전조등 회로의 접지 볼트가 부식되었을 때 나타나는 증상으로 가장 알맞은 것은?', o: ['전조등이 평소보다 어둡거나 깜빡인다', '전조등이 더 밝아진다', '퓨즈가 즉시 끊어진다', '배터리 전압이 올라간다'], a: 0,
+      setup: { mode: 'parallel', R: [R55, R55], Rc: 0.6 },
+      e: '접지 쪽에 저항이 생기면 그곳에서 전압이 빠져 전구에 걸리는 전압이 줄어듭니다. 전류는 오히려 줄어서 퓨즈는 끊어지지 않습니다. 실습판에서 커넥터(접지 쪽) 양단을 재 보세요.' }
+  ];
+  let autoQueue = [];
+
+  function genAuto() {
+    if (!autoQueue.length) autoQueue = shuffle(AUTO.map((_, i) => i));   // 전부 한 번씩 나온 뒤 다시 섞음
+    const item = AUTO[autoQueue.pop()];
+    if (item.setup) {
+      const su = item.setup;
+      const full = [...su.R, ...[6, 6, 12].slice(su.R.length)];
+      Object.assign(P, { mode: su.mode, V: 12, R: full.slice(0, 3), use3: su.R.length === 3, open2: !!su.open2, Rc: su.Rc || 0 });
+      syncControls();
+    }
+    Q = { type: 'auto', mask: !!item.setup, answered: false, q: item.q, ex: item.e,
+          opts: shuffle(item.o.map((label, i) => ({ label, ok: i === item.a }))) };
+  }
+
   function renderProblem() {
     const box = $('probOpts');
     if (!Q) {
-      $('probQ').textContent = probKind === 'calc'
-        ? '「새 문제」를 누르면 회로가 무작위로 바뀌고 계산 문제가 나옵니다. 답을 고르기 전까지 화면의 숫자는 가려집니다.'
-        : '「새 문제」를 누르면 고장 하나가 몰래 들어갑니다. 멀티미터로 재서 원인을 찾아보세요.';
+      $('probQ').textContent = {
+        calc: '「새 문제」를 누르면 회로가 무작위로 바뀌고 계산 문제가 나옵니다. 답을 고르기 전까지 화면의 숫자는 가려집니다.',
+        diag: '「새 문제」를 누르면 고장 하나가 몰래 들어갑니다. 멀티미터로 재서 원인을 찾아보세요.',
+        auto: `「새 문제」를 누르면 전조등·제동등·방향지시등·배터리 같은 자동차 전기 문제(${AUTO.length}개)가 나옵니다. 회로가 필요한 문제는 실습판이 그 상황으로 바뀝니다.`
+      }[probKind];
       box.innerHTML = ''; $('probEx').hidden = true; $('btnEnd').hidden = true;
       return;
     }
@@ -1020,7 +1079,7 @@
   const probSeg = initSeg($('segProb'), v => { probKind = v; if (!Q) renderProblem(); });
   $('btnNew').addEventListener('click', () => {
     if (!snapshot) snapshot = JSON.parse(JSON.stringify(P));
-    probKind === 'calc' ? genCalc() : genDiag();
+    ({ calc: genCalc, diag: genDiag, auto: genAuto })[probKind]();
     setLocked(true);
     updateText(); renderProblem();
   });
