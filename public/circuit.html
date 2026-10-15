@@ -186,6 +186,24 @@
   }
 
   #stage { touch-action: none; }
+  .prob-q { margin: 0; font-size: 0.95rem; font-weight: 600; line-height: 1.55; }
+  .opts { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 620px) { .opts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .opt { display: flex; align-items: center; gap: 10px; text-align: left; cursor: pointer; border: 1.5px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 14px; padding: 10px 12px; font-size: 0.9rem; font-weight: 500; min-width: 0; transition: border-color 0.2s var(--ease-out), background-color 0.2s var(--ease-out), transform 0.18s var(--ease-out); }
+  .opt:hover:not(:disabled) { border-color: var(--accent); }
+  .opt:active:not(:disabled) { transform: scale(0.98); }
+  .opt:disabled { cursor: default; }
+  .opt .no { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--fill); font-size: 0.78rem; font-weight: 700; color: var(--fg-2); }
+  .opt.correct { border-color: var(--good); background: var(--good-soft); }
+  .opt.correct .no { background: var(--good); color: #fff; }
+  .opt.wrong { border-color: var(--bad); background: var(--bad-soft); animation: shake 0.32s var(--ease-out); }
+  .opt.wrong .no { background: var(--bad); color: #fff; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 60% { transform: translateX(3px); } }
+  .prob-ex { margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--fill); font-size: 0.86rem; color: var(--fg-2); font-variant-numeric: tabular-nums; }
+  .prob-ex .ok { color: var(--good); } .prob-ex .ng { color: var(--bad); }
+  .prob-body { display: grid; gap: 12px; margin-top: 12px; }
+  input:disabled, .seg button:disabled { opacity: 0.45; cursor: not-allowed; }
+  @media (prefers-reduced-motion: reduce) { .opt.wrong { animation: none; } }
   .meter { display: grid; gap: 2px; padding: 12px 14px; border-radius: 16px; background: var(--tire); color: #f5f5f7; box-shadow: var(--shadow); }
   .meter-label { font-size: 0.72rem; font-weight: 600; color: #98989f; }
   .meter-value { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: #64d2ff; line-height: 1.1; }
@@ -243,6 +261,27 @@
         </div>
       </div>
 
+      <section class="panel" aria-label="문제 풀기">
+        <div class="panel-head">
+          <h2 class="panel-title">문제 풀기</h2>
+          <span class="hint" id="probScore" aria-live="polite">답을 고르면 바로 채점됩니다</span>
+        </div>
+        <div class="seg" id="segProb" role="group" aria-label="문제 종류">
+          <span class="seg-thumb" aria-hidden="true"></span>
+          <button data-v="calc" aria-pressed="true">계산 문제</button>
+          <button data-v="diag" aria-pressed="false">고장 진단</button>
+        </div>
+        <div class="prob-body">
+          <p class="prob-q" id="probQ"></p>
+          <div class="opts" id="probOpts"></div>
+          <p class="prob-ex" id="probEx" aria-live="polite" hidden></p>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="btnNew">새 문제</button>
+            <button class="btn" id="btnEnd" hidden>끝내기 (원래 회로로)</button>
+          </div>
+        </div>
+      </section>
+
       <section class="panel">
         <div class="panel-head"><h2 class="panel-title">계산 과정</h2></div>
         <div class="calc" id="calc"></div>
@@ -253,6 +292,7 @@
     <aside class="col side">
       <section class="panel">
         <div class="panel-head"><h2 class="panel-title">회로 구성</h2></div>
+        <p class="hint" id="lockNote" hidden style="margin-bottom:8px;">문제를 푸는 동안 회로 설정이 잠깁니다. 「끝내기」를 누르면 원래대로 돌아옵니다.</p>
         <div class="seg" id="segMode" role="group" aria-label="연결 방식">
           <span class="seg-thumb" aria-hidden="true"></span>
           <button data-v="series" aria-pressed="true">직렬</button>
@@ -429,29 +469,34 @@
 
 
   const P = { mode: 'series', V: 12, R: [6, 6, 12], use3: true, open2: false, Rc: 0 };
+  let Q = null;   // 진행 중인 문제 (아래 '문제 풀기')
+  const isDiag = () => Q && Q.type === 'diag';
+  const RcEff = () => P.Rc + (isDiag() ? Q.rc : 0);                       // 숨은 접촉 저항 포함
+  const masked = () => Q && !Q.answered;                                  // 답 고르기 전
+  const maskNums = () => masked() && Q.type === 'calc';                   // 계산 문제는 숫자까지 가림
 
   // ---------- 회로 계산 ----------
   function solve() {
     const n = P.use3 ? 3 : 2;
-    const loads = P.R.slice(0, n).map((r, i) => ({ r, open: i === 1 && P.open2 }));
+    const loads = P.R.slice(0, n).map((r, i) => ({ r, open: (i === 1 && P.open2) || (isDiag() && Q.open === i) }));
     let Rt, I, branch = [], drops = [], vc;
     if (P.mode === 'series') {
       const anyOpen = loads.some(l => l.open);
-      Rt = anyOpen ? Infinity : loads.reduce((s, l) => s + l.r, 0) + P.Rc;
+      Rt = anyOpen ? Infinity : loads.reduce((s, l) => s + l.r, 0) + RcEff();
       I = anyOpen ? 0 : P.V / Rt;
       // 단선이면 끊어진 부품 양 끝에 전원 전압이 걸림
       drops = loads.map(l => l.open ? P.V : I * l.r);
       branch = loads.map(() => I);
-      vc = I * P.Rc;
+      vc = I * RcEff();
     } else {
       const g = loads.reduce((s, l) => s + (l.open ? 0 : 1 / l.r), 0);
       const Rp = g > 0 ? 1 / g : Infinity;
-      Rt = Rp + P.Rc;
+      Rt = Rp + RcEff();
       I = isFinite(Rt) ? P.V / Rt : 0;
       const Vp = isFinite(Rp) ? I * Rp : P.V;
       drops = loads.map(() => Vp);
       branch = loads.map(l => l.open ? 0 : Vp / l.r);
-      vc = I * P.Rc;
+      vc = I * RcEff();
     }
     const power = loads.map((l, i) => l.open ? 0 : drops[i] * branch[i]);
     return { n, loads, Rt, I, branch, drops, vc, power, Ptot: P.V * I };
@@ -464,30 +509,34 @@
     $('vV').textContent = P.V.toFixed(1);
     P.R.forEach((r, i) => { $('vR' + (i + 1)).textContent = r.toFixed(1); });
     $('vRc').textContent = P.Rc.toFixed(2);
-    $('mR').textContent = f(s.Rt);
+    const hide = maskNums();
+    $('mR').textContent = hide ? '?' : f(s.Rt);
     setChip($('cR'), P.mode === 'series' ? '직렬' : '병렬', 'info');
-    $('mI').textContent = f(s.I);
+    $('mI').textContent = hide ? '?' : f(s.I);
     setChip($('cI'), s.I === 0 ? '전류 없음 · 회로 끊김' : 'I = V ÷ R', s.I === 0 ? 'bad' : '');
-    $('mP').textContent = f(s.Ptot, 1);
-    setChip($('cP'), P.Rc > 0.001 ? `접촉부 손실 ${f(s.vc * s.I, 1)}W` : 'P = V × I', P.Rc > 0.2 ? 'warn' : '');
+    $('mP').textContent = hide ? '?' : f(s.Ptot, 1);
+    if (hide) setChip($('cI'), 'I = V ÷ R', '');
+    setChip($('cP'), !masked() && RcEff() > 0.001 ? `접촉부 손실 ${f(s.vc * s.I, 1)}W` : 'P = V × I', !masked() && RcEff() > 0.2 ? 'warn' : '');
 
     // 계산 과정
     const rows = [];
     if (P.mode === 'series') {
-      const parts = s.loads.map(l => l.open ? '∞(단선)' : l.r).join(' + ') + (P.Rc > 0 ? ` + ${P.Rc}` : '');
+      const parts = s.loads.map(l => l.open ? '∞(단선)' : l.r).join(' + ') + (RcEff() > 0 ? ` + ${RcEff()}` : '');
       rows.push([`① 합성 저항 = ${parts}`, `${f(s.Rt)} Ω`]);
       rows.push([`② 전류 = ${P.V.toFixed(1)} ÷ ${f(s.Rt)}`, `${f(s.I)} A`]);
       s.loads.forEach((l, i) => rows.push([`③ 전구${i + 1} 전압 = ${l.open ? '단선 → 전원 전압' : `${f(s.I)} × ${l.r}`}`, `${f(s.drops[i])} V`]));
     } else {
       const inv = s.loads.map(l => l.open ? '0(단선)' : `1/${l.r}`).join(' + ');
-      const Rp = isFinite(s.Rt) ? s.Rt - P.Rc : Infinity;
+      const Rp = isFinite(s.Rt) ? s.Rt - RcEff() : Infinity;
       rows.push([`① 병렬 합성 1/R = ${inv}`, `${f(Rp)} Ω`]);
-      if (P.Rc > 0) rows.push([`  + 접촉 저항 ${P.Rc} (직렬)`, `${f(s.Rt)} Ω`]);
+      if (RcEff() > 0) rows.push([`  + 접촉 저항 ${RcEff()} (직렬)`, `${f(s.Rt)} Ω`]);
       rows.push([`② 전체 전류 = ${P.V.toFixed(1)} ÷ ${f(s.Rt)}`, `${f(s.I)} A`]);
       s.loads.forEach((l, i) => rows.push([`③ 전구${i + 1} 전류 = ${f(s.drops[i])}V ÷ ${l.open ? '∞' : l.r}`, `${f(s.branch[i])} A`]));
     }
     rows.push([`④ 전력 = ${P.V.toFixed(1)} × ${f(s.I)}`, `${f(s.Ptot, 1)} W`]);
-    $('calc').innerHTML = rows.map(([a, b]) => `<div class="calc-row"><span>${a}</span><b>${b}</b></div>`).join('');
+    $('calc').innerHTML = masked()
+      ? '<div class="calc-row"><span>문제를 풀고 나면 계산 과정이 열립니다</span><b>?</b></div>'
+      : rows.map(([a, b]) => `<div class="calc-row"><span>${a}</span><b>${b}</b></div>`).join('');
     buildSegments();
     updateMeter();
   }
@@ -562,7 +611,7 @@
         NV['n' + k] = Math.abs(cur) < 1e-9 ? 0 : cur;
       });
     } else {
-      NV.B = s.I * P.Rc;          // 아래 레일 = 접촉 저항만큼 떠 있음
+      NV.B = s.I * RcEff();          // 아래 레일 = 접촉 저항만큼 떠 있음
     }
     return NV;
   }
@@ -634,6 +683,12 @@
       return;
     }
     const v = NV[rp.node] - NV[bp.node];
+    if (maskNums()) {
+      $('meterLabel').textContent = `빨강 ${rp.name} · 검정 ${bp.name}`;
+      $('meterV').textContent = '?';
+      $('meterNote').textContent = '답을 고른 뒤 측정값으로 확인해 보세요';
+      return;
+    }
     $('meterLabel').textContent = `빨강 ${rp.name} · 검정 ${bp.name}`;
     $('meterV').textContent = (Math.abs(v) < 0.005 ? 0 : v).toFixed(2);
     let note;
@@ -811,14 +866,15 @@
 
     // 접촉부
     const xc = G.xc;
-    const bad = P.Rc > 0.001;
+    const rcShown = masked() ? P.Rc : RcEff();
+    const bad = rcShown > 0.001;
     ctx.fillStyle = C.surface; ctx.fillRect(xc - u * 4, B - u * 3, u * 8, u * 6);
     ctx.strokeStyle = bad ? C.bad : C['steel-dark']; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(xc - u * 4, B);
     for (let k = 0; k <= 6; k++) ctx.lineTo(xc - u * 3 + k * u, B + (k % 2 ? -u * 1.6 : u * 1.6));
     ctx.lineTo(xc + u * 4, B); ctx.stroke();
     ctx.fillStyle = bad ? C.bad : C['fg-2']; ctx.font = `600 ${Math.max(10, u * 2.6)}px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText(bad ? `접촉부 ${P.Rc.toFixed(2)}Ω` : '커넥터', xc, B + u * 3);
+    ctx.fillText(bad ? `접촉부 ${rcShown.toFixed(2)}Ω` : '커넥터', xc, B + u * 3);
 
     // 전구
     const r = Math.max(12, u * 5);
@@ -826,11 +882,155 @@
     s.loads.forEach((l, k) => {
       const rated = 144 / l.r;                            // 12V 기준 정격 전력
       const bright = l.open ? 0 : s.power[k] / rated;
-      bulb(pos[k][0], pos[k][1], r, bright, l.open, `전구${k + 1} ${l.r}Ω`, l.open ? '단선' : `${f(s.branch[k])}A · ${f(s.power[k], 1)}W`);
+      const showOpen = l.open && !(masked() && isDiag() && !(k === 1 && P.open2));
+      bulb(pos[k][0], pos[k][1], r, bright, showOpen, `전구${k + 1} ${l.r}Ω`, masked() ? '' : showOpen ? '단선' : `${f(s.branch[k])}A · ${f(s.power[k], 1)}W`);
     });
 
     drawProbes();
   }
+
+
+  // ---------- 문제 풀기 ----------
+  // Q: 진행 중인 문제. calc = 계산 문제, diag = 숨은 고장 찾기
+  let probKind = 'calc', snapshot = null, score = { ok: 0, all: 0 };
+  const NICE = {
+    series2: [[2, 4], [3, 3], [2, 10], [4, 8], [1, 5], [6, 6], [3, 9]],
+    series3: [[2, 4, 6], [1, 2, 3], [2, 2, 8], [3, 4, 5], [1, 1, 4]],
+    parallel2: [[6, 6], [4, 12], [3, 6], [12, 12], [6, 12]],
+    parallel3: [[6, 6, 6], [4, 6, 12], [12, 12, 6], [3, 6, 6]]
+  };
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+  const nice = v => String(+v.toFixed(2));
+  const CTRL_IDS = ['inV', 'inR1', 'inR2', 'inR3', 'inUse3', 'inOpen', 'inRc', 'btnExample'];
+
+  function syncControls() {
+    modeSeg.select(P.mode);
+    $('inV').value = P.V; $('inR1').value = P.R[0]; $('inR2').value = P.R[1]; $('inR3').value = P.R[2];
+    $('inUse3').checked = P.use3; $('inOpen').checked = P.open2; $('inRc').value = P.Rc;
+  }
+  function setLocked(on) {
+    CTRL_IDS.forEach(id => { $(id).disabled = on; });
+    document.querySelectorAll('#segMode button').forEach(b => { b.disabled = on; });
+    $('lockNote').hidden = !on;
+  }
+
+  function applyCircuit(mode, R) {
+    const full = [...R, ...[6, 6, 12].slice(R.length)];
+    Object.assign(P, { mode, V: 12, R: full.slice(0, 3), use3: R.length === 3, open2: false, Rc: 0 });
+    syncControls();
+  }
+
+  function genCalc() {
+    const mode = Math.random() < 0.5 ? 'series' : 'parallel';
+    const n = Math.random() < 0.5 ? 2 : 3;
+    const R = pick(NICE[mode + n]);
+    applyCircuit(mode, R);
+    Q = { type: 'calc', answered: false };
+    const s = solve();
+    const k = Math.floor(Math.random() * n);
+    const sumR = R.reduce((a, b) => a + b, 0);
+    const Rp = 1 / R.reduce((a, b) => a + 1 / b, 0);
+    const list = R.map(r => r + 'Ω').join(', ');
+    const kinds = mode === 'series' ? ['R', 'I', 'Vk', 'P'] : ['R', 'I', 'Ik', 'P'];
+    const kind = pick(kinds);
+    const conn = mode === 'series' ? '직렬' : '병렬';
+    let q, ans, unit, wrong, ex;
+    if (kind === 'R') {
+      q = `12V 전원에 ${list} 전구를 ${conn}로 연결했습니다. 합성 저항은?`; unit = 'Ω';
+      ans = s.Rt; wrong = [mode === 'series' ? Rp : sumR, ans * 2, ans / 2, R[0]];
+      ex = mode === 'series' ? `직렬 합성 저항 = ${R.join(' + ')} = ${nice(ans)}Ω` : `병렬: 1/R = ${R.map(r => '1/' + r).join(' + ')} → R = ${nice(ans)}Ω`;
+    } else if (kind === 'I') {
+      q = `12V 전원에 ${list} 전구를 ${conn}로 연결했습니다. 전원에서 나오는 전체 전류는?`; unit = 'A';
+      ans = s.I; wrong = [12 / (mode === 'series' ? Rp : sumR), 12 / R[0], ans * 2, ans / 2];
+      ex = `합성 저항 ${nice(s.Rt)}Ω → I = 12 ÷ ${nice(s.Rt)} = ${nice(ans)}A`;
+    } else if (kind === 'Vk') {
+      q = `12V 전원에 ${list} 전구를 직렬로 연결했습니다. 전구${k + 1}(${R[k]}Ω) 양단의 전압은?`; unit = 'V';
+      ans = s.drops[k]; wrong = [12, 12 - ans, 12 / R.length, s.I * sumR / 2];
+      ex = `전류 I = 12 ÷ ${sumR} = ${nice(s.I)}A → 전구${k + 1} 전압 = ${nice(s.I)} × ${R[k]} = ${nice(ans)}V (저항에 비례해 전압이 나뉨)`;
+    } else if (kind === 'Ik') {
+      q = `12V 전원에 ${list} 전구를 병렬로 연결했습니다. 전구${k + 1}(${R[k]}Ω)에 흐르는 전류는?`; unit = 'A';
+      ans = s.branch[k]; wrong = [s.I, 12 / sumR, s.I / R.length === ans ? ans * 2 : s.I / R.length, ans / 2];
+      ex = `병렬은 각 가지에 전원 전압 12V가 그대로 걸림 → I = 12 ÷ ${R[k]} = ${nice(ans)}A`;
+    } else {
+      q = `12V 전원에 ${list} 전구를 ${conn}로 연결했습니다. 회로 전체 소비 전력은?`; unit = 'W';
+      ans = s.Ptot; wrong = [144 / (mode === 'series' ? Rp : sumR), 12 * 12, ans * 2, ans / 2];
+      ex = `전체 전류 ${nice(s.I)}A → P = V × I = 12 × ${nice(s.I)} = ${nice(ans)}W`;
+    }
+    // 오답 후보: 직렬·병렬 혼동, 2배·절반 실수 등에서 정답과 다른 값 3개
+    const opts = [ans];
+    shuffle(wrong).forEach(w => { if (opts.length < 4 && w > 0 && isFinite(w) && opts.every(o => Math.abs(o - w) > 0.011)) opts.push(w); });
+    let m = 3; while (opts.length < 4) { const w = ans * m++; if (opts.every(o => Math.abs(o - w) > 0.011)) opts.push(w); }
+    Q.opts = shuffle(opts).map(v => ({ label: nice(v) + ' ' + unit, ok: Math.abs(v - ans) < 1e-9 }));
+    Q.q = q; Q.ex = ex + ' · 이제 멀티미터로 직접 재서 확인해 보세요.';
+  }
+
+  const DIAG = [
+    { id: 'o0', label: '전구1 단선' }, { id: 'o1', label: '전구2 단선' }, { id: 'o2', label: '전구3 단선' }, { id: 'rc', label: '커넥터 접촉 불량' }
+  ];
+  let lastDiag = null;
+  function genDiag() {
+    const mode = Math.random() < 0.5 ? 'series' : 'parallel';
+    applyCircuit(mode, pick(NICE[mode + 3]));
+    const f = pick(DIAG.filter(d => d.id !== lastDiag));   // 같은 고장이 연달아 나오지 않게
+    lastDiag = f.id;
+    Q = { type: 'diag', answered: false, fault: f.id, open: f.id[0] === 'o' ? +f.id[1] : -1, rc: f.id === 'rc' ? 1.5 : 0 };
+    Q.q = `${mode === 'series' ? '직렬' : '병렬'} 회로에 고장이 하나 숨어 있습니다. 전구 상태를 보고 멀티미터로 구간별 전압을 재서 원인을 고르세요. (그림에는 고장 위치가 표시되지 않습니다)`;
+    Q.opts = DIAG.map(d => ({ label: d.label, ok: d.id === f.id }));
+    const k = Q.open + 1;
+    Q.ex = f.id === 'rc'
+      ? `커넥터 접촉 저항이 커졌습니다. 전구가 모두 조금씩 어두워지고, 커넥터 왼쪽–오른쪽을 재면 전압 강하가 크게 나옵니다.`
+      : mode === 'series'
+        ? `끊어진 것은 전구${k}입니다. 직렬이라 전구가 모두 꺼지고, 전구${k} 양 끝에만 12V가 걸리며 다른 전구 양단은 0V입니다.`
+        : `끊어진 것은 전구${k}입니다. 병렬이라 전구${k}만 꺼집니다. 양 끝에 전압은 걸리는데 전류가 0이므로 전구 자체의 단선입니다.`;
+  }
+
+  function renderProblem() {
+    const box = $('probOpts');
+    if (!Q) {
+      $('probQ').textContent = probKind === 'calc'
+        ? '「새 문제」를 누르면 회로가 무작위로 바뀌고 계산 문제가 나옵니다. 답을 고르기 전까지 화면의 숫자는 가려집니다.'
+        : '「새 문제」를 누르면 고장 하나가 몰래 들어갑니다. 멀티미터로 재서 원인을 찾아보세요.';
+      box.innerHTML = ''; $('probEx').hidden = true; $('btnEnd').hidden = true;
+      return;
+    }
+    $('probQ').textContent = Q.q;
+    box.innerHTML = Q.opts.map((o, i) => `<button class="opt" data-i="${i}"><span class="no">${'①②③④'[i]}</span><span>${o.label}</span></button>`).join('');
+    box.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => answer(+b.dataset.i)));
+    $('probEx').hidden = true; $('btnEnd').hidden = false;
+  }
+
+  function answer(i) {
+    if (!Q || Q.answered) return;
+    Q.answered = true;
+    const ok = Q.opts[i].ok;
+    score.all++; if (ok) score.ok++;
+    $('probScore').textContent = `이번에 ${score.ok} / ${score.all} 정답`;
+    $('probOpts').querySelectorAll('.opt').forEach((b, j) => {
+      b.disabled = true;
+      if (Q.opts[j].ok) b.classList.add('correct');
+      else if (j === i) b.classList.add('wrong');
+    });
+    const ex = $('probEx');
+    ex.innerHTML = `<b class="${ok ? 'ok' : 'ng'}">${ok ? '정답입니다' : '오답입니다'}</b> ${Q.ex}`;
+    ex.hidden = false;
+    updateText();
+  }
+
+  const probSeg = initSeg($('segProb'), v => { probKind = v; if (!Q) renderProblem(); });
+  $('btnNew').addEventListener('click', () => {
+    if (!snapshot) snapshot = JSON.parse(JSON.stringify(P));
+    probKind === 'calc' ? genCalc() : genDiag();
+    setLocked(true);
+    updateText(); renderProblem();
+  });
+  $('btnEnd').addEventListener('click', () => {
+    Q = null;
+    if (snapshot) { Object.assign(P, snapshot); snapshot = null; }
+    syncControls(); setLocked(false);
+    updateText(); renderProblem();
+  });
+  renderProblem();
 
   let last = performance.now();
   function loop(now) {
