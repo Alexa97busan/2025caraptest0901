@@ -58,10 +58,10 @@ export const Landing: React.FC<LandingProps> = ({ onOpenAppraiser }) => (
         <a className="lp-tile" href={LAB_URL} style={{ '--d': '120ms' } as React.CSSProperties}>
           <span className="lp-kicker">국가기술자격</span>
           <h2 className="lp-name">자동차산업기사</h2>
-          <p className="lp-desc">엔진, 섀시, 전기. 공식을 직접 움직여 보며 이해합니다.</p>
+          <p className="lp-desc">엔진, 섀시, 전기. 공식을 직접 움직여 보고 마력·토크를 계산합니다.</p>
           <EngineGlyph />
           <dl className="lp-stats">
-            <div><dt>시뮬레이터</dt><dd>8</dd></div>
+            <div><dt>시뮬레이터·계산기</dt><dd>9</dd></div>
             <div><dt>연습 문제</dt><dd>32</dd></div>
           </dl>
           <span className="lp-cta">학습 시작하기<Chevron /></span>

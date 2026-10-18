@@ -144,7 +144,7 @@
   <header>
     <p class="eyebrow">자동차산업기사 · 인터랙티브 학습 · <a href="./" style="color:var(--accent);text-decoration:none;">← 처음 화면</a></p>
     <h1>물리 시스템 알기</h1>
-    <p class="lead">교재의 공식과 그림을 직접 움직여 보며 익히는 시뮬레이터 8개와 연습 문제입니다. 섹션은 시험 과목 순서로 묶었습니다. 값을 바꾸면 결과가 바로 보이니, 외우기 전에 먼저 눈으로 이해해 보세요.</p>
+    <p class="lead">교재의 공식과 그림을 직접 움직여 보며 익히는 시뮬레이터 8개, 마력·토크 계산기, 연습 문제입니다. 섹션은 시험 과목 순서로 묶었습니다. 값을 바꾸면 결과가 바로 보이니, 외우기 전에 먼저 눈으로 이해해 보세요.</p>
   </header>
 
   <div class="sections">
@@ -186,6 +186,22 @@
           <ul class="learn">
             <li>밸브 열림 기간과 오버랩 계산</li>
             <li>배기량, 압축비, 평균 피스톤 속도, 폭발 간격</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+      <a class="card wide" href="calc.html#power" style="margin-top:16px">
+        <canvas class="preview" id="pvPower" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">마력·토크</span><span class="tag">계산기</span></div>
+          <h2>정비 이론 계산기</h2>
+          <p>회전수별 토크를 넣으면 출력(PS·kW) 곡선이 그려집니다. 배기량·압축비, 제동거리, 변속비·차속도 같은 화면에서 계산합니다.</p>
+          <div class="formula">PS = T[kgf·m] × N ÷ 716.2 · kW = T[N·m] × N ÷ 9549</div>
+          <ul class="learn">
+            <li>최대 토크와 최대 출력이 나오는 회전수가 다른 이유</li>
+            <li>kgf·m ↔ N·m, PS ↔ kW 단위 환산과 풀이 과정</li>
           </ul>
           <span class="open">열기
             <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
@@ -343,9 +359,10 @@
   const pv4 = document.getElementById('pvEngine');
   const pv5 = document.getElementById('pvSteering');
   const pvG = document.getElementById('pvGear');
+  const pvP = document.getElementById('pvPower');
   const pvC = document.getElementById('pvCircuit');
   const pvR = document.getElementById('pvRelay');
-  const ctx1 = setup(pv1), ctx2 = setup(pv2), ctx3 = setup(pv3), ctx4 = setup(pv4), ctx5 = setup(pv5), ctxG = setup(pvG), ctxC = setup(pvC), ctxR = setup(pvR);
+  const ctx1 = setup(pv1), ctx2 = setup(pv2), ctx3 = setup(pv3), ctx4 = setup(pv4), ctx5 = setup(pv5), ctxG = setup(pvG), ctxC = setup(pvC), ctxR = setup(pvR), ctxP = setup(pvP);
 
   // 단진자 미리보기: 감쇠 없이 일정하게 흔들림
   function drawPendulum(t) {
@@ -503,6 +520,32 @@
     g(x2, H / 2, z2, m, -a * z1 / z2 + Math.PI / z2, C.steel);
   }
 
+  // 마력·토크 미리보기: 토크(파랑)와 출력(주황) 곡선 위를 회전수 표시가 왕복. 출력 = 토크 × 회전수
+  function drawPower(t) {
+    const W = pvP._w, H = pvP._h, ctx = ctxP;
+    ctx.clearRect(0, 0, W, H);
+    const L = W * 0.1, R = W * 0.92, T = H * 0.16, B = H * 0.84;
+    const torque = x => 0.62 + 0.38 * Math.sin(Math.PI * (0.15 + 0.7 * x));      // 중간 회전수에서 최대
+    const power = x => torque(x) * (0.12 + 0.88 * x) / 0.86;                       // 토크 × 회전수 (정규화)
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(L, B); ctx.lineTo(R, B); ctx.moveTo(L, T); ctx.lineTo(L, B); ctx.stroke();
+    const curve = (f, col) => {
+      ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.beginPath();
+      for (let i = 0; i <= 60; i++) { const x = i / 60, X = L + (R - L) * x, Y = B - (B - T) * f(x) * 0.95; i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }
+      ctx.stroke();
+    };
+    curve(torque, C.accent); curve(power, C.spring);
+    const x = reduce ? 0.62 : 0.5 + 0.42 * Math.sin(t * 0.8), X = L + (R - L) * x;
+    ctx.save(); ctx.setLineDash([3, 4]); ctx.strokeStyle = C['fg-2']; ctx.beginPath(); ctx.moveTo(X, T); ctx.lineTo(X, B); ctx.stroke(); ctx.restore();
+    [[torque, C.accent], [power, C.spring]].forEach(([f, col]) => {
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X, B - (B - T) * f(x) * 0.95, 5, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.font = `600 12px ${C.font || '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif'}`; ctx.textBaseline = 'bottom';
+    ctx.fillStyle = C.accent; ctx.textAlign = 'left'; ctx.fillText('토크', L + 6, T + 2);
+    ctx.fillStyle = C.spring; ctx.textAlign = 'right'; ctx.fillText('출력', R, T + 2);
+    ctx.fillStyle = C['fg-2']; ctx.textBaseline = 'top'; ctx.fillText('rpm', R, B + 4);
+  }
+
   // 전기회로 미리보기: 닫힌 회로를 도는 전류와 켜진 전구
   function drawCircuit(t) {
     const W = pvC._w, H = pvC._h, ctx = ctxC;
@@ -562,7 +605,7 @@
   // 화면에 보일 때만 애니메이션
   const visible = new Set();
   const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? visible.add(e.target) : visible.delete(e.target)));
-  [pv1, pv2, pv3, pv4, pv5, pvG, pvC, pvR].forEach(c => io.observe(c));
+  [pv1, pv2, pv3, pv4, pv5, pvG, pvC, pvR, pvP].forEach(c => io.observe(c));
 
   let first = true;   // 첫 프레임은 화면 밖 카드도 그려 둠 (정지 상태로도 완성된 화면)
   function loop(now) {
@@ -576,6 +619,7 @@
     if (visible.has(pvG) || all || pvG._dirty) { drawGear(t); pvG._dirty = false; }
     if (visible.has(pvC) || all || pvC._dirty) { drawCircuit(t); pvC._dirty = false; }
     if (visible.has(pvR) || all || pvR._dirty) { drawRelay(t); pvR._dirty = false; }
+    if (visible.has(pvP) || all || pvP._dirty) { drawPower(t); pvP._dirty = false; }
     if (!reduce) requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
