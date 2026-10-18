@@ -3,17 +3,47 @@ import { QUIZ_DATABASE, Question } from './data/quizData';
 import { CompletedExamInfo } from './types';
 import { SetupView } from './components/SetupView';
 import { LabLinkCard } from './components/LabLinkCard';
+import { Landing } from './components/Landing';
 import { QuestionView } from './components/QuestionView';
 import { ResultView } from './components/ResultView';
 import { SearchModal } from './components/SearchModal';
 import { sound } from './utils/audio';
 
-type ViewMode = 'setup' | 'quiz' | 'result';
+type ViewMode = 'home' | 'setup' | 'quiz' | 'result';
+
+// 주소가 #appraiser이면 기출문제집, 아니면 첫 화면 (뒤로가기로 첫 화면에 돌아올 수 있게)
+const APPRAISER_HASH = '#appraiser';
+const viewFromHash = (): ViewMode => (window.location.hash === APPRAISER_HASH ? 'setup' : 'home');
 
 const ALL_ROUNDS_KEY = 'ALL';
 
 export default function App() {
-  const [view, setView] = useState<ViewMode>('setup');
+  const [view, setView] = useState<ViewMode>(viewFromHash);
+
+  useEffect(() => {
+    const onHash = () => {
+      if (window.location.hash === APPRAISER_HASH) setView(v => (v === 'home' ? 'setup' : v));
+      else setView('home');
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle('is-landing', view === 'home');
+  }, [view]);
+
+  const openAppraiser = () => {
+    window.location.hash = APPRAISER_HASH;
+    setView('setup');
+    window.scrollTo(0, 0);
+  };
+  const goLanding = () => {
+    // 주소 끝에 '#'이 남지 않도록 해시를 지우고 기록에 남김 (뒤로가기로 기출문제집 복귀 가능)
+    history.pushState(null, '', window.location.pathname + window.location.search);
+    setView('home');
+    window.scrollTo(0, 0);
+  };
   const [selectedYear, setSelectedYear] = useState<string>('2026-42');
   const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Array<{ selected: number; correct: boolean } | null>>([]);
@@ -251,10 +281,15 @@ export default function App() {
       ? '2019~2026 전체 통합 모의고사'
       : QUIZ_DATABASE[selectedYear]?.label || `${selectedYear}년도`;
 
+  if (view === 'home') return <Landing onOpenAppraiser={openAppraiser} />;
+
   return (
     <main className="min-h-screen bg-[#242426] text-[#2c2b29] flex flex-col items-center justify-start pb-12">
       {/* Outer Desk Ambient Mat */}
       <div className="w-full max-w-4xl pt-4 sm:pt-6">
+        {view === 'setup' && (
+          <button type="button" className="back-home" onClick={goLanding}>‹ 처음 화면</button>
+        )}
         {view === 'setup' && (
           <SetupView
             onStartQuiz={handleStartQuiz}
