@@ -1,0 +1,853 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>정비 이론 계산기 · 마력·토크</title>
+<meta name="description" content="배기량·압축비, 토크·출력(마력), 제동거리, 변속비·차속을 숫자를 바꿔 가며 계산하는 학습용 계산기"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f7;color:#1d1d1f}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<style>
+/* 구조: 탭 4개(주제) → 각 탭은 [입력 패널 | 결과(핵심 수치 → 그래프 → 풀이 → 공식 → 표)].
+   색: 무채색 + 주황(포커스·선택). 그래프 색은 블루(slot1)·오렌지(slot2), 보조선은 회색. 모션은 상태 변화를 알리는 용도만. */
+:root {
+  --bg: #f5f5f7; --surface: #ffffff; --ink: #1d1d1f; --ink2: #424245; --muted: #6e6e73;
+  --line: #e5e5ea; --line-strong: #c7c7cc; --accent: #0071e3; --bad: #d70015; --bad-tint: rgba(255,59,48,.10);
+  --s1: #0071e3; --s2: #e85d00; --sd: #aeaeb2;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font-num: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  --ease: cubic-bezier(.16,1,.3,1); --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #000000; --surface: #1c1c1e; --ink: #f5f5f7; --ink2: #d1d1d6; --muted: #98989d;
+    --line: #2c2c2e; --line-strong: #48484a; --accent: #2997ff; --bad: #ff453a; --bad-tint: rgba(255,69,58,.16);
+    --s1: #2997ff; --s2: #ff9f0a; --sd: #636366; --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #000000; --surface: #1c1c1e; --ink: #f5f5f7; --ink2: #d1d1d6; --muted: #98989d;
+  --line: #2c2c2e; --line-strong: #48484a; --accent: #2997ff; --bad: #ff453a; --bad-tint: rgba(255,69,58,.16);
+  --s1: #2997ff; --s2: #ff9f0a; --sd: #636366; --shadow: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--font-body); }
+.page { max-width: 1240px; margin: 0 auto; padding: 28px clamp(16px,4vw,32px) 56px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.back { margin: 0 0 14px; font-size: 13px; }
+.back a { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; color: var(--muted); text-decoration: none; transition: color 120ms var(--ease); }
+.back a span { display: inline-block; transition: transform 160ms var(--ease); }
+.back a:hover, .back a:focus-visible { color: var(--ink); }
+.back a:hover span, .back a:focus-visible span { transform: translateX(-4px); }
+h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+.sub { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+
+/* 탭: 활성 탭 밑줄이 이동하며 "어느 주제인가"를 알린다 (transform 200ms) */
+.tabs { position: relative; display: flex; gap: 4px; margin-top: 20px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex: 0 0 auto; appearance: none; background: none; border: 0; border-radius: var(--r) var(--r) 0 0; padding: 10px 14px; min-height: 44px; font: 500 14px var(--font-body); color: var(--muted); cursor: pointer; transition: color 120ms var(--ease), background-color 120ms var(--ease); }
+.tab:hover { color: var(--ink); background: var(--surface); }
+.tab[aria-selected="true"] { color: var(--ink); }
+.tab:active { background: var(--line); }
+.ind { position: absolute; left: 0; bottom: -1px; height: 2px; width: 100px; background: var(--accent); transform: translateX(0); transition: transform 220ms var(--ease), width 220ms var(--ease); }
+
+.layout { display: grid; grid-template-columns: minmax(0,1fr); gap: 24px; margin-top: 24px; align-items: start; }
+@media (min-width: 960px) { .layout { grid-template-columns: 340px minmax(0,1fr); gap: 32px; } .panel { position: sticky; top: 16px; } }
+.jump { display: none; margin: 0 0 4px; padding: 0; background: none; border: 0; color: var(--ink); font: 400 13px var(--font-body); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; min-height: 32px; }
+@media (max-width: 959px) { .jump { display: block; } }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 6px 16px 16px; min-width: 0; }
+.panel h2 { margin: 12px 0 4px; font-size: 12px; font-weight: 500; letter-spacing: .04em; color: var(--muted); }
+.field { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,148px); gap: 8px; align-items: center; font-size: 13px; padding-block: 4px; }
+.field[hidden] { display: none; }
+.field.duo .inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.field.duo { grid-template-columns: 22px minmax(0,1fr); }
+.field.duo > label { color: var(--muted); font-family: var(--font-num); font-size: 12px; }
+.num { position: relative; }
+.num .unit { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 11px; pointer-events: none; }
+input[type="text"], select {
+  width: 100%; height: 40px; border: 1px solid var(--line-strong); border-radius: var(--r); background: var(--bg); color: var(--ink);
+  font: 400 14px var(--font-num); padding: 0 38px 0 8px; text-align: right;
+  transition: border-color 120ms var(--ease), background-color 120ms var(--ease);
+}
+.duo input[type="text"] { padding-right: 34px; }
+select { font-family: var(--font-body); padding: 0 8px; text-align: left; }
+.field.wide { grid-template-columns: 1fr; gap: 4px; }
+input[type="text"]:hover, select:hover { border-color: var(--ink); }
+input[type="text"]:focus-visible, select:focus-visible { border-color: var(--accent); outline-offset: 0; }
+input[aria-invalid="true"] { border-color: var(--bad); background: var(--bad-tint); }
+.hint { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+
+/* 결과 */
+.results { min-width: 0; display: grid; gap: 24px; transition: opacity 160ms var(--ease); }
+.results.stale > *:not(.notice) { opacity: .4; }
+.results > * { transition: opacity 160ms var(--ease); }
+.notice { margin: 0; padding: 10px 12px; border: 1px solid var(--bad); border-radius: var(--r); background: var(--bad-tint); font-size: 13px; }
+.notice[hidden] { display: none; }
+.figs { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+@media (max-width: 720px) { .figs { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+.fig { background: var(--surface); padding: 12px 14px; min-width: 0; }
+.fig .lbl { display: block; font-size: 12px; color: var(--muted); }
+.fig .val { display: block; margin-top: 2px; font-size: 24px; font-weight: 600; letter-spacing: -.01em; line-height: 1.25; overflow-wrap: anywhere; }
+.fig .val i { font-style: normal; font-size: 12px; font-weight: 400; color: var(--muted); margin-left: 4px; letter-spacing: 0; }
+.fig .note { display: block; font-size: 12px; color: var(--muted); min-height: 18px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px 12px; min-width: 0; }
+.card h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.card .cap { margin: 2px 0 10px; font-size: 12px; color: var(--muted); }
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; touch-action: pan-y; }
+.chart svg:focus-visible { outline-offset: 0; border-radius: var(--r); }
+.chart text { font-family: var(--font-num); font-size: 11px; fill: var(--muted); }
+.chart text.dl { font-family: var(--font-body); font-size: 12px; fill: var(--ink2); }
+.chart text.mk { font-family: var(--font-num); font-size: 12px; fill: var(--ink); font-weight: 500; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 6px; font-size: 12px; color: var(--ink2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend .ln { width: 14px; height: 2px; border-radius: 1px; }
+.legend .ar { width: 14px; height: 10px; opacity: .22; border-radius: 1px; }
+.k-s1 { background: var(--s1); } .k-s2 { background: var(--s2); } .k-sd { background: var(--sd); }
+.tip { position: absolute; top: 6px; left: 0; z-index: 2; pointer-events: none; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r); padding: 7px 10px; font-size: 12px; min-width: 120px; }
+.tip[hidden] { display: none; }
+.tip .th { color: var(--muted); font-family: var(--font-num); margin-bottom: 3px; }
+.tip .tr { display: flex; align-items: center; gap: 6px; line-height: 1.7; }
+.tip .tr .key { width: 10px; height: 2px; border-radius: 1px; flex: none; }
+.tip .tr .nm { color: var(--ink2); flex: 1; }
+.tip .tr b { font-family: var(--font-num); font-weight: 500; color: var(--ink); margin-left: 8px; }
+
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 24px minmax(0,1fr); gap: 4px 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.steps li:first-child { border-top: 0; padding-top: 4px; }
+.steps li::before { content: counter(s); font-family: var(--font-num); font-size: 12px; color: var(--muted); padding-top: 2px; }
+.steps .what { font-size: 13px; color: var(--muted); }
+.steps code { grid-column: 2; font: 400 13px/1.6 var(--font-num); color: var(--ink); overflow-wrap: anywhere; }
+.steps code b { font-weight: 500; color: var(--accent); }
+.note-text { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+
+dl.formula { display: grid; grid-template-columns: minmax(0,max-content) minmax(0,1fr); gap: 6px 18px; margin: 0; font-size: 13px; }
+dl.formula dt { color: var(--muted); }
+dl.formula dd { margin: 0; font-family: var(--font-num); font-size: 13px; overflow-wrap: anywhere; }
+@media (max-width: 560px) { dl.formula { grid-template-columns: 1fr; gap: 0; } dl.formula dd { margin-bottom: 8px; } }
+
+details { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+summary { cursor: pointer; font-size: 13px; color: var(--ink); min-height: 32px; display: flex; align-items: center; }
+.tbl { overflow-x: auto; margin-top: 6px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 320px; }
+th, td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+th { font-weight: 500; color: var(--muted); font-size: 12px; }
+th:first-child, td:first-child { text-align: left; }
+td { font-family: var(--font-num); }
+td:first-child { font-family: var(--font-body); }
+tr.on td { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+
+.foot { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); display: grid; gap: 4px; }
+/* Apple 스타일: 테두리 대신 그림자와 큰 모서리. 다크 모드는 그림자 없이 면 색으로 구분 */
+h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+.back a { color: var(--accent); }
+.back a:hover, .back a:focus-visible { color: var(--accent); opacity: .8; }
+.panel, .card, .figs { border: 0; border-radius: 18px; box-shadow: var(--shadow); }
+.panel { padding: 8px 18px 18px; }
+.card { padding: 18px 20px 16px; }
+.fig { padding: 14px 16px; }
+.fig .val { font-family: var(--font-body); font-variant-numeric: tabular-nums; font-weight: 700; }
+.tab { border-radius: 10px 10px 0 0; font-weight: 600; }
+.ind { border-radius: 2px; }
+input[type="text"], select { border-color: var(--line-strong); background: var(--surface); }
+.notice { border-radius: 12px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; } }
+</style>
+
+<div class="page">
+  <header>
+    <p class="back"><a href="./lab.html"><span aria-hidden="true">←</span> 물리 시스템 알기</a></p>
+    <h1>정비 이론 계산기</h1>
+    <p class="sub">숫자를 바꾸면 결과와 그래프가 바로 바뀝니다. 풀이 과정과 공식도 함께 봅니다.</p>
+  </header>
+  <div class="tabs" role="tablist" aria-label="계산 주제" id="tabs">
+    <button class="tab" role="tab" id="tab-compression" aria-controls="panel-compression" data-id="compression">배기량·압축비</button>
+    <button class="tab" role="tab" id="tab-power" aria-controls="panel-power" data-id="power">토크·출력</button>
+    <button class="tab" role="tab" id="tab-braking" aria-controls="panel-braking" data-id="braking">제동거리</button>
+    <button class="tab" role="tab" id="tab-gears" aria-controls="panel-gears" data-id="gears">변속비·차속</button>
+    <span class="ind" id="ind" aria-hidden="true"></span>
+  </div>
+  <main id="main"></main>
+  <footer class="foot">
+    <span>학습용 계산기입니다. 시험·정비 작업에서는 교재와 제조사 정비지침서의 값과 공식을 기준으로 하세요.</span>
+    <span>입력창의 초기값은 계산 예시용 가상의 값이며 특정 차종의 제원이 아닙니다. 노면 마찰계수도 대표 가정값입니다.</span>
+  </footer>
+</div>
+
+<script>
+/* CALC START — 정비 이론 계산식 (순수 함수, 단위는 주석에 표기) */
+var G = 9.80665;                 // m/s²  표준 중력가속도
+var KW_PER_PS = 0.73549875;      // 1 PS(미터 마력) = 0.73549875 kW
+var W_PER_RPM = 2 * Math.PI / 60 / 1000;   // T[N·m] × N[rpm] × W_PER_RPM = kW
+var K_SPEED = 2 * Math.PI * 60 / 1000;     // 차속[km/h] = K_SPEED × r[m] × N[rpm] ÷ 총감속비 (≈ 0.377)
+
+/* 배기량·압축비·이론열효율(오토 사이클). D, S: mm / Vc: cc(cm³) */
+function calcCompression(p) {
+  var d = p.D / 10, s = p.S / 10;                    // cm
+  var Vs = Math.PI / 4 * d * d * s;                  // 행정체적 cm³ / 실린더
+  var total = Vs * p.n;
+  var Vc, eps;
+  if (p.mode === "vc") { Vc = p.Vc; eps = (Vc + Vs) / Vc; }
+  else { eps = p.eps; Vc = Vs / (eps - 1); }
+  var eta = 1 - Math.pow(1 / eps, p.k - 1);
+  return { Vs: Vs, total: total, Vc: Vc, eps: eps, eta: eta };
+}
+function otto(eps, k) { return 1 - Math.pow(1 / eps, k - 1); }
+
+/* 토크 → 출력. unit: "nm" | "kgf" (kgf·m) */
+function torqueToNm(T, unit) { return unit === "kgf" ? T * G : T; }
+function powerFromTorque(T, unit, rpm) {
+  var kW = torqueToNm(T, unit) * rpm * W_PER_RPM;
+  return { kW: kW, PS: kW / KW_PER_PS };
+}
+
+/* 단조 3차 보간(Fritsch–Carlson). xs 오름차순 */
+function monotoneInterp(xs, ys) {
+  var n = xs.length, d = [], m = [], i;
+  for (i = 0; i < n - 1; i++) d[i] = (ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]);
+  m[0] = d[0]; m[n - 1] = d[n - 2];
+  for (i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+  for (i = 0; i < n - 1; i++) {
+    if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+    var a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b;
+    if (s > 9) { var t = 3 / Math.sqrt(s); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; }
+  }
+  return function (x) {
+    if (x <= xs[0]) return ys[0];
+    if (x >= xs[n - 1]) return ys[n - 1];
+    var k = 0; while (x > xs[k + 1]) k++;
+    var h = xs[k + 1] - xs[k], t = (x - xs[k]) / h, t2 = t * t, t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * ys[k] + (t3 - 2 * t2 + t) * h * m[k] + (-2 * t3 + 3 * t2) * ys[k + 1] + (t3 - t2) * h * m[k + 1];
+  };
+}
+
+/* 정지거리 = 공주거리 + 제동거리. v: km/h, t: s, mu: 마찰계수 */
+function calcBraking(v, t, mu) {
+  var ms = v / 3.6, react = ms * t, brake = ms * ms / (2 * mu * G);
+  return { ms: ms, react: react, brake: brake, total: react + brake };
+}
+
+/* 타이어 규격 "205/55R16" → 반경 */
+function parseTire(str) {
+  var m = /^\s*(\d{3})\s*\/\s*(\d{2})\s*[A-Za-z]?R\s*(\d{2})\s*$/i.exec(str || "");
+  if (!m) return null;
+  var w = +m[1], ar = +m[2], rim = +m[3];
+  var side = w * ar / 100, diameter = 2 * side + rim * 25.4;
+  return { width: w, aspect: ar, rim: rim, sidewall: side, diameter: diameter, radiusMm: diameter / 2 };
+}
+
+/* 차속 km/h. rMm: 타이어 반경 mm, rpm: 엔진 회전수, gear·final: 변속비·종감속비 */
+function speedKmh(rMm, rpm, gear, fin) { return K_SPEED * (rMm / 1000) * rpm / (gear * fin); }
+/* CALC END */
+
+</script>
+<script>
+(function () {
+  "use strict";
+  var RM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  function fmt(v, d) { return v.toLocaleString("ko-KR", { minimumFractionDigits: d, maximumFractionDigits: d }); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function ease(t) { return 1 - Math.pow(1 - t, 3); }
+  function dec(step) { return step >= 1 ? 0 : Math.min(3, Math.ceil(-Math.log10(step) - 1e-9)); }
+  function niceScale(min, max, count) {
+    if (!(max > min)) max = min + 1;
+    var raw = (max - min) / count, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+    var st = (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * p;
+    var lo = Math.floor(min / st + 1e-9) * st, hi = Math.ceil(max / st - 1e-9) * st, t = [];
+    for (var v = lo; v <= hi + st * 1e-9; v += st) t.push(+v.toFixed(10));
+    return { lo: lo, hi: hi, ticks: t, step: st };
+  }
+  function lin(a, b, n) { var o = [], i; for (i = 0; i < n; i++) o.push(a + (b - a) * i / (n - 1)); return o; }
+
+  /* ---------- 엔진 공유 상태: 배기량 탭의 결과를 다른 탭이 읽는다 ----------
+     기준 엔진(REF)은 각 탭의 초기값이 만드는 예시 엔진(보어 86 × 행정 86 × 4기통).
+     · 토크 ∝ 배기량            (평균유효압력 BMEP 일정 가정)
+     · 최고 회전수 ∝ 1 / 행정   (평균 피스톤 속도 Sp = 2·S·N/60 일정 가정) */
+  var REF = { V: calcCompression({ D: 86, S: 86, n: 4, mode: "eps", eps: 10, k: 1.4 }).total, S: 86 };
+  var ENG = { V: REF.V, S: REF.S, D: 86, n: 4, eps: 10 };
+  var drv = "bs", ratio = 1, epsKeep = 10;   // drv: 마지막에 사용자가 만진 쪽 ("bs" 보어·행정 / "V" 총배기량)
+  var lastKey = "";
+  function r1(x) { return String(Math.round(x * 10) / 10); }
+  function linkEngine() {   // 배기량이 바뀌면 토크·출력 탭과 변속비·차속 탭을 새 엔진에 맞춘다
+    var key = ENG.V.toFixed(3) + "|" + ENG.S.toFixed(3);
+    if (key !== lastKey) { lastKey = key; pw.applyLink(); gears.applyLink(); }
+    pw.update(); gears.update();
+  }
+  function syncFromV(F, V, n) {   // 총배기량 → 보어·행정 (행정/보어비 유지), 연소실 체적 (압축비 유지)
+    if (!(V > 0) || !(n >= 1)) return;
+    var Vs = V / n, D = 10 * Math.cbrt(4 * Vs / (Math.PI * ratio)), S = ratio * D;
+    if (D >= 30 && D <= 200 && S >= 30 && S <= 250) { F.set("D", r1(D)); F.set("S", r1(S)); }
+    if (F.mode.el.value === "vc" && epsKeep > 1) F.set("Vc", String(Math.round(Vs / (epsKeep - 1) * 100) / 100));
+  }
+
+  /* ---------- 차트: 입력이 바뀌면 선·축이 260ms 동안 새 값으로 이동한다 (감속 곡선) ---------- */
+  function Chart(root, o) {
+    var NS = "http://www.w3.org/2000/svg";
+    root.classList.add("chart");
+    root.innerHTML = '<div class="legend" hidden></div><svg tabindex="0" role="img"></svg><div class="tip" hidden></div>';
+    var leg = root.children[0], svg = root.children[1], tip = root.children[2];
+    var W = 0, H = 260, spec = null, cur = null, from = null, to = null, t0 = 0, raf = 0, hover = -1;
+    var L = 46, T = 14, B = 28;
+
+    function stateOf(sp) {
+      var ys = {}; sp.series.forEach(function (s) { ys[s.id] = s.ys.slice(); });
+      return { xMin: sp.xMin, xMax: sp.xMax, yMin: sp.y.lo, yMax: sp.y.hi, ys: ys, m: sp.marker ? [sp.marker.x, sp.marker.y] : null, dots: (sp.dots || []).map(function (d) { return [d.x, d.y]; }) };
+    }
+    function mix(a, b, t) {
+      var r = { xMin: a.xMin + (b.xMin - a.xMin) * t, xMax: a.xMax + (b.xMax - a.xMax) * t, yMin: a.yMin + (b.yMin - a.yMin) * t, yMax: a.yMax + (b.yMax - a.yMax) * t, ys: {}, m: null, dots: [] };
+      Object.keys(b.ys).forEach(function (k) {
+        var p = a.ys[k], q = b.ys[k];
+        r.ys[k] = p && p.length === q.length ? q.map(function (v, i) { return p[i] + (v - p[i]) * t; }) : q;
+      });
+      r.m = a.m && b.m ? [a.m[0] + (b.m[0] - a.m[0]) * t, a.m[1] + (b.m[1] - a.m[1]) * t] : b.m;
+      r.dots = a.dots.length === b.dots.length ? b.dots.map(function (d, i) { return [a.dots[i][0] + (d[0] - a.dots[i][0]) * t, a.dots[i][1] + (d[1] - a.dots[i][1]) * t]; }) : b.dots;
+      return r;
+    }
+    function px(x, R) { return L + (x - cur.xMin) / (cur.xMax - cur.xMin) * (W - L - R); }
+    function py(y) { return T + (1 - (y - cur.yMin) / (cur.yMax - cur.yMin)) * (H - T - B); }
+    function rightPad() { return spec.labels ? (W < 480 ? 60 : 78) : 16; }
+
+    function render() {
+      if (!spec || !cur || !W) return;
+      var R = rightPad(), s = [], i;
+      var xs = spec.xs, x0 = px(cur.xMin, R), x1 = px(cur.xMax, R);
+      spec.y.ticks.forEach(function (v) {
+        if (v < cur.yMin - 1e-9 || v > cur.yMax + 1e-9) return;
+        var y = py(v);
+        s.push('<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '" stroke="var(--line)" stroke-width="1"/>');
+        s.push('<text x="' + (L - 8) + '" y="' + (y + 4) + '" text-anchor="end">' + spec.yFmt(v) + "</text>");
+      });
+      s.push('<line x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '" stroke="var(--line-strong)" stroke-width="1"/>');
+      var xt = spec.xTicks, skip = xt.length > 1 && Math.abs(px(xt[1], R) - px(xt[0], R)) < 52 ? 2 : 1;
+      xt.forEach(function (v, ti) {
+        if (ti % skip || v < cur.xMin - 1e-9 || v > cur.xMax + 1e-9) return;
+        var x = px(v, R);
+        s.push('<text x="' + x + '" y="' + (H - B + 17) + '" text-anchor="middle">' + spec.xFmt(v) + "</text>");
+      });
+      function pts(id) { return xs.map(function (x, k) { return px(x, R).toFixed(1) + "," + py(cur.ys[id][k]).toFixed(1); }); }
+      if (spec.fill) {
+        var top = pts(spec.fill.top), bot = pts(spec.fill.bottom).reverse();
+        s.push('<polygon points="' + top.concat(bot).join(" ") + '" fill="var(--' + spec.fill.cls + ')" opacity=".14"/>');
+      }
+      var order = spec.series.filter(function (q) { return !q.noDraw; }).sort(function (a, b) { return (a.cls === "s1" ? 1 : 0) - (b.cls === "s1" ? 1 : 0); });
+      order.forEach(function (q) {
+        s.push('<polyline points="' + pts(q.id).join(" ") + '" fill="none" stroke="var(--' + q.cls + ')" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>');
+      });
+      if (spec.labels) {
+        var cand = order.filter(function (q) { return q.label; }).map(function (q) { return { q: q, y: py(cur.ys[q.id][xs.length - 1]) }; });
+        cand.sort(function (a, b) { return (b.q.cls === "s1") - (a.q.cls === "s1"); });
+        var placed = [];
+        cand.forEach(function (c) {
+          if (placed.some(function (p) { return Math.abs(p - c.y) < 14; })) return;
+          placed.push(c.y);
+          s.push('<line x1="' + (W - R + 8) + '" x2="' + (W - R + 20) + '" y1="' + c.y + '" y2="' + c.y + '" stroke="var(--' + c.q.cls + ')" stroke-width="2" stroke-linecap="round"/>');
+          s.push('<text class="dl" x="' + (W - R + 25) + '" y="' + (c.y + 4) + '">' + esc(c.q.label) + "</text>");
+        });
+      }
+      cur.dots.forEach(function (d, k) {
+        s.push('<circle cx="' + px(d[0], R) + '" cy="' + py(d[1]) + '" r="4" fill="var(--' + spec.dots[k].cls + ')" stroke="var(--surface)" stroke-width="2"/>');
+      });
+      if (hover >= 0) {
+        var hx = px(xs[hover], R);
+        s.push('<line x1="' + hx + '" x2="' + hx + '" y1="' + T + '" y2="' + (H - B) + '" stroke="var(--line-strong)" stroke-width="1"/>');
+        order.forEach(function (q) {
+          s.push('<circle cx="' + hx + '" cy="' + py(cur.ys[q.id][hover]) + '" r="4" fill="var(--' + q.cls + ')" stroke="var(--surface)" stroke-width="2"/>');
+        });
+      }
+      if (cur.m) {
+        var mx = px(cur.m[0], R), my = py(cur.m[1]);
+        s.push('<circle cx="' + mx + '" cy="' + my + '" r="5" fill="var(--' + spec.marker.cls + ')" stroke="var(--surface)" stroke-width="2"/>');
+        if (spec.marker.text) {
+          var right = mx > W - R - 90;
+          s.push('<text class="mk" x="' + (right ? mx - 10 : mx + 10) + '" y="' + (my - 10) + '" text-anchor="' + (right ? "end" : "start") + '" style="paint-order:stroke;stroke:var(--surface);stroke-width:3px">' + esc(spec.marker.text) + "</text>");
+        }
+      }
+      svg.innerHTML = s.join("");
+    }
+
+    function size() {
+      var w = root.clientWidth; if (!w) return;
+      W = w; H = w < 480 ? 220 : 260;
+      svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.setAttribute("height", H);
+      render();
+    }
+    if (window.ResizeObserver) new ResizeObserver(size).observe(root); else window.addEventListener("resize", size);
+
+    function tick(now) {
+      var t = Math.min(1, (now - t0) / 260);
+      cur = mix(from, to, ease(t)); render();
+      raf = t < 1 ? requestAnimationFrame(tick) : 0;
+    }
+    function set(sp) {
+      spec = sp; to = stateOf(sp);
+      if (hover >= sp.xs.length) hover = -1;
+      svg.setAttribute("aria-label", sp.aria || "");
+      if (sp.legend) {
+        leg.hidden = false; leg.textContent = "";
+        sp.legend.forEach(function (g) {
+          var e = document.createElement("span"), k = document.createElement("i");
+          k.className = (g.area ? "ar " : "ln ") + "k-" + g.cls; e.appendChild(k); e.appendChild(document.createTextNode(g.label)); leg.appendChild(e);
+        });
+      } else leg.hidden = true;
+      cancelAnimationFrame(raf);
+      if (!cur || RM || !W) { cur = to; render(); }
+      else { from = cur; t0 = performance.now(); raf = requestAnimationFrame(tick); }
+      if (hover >= 0) showHover(hover);
+    }
+
+    function showHover(i) {
+      hover = i; render();
+      tip.hidden = false; tip.textContent = "";
+      var h = document.createElement("div"); h.className = "th"; h.textContent = spec.xTip(spec.xs[i]); tip.appendChild(h);
+      spec.series.forEach(function (q) {
+        var r = document.createElement("div"), k = document.createElement("span"), n = document.createElement("span"), b = document.createElement("b");
+        r.className = "tr"; k.className = "key k-" + q.cls; n.className = "nm"; n.textContent = q.name; b.textContent = spec.tipFmt(q.ys[i], q);
+        r.appendChild(k); r.appendChild(n); r.appendChild(b); tip.appendChild(r);
+      });
+      var x = px(spec.xs[i], rightPad()), tw = tip.offsetWidth;
+      tip.style.left = Math.max(0, x + 12 + tw > W ? x - 12 - tw : x + 12) + "px";
+    }
+    function hide() { hover = -1; tip.hidden = true; render(); }
+    function nearest(clientX) {
+      var rc = svg.getBoundingClientRect(), x = clientX - rc.left, R = rightPad(), best = 0, bd = 1e9;
+      spec.xs.forEach(function (v, k) { var d = Math.abs(px(v, R) - x); if (d < bd) { bd = d; best = k; } });
+      return best;
+    }
+    svg.addEventListener("pointermove", function (e) { if (spec) showHover(nearest(e.clientX)); });
+    svg.addEventListener("pointerleave", function () { if (spec && document.activeElement !== svg) hide(); });
+    svg.addEventListener("focus", function () { if (!spec) return; var m = spec.marker ? spec.marker.x : spec.xs[0], b = 0, bd = 1e9; spec.xs.forEach(function (v, k) { if (Math.abs(v - m) < bd) { bd = Math.abs(v - m); b = k; } }); showHover(b); });
+    svg.addEventListener("blur", function () { if (spec) hide(); });
+    svg.addEventListener("keydown", function (e) {
+      if (!spec || hover < 0) return;
+      var n = spec.xs.length - 1, step = e.shiftKey ? 5 : 1, i = hover;
+      if (e.key === "ArrowRight") i = Math.min(n, hover + step); else if (e.key === "ArrowLeft") i = Math.max(0, hover - step);
+      else if (e.key === "Home") i = 0; else if (e.key === "End") i = n; else return;
+      e.preventDefault(); showHover(i);
+    });
+    return { set: set };
+  }
+  function chartSpec(o) {  // o: xs, series, xMin, xMax, yMin, yMax(raw), yDec …
+    var y = niceScale(o.yMin, o.yMax, 5), xt = niceScale(o.xMin, o.xMax, o.xCount || 6);
+    var xd = dec(xt.step), yd = dec(y.step);
+    o.y = y; o.xTicks = xt.ticks;
+    o.xFmt = function (v) { return fmt(v, xd); }; o.yFmt = function (v) { return fmt(v, yd); };
+    return o;
+  }
+
+  /* ---------- 폼: 숫자 검증 + 입력 즉시 이벤트 ---------- */
+  function parseNum(s) { s = String(s).replace(/,/g, "").trim(); return s === "" ? NaN : Number(s); }
+  function Form(host, items, onChange) {
+    var F = {}, order = [];
+    function mk(f, parent, extra) {
+      var wrap = extra || document.createElement("div");
+      var id = "f-" + host.id + "-" + f.key;
+      if (f.type === "select") {
+        var sel = document.createElement("select"); sel.id = id; sel.name = f.key;
+        F[f.key] = { f: f, el: sel, wrap: wrap }; order.push(f.key);
+        sel.addEventListener("change", function () { onChange(f.key); });
+        return sel;
+      }
+      var box = document.createElement("div"); box.className = "num";
+      var inp = document.createElement("input"); inp.type = "text"; inp.id = id; inp.name = f.key; inp.value = f.def == null ? "" : String(f.def);
+      inp.autocomplete = "off"; inp.spellcheck = false; inp.inputMode = f.text ? "text" : "decimal";
+      if (f.label) inp.setAttribute("aria-label", f.label);
+      var u = document.createElement("span"); u.className = "unit"; u.textContent = f.unit || "";
+      box.appendChild(inp); box.appendChild(u);
+      if (f.text) inp.style.textAlign = "right";
+      F[f.key] = { f: f, el: inp, wrap: wrap }; order.push(f.key);
+      inp.addEventListener("input", function () { onChange(f.key); });
+      return box;
+    }
+    items.forEach(function (it) {
+      if (it.h) { var h = document.createElement("h2"); h.textContent = it.h; host.appendChild(h); return; }
+      if (it.hint) { var p = document.createElement("p"); p.className = "hint"; p.textContent = it.hint; host.appendChild(p); return; }
+      var w = document.createElement("div"); w.className = "field" + (it.row ? " duo" : "");
+      var lab = document.createElement("label");
+      if (it.row) {
+        lab.textContent = it.label; w.appendChild(lab);
+        var g = document.createElement("div"); g.className = "inputs";
+        it.row.forEach(function (f) { g.appendChild(mk(f, g, w)); }); w.appendChild(g);
+        lab.htmlFor = "f-" + host.id + "-" + it.row[0].key;
+      } else {
+        lab.textContent = it.label; lab.htmlFor = "f-" + host.id + "-" + it.key; w.appendChild(lab);
+        w.appendChild(mk(it, w, w));
+      }
+      host.appendChild(w);
+    });
+    F.read = function () {
+      var v = {}, errs = [], raw = {};
+      order.forEach(function (k) { raw[k] = F[k].el.value; });
+      order.forEach(function (k) {
+        var e = F[k], f = e.f, vis = !f.show || f.show(raw);
+        e.wrap.hidden = !vis;
+        e.el.removeAttribute("aria-invalid");
+        if (f.type === "select") { v[k] = e.el.value; return; }
+        if (!vis || (f.optional && e.el.value.trim() === "")) { v[k] = NaN; return; }
+        var n = f.text ? e.el.value.trim() : parseNum(e.el.value), bad = false;
+        if (f.text) bad = !n;
+        else bad = !isFinite(n) || n < f.min || n > f.max || (f.int && Math.floor(n) !== n) || (f.minEx && n <= f.min);
+        if (bad) { e.el.setAttribute("aria-invalid", "true"); errs.push(f.text ? (f.errMsg || f.label + " 형식을 확인하세요.") : (f.name || f.label) + ": " + f.min + " ~ " + f.max + " 사이의 " + (f.int ? "정수" : "숫자") + "를 입력하세요."); }
+        v[k] = n;
+      });
+      return { v: v, errs: errs };
+    };
+    F.mark = function (keys) { keys.forEach(function (k) { F[k].el.setAttribute("aria-invalid", "true"); }); };
+    F.set = function (k, val) { F[k].el.value = val; };
+    F.options = function (k, opts, sel) {
+      var el = F[k].el; el.textContent = "";
+      opts.forEach(function (o) { var op = document.createElement("option"); op.value = o[0]; op.textContent = o[1]; el.appendChild(op); });
+      if (sel != null) el.value = sel;
+    };
+    return F;
+  }
+
+  /* ---------- 결과 영역 공통 틀 ---------- */
+  function Tab(id, cfg) {
+    var sec = document.createElement("section");
+    sec.id = "panel-" + id; sec.setAttribute("role", "tabpanel"); sec.setAttribute("aria-labelledby", "tab-" + id); sec.hidden = true;
+    sec.innerHTML = '<div class="layout"><div><button type="button" class="jump">결과로 이동 ↓</button><form class="panel" id="in-' + id + '" onsubmit="return false" aria-label="입력값"></form></div>' +
+      '<div class="results" id="res-' + id + '"><p class="notice" role="alert" hidden></p><div class="figs"></div>' + cfg.body + "</div></div>";
+    $("#main").appendChild(sec);
+    var host = $(".panel", sec), res = $(".results", sec), notice = $(".notice", sec), figs = $(".figs", sec);
+    var T = { id: id, sec: sec, res: res, $: function (s) { return $(s, sec); } };
+    figs.innerHTML = cfg.figs.map(function (f) { return '<div class="fig"><span class="lbl">' + f[1] + '</span><span class="val" data-k="' + f[0] + '"><b></b><i></i></span><span class="note" data-n="' + f[0] + '"></span></div>'; }).join("");
+    var tweens = {};
+    T.fig = function (k, value, d, unit, note) {  // 숫자가 바뀐 만큼 220ms 동안 올라가거나 내려간다
+      var box = $('[data-k="' + k + '"]', sec), b = box.firstChild; box.lastChild.textContent = unit || "";
+      $('[data-n="' + k + '"]', sec).textContent = note || "";
+      cancelAnimationFrame(tweens[k]);
+      var a = parseFloat(b.dataset.v); b.dataset.v = value;
+      if (RM || !isFinite(a) || a === value) { b.textContent = fmt(value, d); return; }
+      var s = performance.now();
+      (function f(now) { var t = Math.min(1, (now - s) / 220), v = a + (value - a) * ease(t); b.textContent = fmt(t < 1 ? v : value, d); if (t < 1) tweens[k] = requestAnimationFrame(f); })(s);
+    };
+    T.steps = function (arr) {
+      $(".steps", sec).innerHTML = arr.map(function (s) { return '<li><span class="what">' + esc(s[0]) + "</span><code>" + s[1] + "</code></li>"; }).join("");
+    };
+    T.table = function (headCols, rows, onIdx) {
+      $(".tbl", sec).innerHTML = "<table><thead><tr>" + headCols.map(function (h) { return "<th>" + esc(h) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+        rows.map(function (r, i) { return "<tr" + (onIdx === i ? ' class="on"' : "") + ">" + r.map(function (c) { return "<td>" + esc(c) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
+    };
+    T.fail = function (msgs) { notice.hidden = false; notice.textContent = msgs[0] + (msgs.length > 1 ? " (외 " + (msgs.length - 1) + "건)" : "") + " 입력을 고치면 결과가 다시 계산됩니다."; res.classList.add("stale"); };
+    T.ok = function () { notice.hidden = true; res.classList.remove("stale"); };
+    T.form = Form(host, cfg.inputs, function (k) { if (cfg.onInput) cfg.onInput(T, k); T.update(); });
+    T.update = function () {
+      var r = T.form.read();
+      if (r.errs.length) { T.fail(r.errs); return; }
+      var m = cfg.compute(r.v, T);
+      if (m.error) { T.form.mark(m.keys || []); T.fail([m.error]); return; }
+      T.ok(); cfg.draw(T, m, r.v);
+    };
+    $(".jump", sec).addEventListener("click", function () { res.scrollIntoView({ behavior: RM ? "auto" : "smooth", block: "start" }); });
+    return T;
+  }
+  var CARD = function (title, cap, cls) { return '<div class="card"><h3>' + title + '</h3><p class="cap">' + cap + '</p><div class="' + (cls || "c") + '"></div></div>'; };
+  var STEPS = '<div class="card"><h3>풀이 과정</h3><ol class="steps" style="margin-top:10px"></ol><p class="note-text" data-role="note"></p></div>';
+  var DETAILS = '<div class="card"><h3>표로 보기</h3><div class="tbl"></div></div>';
+  function FORMULA(rows) { return '<div class="card"><h3>공식</h3><dl class="formula" style="margin-top:10px">' + rows.map(function (r) { return "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>"; }).join("") + "</dl></div>"; }
+  var B = function (s) { return "<b>" + s + "</b>"; };
+
+  /* ================= 1. 배기량·압축비 ================= */
+  var comp = Tab("compression", {
+    figs: [["vs", "행정체적 (1기통)"], ["total", "총배기량"], ["eps", "압축비 ε"], ["eta", "이론열효율 η"]],
+    inputs: [
+      { h: "실린더 제원" },
+      { key: "V", label: "총배기량", unit: "cc", def: 1999, min: 50, max: 20000, name: "총배기량" },
+      { key: "D", label: "실린더 안지름 (보어)", unit: "mm", def: 86, min: 30, max: 200 },
+      { key: "S", label: "피스톤 행정", unit: "mm", def: 86, min: 30, max: 250 },
+      { key: "n", label: "실린더 수", unit: "개", def: 4, min: 1, max: 12, int: true },
+      { hint: "총배기량을 바꾸면 행정/보어비와 압축비를 유지한 채 보어·행정·연소실 체적이 다시 계산됩니다. 토크·출력 탭과 변속비·차속 탭도 함께 바뀝니다. 보어·행정을 직접 바꾸면 총배기량이 따라 바뀝니다." },
+      { h: "압축비 조건" },
+      { key: "mode", label: "입력 기준", type: "select" },
+      { key: "Vc", label: "연소실 체적", unit: "cc", def: 55.5, min: 0.5, max: 5000, show: function (r) { return r.mode === "vc"; } },
+      { key: "eps", label: "압축비 ε", unit: ": 1", def: 10, min: 4, max: 25, name: "압축비", show: function (r) { return r.mode === "eps"; } },
+      { key: "k", label: "비열비 k", unit: "", def: 1.4, min: 1.1, max: 1.67, name: "비열비" },
+      { hint: "k = 1.4 는 공기 기준 값입니다. 이론열효율은 오토 사이클 기준이며, 실제 기관의 열효율은 이보다 낮습니다." }
+    ],
+    body: CARD("압축비와 이론열효율", "가로축: 압축비 ε · 세로축: 이론열효율 η (%) · 점은 지금 입력한 값", "c") + STEPS +
+      FORMULA([["행정체적", "Vs = π/4 × D² × S"], ["총배기량", "V = Vs × 실린더 수"], ["압축비", "ε = (Vc + Vs) / Vc"], ["연소실 체적", "Vc = Vs / (ε − 1)"], ["이론열효율(오토)", "η = 1 − (1/ε)^(k−1)"]]) + DETAILS,
+    onInput: function (T, k) {
+      var F = T.form;
+      if (k === "V") {
+        if (drv !== "V") {   // 보어·행정 기준 → 배기량 기준으로 넘어가는 순간의 비율을 기억한다
+          var d0 = parseNum(F.D.el.value), s0 = parseNum(F.S.el.value);
+          if (isFinite(d0) && isFinite(s0) && d0 > 0 && s0 > 0) ratio = s0 / d0;
+          epsKeep = ENG.eps; drv = "V";
+        }
+        syncFromV(F, parseNum(F.V.el.value), parseNum(F.n.el.value));
+      } else if (k === "n") {
+        if (drv === "V") syncFromV(F, parseNum(F.V.el.value), parseNum(F.n.el.value));
+      } else if (k === "D" || k === "S" || k === "Vc" || k === "eps" || k === "mode") drv = "bs";
+    },
+    compute: function (v) {
+      var D = v.D, S = v.S, Vc = v.Vc, fromV = drv === "V";
+      if (fromV) {   // 총배기량에서 보어·행정을 정확히 역산 (입력창 표시값은 반올림되므로 따로 계산)
+        var Vs0 = v.V / v.n;
+        D = 10 * Math.cbrt(4 * Vs0 / (Math.PI * ratio)); S = ratio * D;
+        if (D < 30 || D > 200 || S < 30 || S > 250) return { error: "이 배기량과 실린더 수에서는 보어·행정이 허용 범위(보어 30~200 mm, 행정 30~250 mm)를 벗어납니다.", keys: ["V"] };
+        if (v.mode === "vc") Vc = Vs0 / (epsKeep - 1);
+      }
+      var r = calcCompression({ D: D, S: S, n: v.n, mode: v.mode, Vc: Vc, eps: v.eps, k: v.k });
+      if (!isFinite(r.eps) || r.eps <= 1) return { error: "압축비가 1보다 커야 합니다." };
+      r.D = D; r.S = S; r.fromV = fromV;
+      return r;
+    },
+    draw: function (T, r, v) {
+      ENG.V = r.total; ENG.S = r.S; ENG.D = r.D; ENG.n = v.n; ENG.eps = r.eps;
+      if (drv === "bs") T.form.set("V", String(Math.round(r.total)));
+      T.fig("vs", r.Vs, 1, "cc"); T.fig("total", r.total, 0, "cc", v.n + "기통");
+      T.fig("eps", r.eps, 2, ": 1"); T.fig("eta", r.eta * 100, 1, "%");
+      var lo = niceScale(Math.min(4, r.eps * 0.8), Math.max(20, r.eps * 1.1), 8), xs = lin(lo.lo, lo.hi, 65), ys = xs.map(function (e) { return otto(e, v.k) * 100; });
+      var allY = ys.concat([r.eta * 100]);
+      comp.chart.set(chartSpec({
+        xs: xs, xMin: lo.lo, xMax: lo.hi, yMin: Math.min.apply(null, allY), yMax: Math.max.apply(null, allY), xCount: 8,
+        series: [{ id: "eta", name: "이론열효율", cls: "s1", ys: ys }],
+        marker: { x: r.eps, y: r.eta * 100, cls: "s1", text: "ε " + fmt(r.eps, 1) + " → " + fmt(r.eta * 100, 1) + "%" },
+        xTip: function (x) { return "ε = " + fmt(x, 1); }, tipFmt: function (y) { return fmt(y, 1) + " %"; },
+        aria: "압축비에 따른 이론열효율 그래프. 압축비 " + fmt(r.eps, 2) + "에서 " + fmt(r.eta * 100, 1) + "퍼센트."
+      }));
+      var d = v.mode === "vc";
+      var st1 = [
+        ["행정체적 (mm → cm 로 바꿔 계산, 1 cm³ = 1 cc)", "Vs = π/4 × " + fmt(r.D / 10, 2) + "² × " + fmt(r.S / 10, 2) + " = " + B(fmt(r.Vs, 1) + " cc")],
+        ["총배기량", "V = " + fmt(r.Vs, 1) + " × " + v.n + " = " + B(fmt(r.total, 0) + " cc")],
+        d ? ["압축비", "ε = (" + fmt(r.Vc, 1) + " + " + fmt(r.Vs, 1) + ") / " + fmt(r.Vc, 1) + " = " + B(fmt(r.eps, 2))]
+          : ["연소실 체적 (압축비에서 역산)", "Vc = " + fmt(r.Vs, 1) + " / (" + fmt(r.eps, 2) + " − 1) = " + B(fmt(r.Vc, 1) + " cc")],
+        ["이론열효율", "η = 1 − (1/" + fmt(r.eps, 2) + ")^" + fmt(v.k - 1, 2) + " = " + B(fmt(r.eta * 100, 1) + " %")]
+      ];
+      if (r.fromV) st1.unshift(["총배기량에서 보어·행정 역산 (행정/보어비 " + fmt(ratio, 2) + " 유지)", "Vs = " + fmt(v.V, 0) + " / " + v.n + " = " + B(fmt(r.Vs, 1) + " cc") + "  →  D = " + B(fmt(r.D, 1) + " mm") + ", S = " + B(fmt(r.S, 1) + " mm")]);
+      T.steps(st1);
+      T.$('[data-role="note"]').textContent = "디젤 기관은 사바테·디젤 사이클을 쓰므로 η 식이 다릅니다. 이 계산기는 가솔린(오토 사이클) 기준입니다.";
+      var es = [6, 8, 10, 12, 14, 16, 18, 20];
+      T.table(["압축비 ε", "이론열효율 η"], es.map(function (e) { return [fmt(e, 0), fmt(otto(e, v.k) * 100, 1) + " %"]; }));
+      linkEngine();
+    }
+  });
+  comp.form.options("mode", [["vc", "연소실 체적 → 압축비 계산"], ["eps", "압축비 → 연소실 체적 계산"]], "vc");
+  comp.chart = Chart(comp.$(".c"));
+
+  /* ================= 2. 토크·출력 ================= */
+  var SAMPLE = [[1000, 13.5], [2000, 16.8], [3000, 19.6], [4000, 20.5], [5000, 19.8], [6000, 17.5], [7000, 14.2]];
+  var pin = [{ h: "단위" }, { key: "unit", label: "토크 단위", type: "select" }, { h: "곡선 기준" }, { key: "src", label: "토크 곡선", type: "select" },
+    { hint: "'배기량 연동'이면 배기량 탭의 값에 맞춰 아래 숫자가 자동으로 계산됩니다. 숫자를 직접 고치면 '직접 입력'으로 바뀝니다." }, { h: "회전수별 토크" }];
+  SAMPLE.forEach(function (p, i) { pin.push({ label: i + 1, row: [{ key: "r" + i, label: "회전수 " + (i + 1), unit: "rpm", def: p[0], min: 100, max: 25000, int: true, name: "회전수 " + (i + 1) }, { key: "t" + i, label: "토크 " + (i + 1), unit: "", def: p[1], min: 0.1, max: 5000, name: "토크 " + (i + 1) }] }); });
+  pin.push({ h: "특정 회전수 조회" }, { key: "q", label: "조회 회전수", unit: "rpm", def: 4000, min: 100, max: 25000, int: true, name: "조회 회전수" });
+  pin.push({ hint: "초기값은 예시용 가상의 토크 곡선입니다. 점 사이는 부드러운 곡선(단조 보간)으로 이어 그립니다." });
+  var pw = Tab("power", {
+    figs: [["tmax", "최대 토크 (입력점)"], ["pmax", "최대 출력 (입력점)"], ["kmax", "최대 출력 (kW)"], ["pq", "조회 회전수 출력"]],
+    inputs: pin,
+    body: CARD("토크 곡선", '<span data-role="tcap"></span>', "ct") + CARD("출력 곡선", "가로축: 엔진 회전수 (rpm) · 세로축: 출력 (PS) · 점은 입력한 측정점", "cp") + STEPS +
+      FORMULA([["출력 (PS, kgf·m 입력)", "PS = T[kgf·m] × N[rpm] / 716.2"], ["출력 (kW, N·m 입력)", "kW = T[N·m] × N[rpm] / 9549.3"], ["단위 환산", "1 PS = 0.7355 kW · 1 kgf·m = 9.807 N·m"], ["배기량 연동 모델", "T ∝ 배기량 (BMEP 일정) · 최고 회전수 ∝ 1 / 행정 (평균 피스톤 속도 일정)"]]) + DETAILS,
+    onInput: function (T, k) {
+      var F = T.form;
+      if (/^[rt]\d$/.test(k)) F.src.el.value = "manual";
+      else if ((k === "unit" || k === "src") && F.src.el.value === "link") T.applyLink();
+    },
+    compute: function (v) {
+      var xs = [], ys = [], i;
+      for (i = 0; i < 7; i++) { xs.push(v["r" + i]); ys.push(v["t" + i]); }
+      for (i = 1; i < 7; i++) if (!(xs[i] > xs[i - 1])) return { error: "회전수는 위에서 아래로 갈수록 커져야 합니다. (" + i + "번 → " + (i + 1) + "번)", keys: ["r" + (i - 1), "r" + i] };
+      if (v.q < xs[0] || v.q > xs[6]) return { error: "조회 회전수는 입력한 회전수 범위(" + fmt(xs[0], 0) + " ~ " + fmt(xs[6], 0) + " rpm) 안이어야 합니다.", keys: ["q"] };
+      return { xs: xs, ys: ys, f: monotoneInterp(xs, ys) };
+    },
+    draw: function (T, m, v) {
+      var u = v.unit, uname = u === "kgf" ? "kgf·m" : "N·m", xs = m.xs, ys = m.ys, i;
+      var P = ys.map(function (t, k) { return powerFromTorque(t, u, xs[k]); });
+      var ti = 0, pi = 0; for (i = 1; i < 7; i++) { if (ys[i] > ys[ti]) ti = i; if (P[i].PS > P[pi].PS) pi = i; }
+      var tq = m.f(v.q), pq = powerFromTorque(tq, u, v.q);
+      T.fig("tmax", ys[ti], 1, uname, "@ " + fmt(xs[ti], 0) + " rpm"); T.fig("pmax", P[pi].PS, 1, "PS", "@ " + fmt(xs[pi], 0) + " rpm");
+      T.fig("kmax", P[pi].kW, 1, "kW", "@ " + fmt(xs[pi], 0) + " rpm"); T.fig("pq", pq.PS, 1, "PS", fmt(v.q, 0) + " rpm · 토크 " + fmt(tq, 1) + " " + uname);
+      T.$('[data-role="tcap"]').textContent = "가로축: 엔진 회전수 (rpm) · 세로축: 토크 (" + uname + ") · 점은 입력한 측정점";
+      var gx = lin(xs[0], xs[6], 61), gt = gx.map(m.f), gp = gx.map(function (x, k) { return powerFromTorque(gt[k], u, x).PS; });
+      pw.ct.set(chartSpec({
+        xs: gx, xMin: xs[0], xMax: xs[6], yMin: 0, yMax: Math.max.apply(null, gt),
+        series: [{ id: "t", name: "토크", cls: "s1", ys: gt }],
+        dots: xs.map(function (x, k) { return { x: x, y: ys[k], cls: "s1" }; }),
+        marker: { x: v.q, y: tq, cls: "s1", text: fmt(tq, 1) + " " + uname },
+        xTip: function (x) { return fmt(x, 0) + " rpm"; }, tipFmt: function (y) { return fmt(y, 1) + " " + uname; },
+        aria: "회전수에 따른 토크 곡선. 최대 " + fmt(ys[ti], 1) + " " + uname + ", " + fmt(xs[ti], 0) + " rpm."
+      }));
+      pw.cp.set(chartSpec({
+        xs: gx, xMin: xs[0], xMax: xs[6], yMin: 0, yMax: Math.max.apply(null, gp),
+        series: [{ id: "p", name: "출력", cls: "s2", ys: gp }],
+        dots: xs.map(function (x, k) { return { x: x, y: P[k].PS, cls: "s2" }; }),
+        marker: { x: v.q, y: pq.PS, cls: "s2", text: fmt(pq.PS, 1) + " PS" },
+        xTip: function (x) { return fmt(x, 0) + " rpm"; }, tipFmt: function (y) { return fmt(y, 1) + " PS (" + fmt(y * KW_PER_PS, 1) + " kW)"; },
+        aria: "회전수에 따른 출력 곡선. 최대 " + fmt(P[pi].PS, 1) + " PS, " + fmt(xs[pi], 0) + " rpm."
+      }));
+      var st = u === "kgf"
+        ? [["조회 회전수에서의 토크 (입력점 사이를 곡선으로 보간)", "T = " + B(fmt(tq, 2) + " kgf·m") + " @ " + fmt(v.q, 0) + " rpm"],
+           ["출력 (PS)", "PS = " + fmt(tq, 2) + " × " + fmt(v.q, 0) + " / 716.2 = " + B(fmt(pq.PS, 1) + " PS")],
+           ["kW 로 환산", "kW = " + fmt(pq.PS, 1) + " × 0.7355 = " + B(fmt(pq.kW, 1) + " kW")]]
+        : [["조회 회전수에서의 토크 (입력점 사이를 곡선으로 보간)", "T = " + B(fmt(tq, 1) + " N·m") + " @ " + fmt(v.q, 0) + " rpm"],
+           ["출력 (kW)", "kW = " + fmt(tq, 1) + " × " + fmt(v.q, 0) + " / 9549.3 = " + B(fmt(pq.kW, 1) + " kW")],
+           ["PS 로 환산", "PS = " + fmt(pq.kW, 1) + " / 0.7355 = " + B(fmt(pq.PS, 1) + " PS")]];
+      if (v.src === "link") st.unshift(["배기량 연동: 기준 곡선(" + fmt(REF.V, 0) + " cc, 행정 " + fmt(REF.S, 0) + " mm)을 현재 엔진에 맞춰 환산", "토크 × (" + fmt(ENG.V, 0) + " / " + fmt(REF.V, 0) + ") = " + B("× " + fmt(ENG.V / REF.V, 3)) + "  ·  회전수 × (" + fmt(REF.S, 0) + " / " + fmt(ENG.S, 1) + ") = " + B("× " + fmt(REF.S / ENG.S, 3))]);
+      T.steps(st);
+      T.$('[data-role="note"]').textContent = v.src === "link"
+        ? "배기량 연동은 평균유효압력과 평균 피스톤 속도가 기준 엔진과 같다고 본 단순 모델입니다. 실제 엔진은 흡배기·과급·설계에 따라 다릅니다. 최대값은 7개 점 기준입니다."
+        : "최대값은 입력한 7개 점 기준입니다. 점 사이의 실제 최대는 측정 간격에 따라 달라질 수 있습니다.";
+      T.table(["회전수 (rpm)", "토크 (" + uname + ")", "출력 (PS)", "출력 (kW)"], xs.map(function (x, k) { return [fmt(x, 0), fmt(ys[k], 1), fmt(P[k].PS, 1), fmt(P[k].kW, 1)]; }), pi);
+    }
+  });
+  pw.form.options("unit", [["kgf", "kgf·m (교재 단위)"], ["nm", "N·m (SI)"]], "kgf");
+  pw.form.options("src", [["link", "배기량 연동 (기준 곡선 × 배기량비)"], ["manual", "직접 입력"]], "link");
+  pw.applyLink = function () {   // 기준 곡선(SAMPLE)을 현재 엔진의 배기량·행정에 맞춰 입력창에 채운다
+    var F = pw.form, nm = F.unit.el.value === "nm", k = ENG.V / REF.V, f = REF.S / ENG.S, i;
+    if (F.src.el.value !== "link") return;
+    for (i = 0; i < 7; i++) {
+      F.set("r" + i, String(Math.round(SAMPLE[i][0] * f / 10) * 10));
+      F.set("t" + i, String(Math.round(SAMPLE[i][1] * k * (nm ? G : 1) * 100) / 100));
+    }
+    F.set("q", String(Math.round(4000 * f / 10) * 10));
+  };
+  pw.ct = Chart(pw.$(".ct")); pw.cp = Chart(pw.$(".cp"));
+
+  /* ================= 3. 제동거리 ================= */
+  var ROADS = [["dry", "건조 노면", 0.7], ["wet", "젖은 노면", 0.4], ["snow", "눈길", 0.2], ["ice", "빙판", 0.1]];
+  var brk = Tab("braking", {
+    figs: [["ms", "초속"], ["react", "공주거리"], ["brake", "제동거리"], ["total", "정지거리"]],
+    inputs: [
+      { h: "주행 조건" },
+      { key: "v", label: "제동 시작 속도", unit: "km/h", def: 100, min: 1, max: 300, name: "속도" },
+      { key: "t", label: "공주시간 (반응시간)", unit: "초", def: 1, min: 0, max: 3, name: "공주시간" },
+      { h: "노면" },
+      { key: "road", label: "노면 상태", type: "select" },
+      { key: "mu", label: "마찰계수 μ", unit: "", def: 0.7, min: 0.05, max: 1.2, name: "마찰계수" },
+      { hint: "노면별 μ는 이해를 위한 대표 가정값입니다. 실제 값은 타이어·포장 상태·속도에 따라 크게 달라집니다. 직접 값을 넣으면 '직접 입력'으로 바뀝니다." }
+    ],
+    body: CARD("속도에 따른 거리", "가로축: 속도 (km/h) · 세로축: 거리 (m) · 음영 = 제동거리", "c") + STEPS +
+      FORMULA([["공주거리", "s₁ = v × t"], ["제동거리", "s₂ = v² / (2 μ g)  (g = 9.807 m/s²)"], ["정지거리", "s = s₁ + s₂"], ["속도 환산", "v[m/s] = V[km/h] / 3.6"]]) +
+      '<div class="card"><h3>노면별 비교 <span style="font-weight:400;color:var(--muted);font-size:12px">현재 속도·공주시간 기준</span></h3><div class="tbl"></div></div>',
+    onInput: function (T, k) {
+      if (k === "road") { var r = ROADS.filter(function (x) { return x[0] === T.form.road.el.value; })[0]; if (r) T.form.set("mu", String(r[2])); }
+      else if (k === "mu") { var mv = parseNum(T.form.mu.el.value), hit = ROADS.filter(function (x) { return x[2] === mv; })[0]; T.form.road.el.value = hit ? hit[0] : "custom"; }
+    },
+    compute: function (v) { return calcBraking(v.v, v.t, v.mu); },
+    draw: function (T, r, v) {
+      T.fig("ms", r.ms, 2, "m/s"); T.fig("react", r.react, 1, "m"); T.fig("brake", r.brake, 1, "m"); T.fig("total", r.total, 1, "m", "차 길이 약 " + fmt(r.total / 4.7, 0) + "대분");
+      var hi = niceScale(0, Math.max(120, v.v * 1.2), 6), xs = lin(0, hi.hi, 41);
+      var re = xs.map(function (x) { return calcBraking(x, v.t, v.mu).react; }), br = xs.map(function (x) { return calcBraking(x, v.t, v.mu).brake; }), to = xs.map(function (x, k) { return re[k] + br[k]; });
+      brk.chart.set(chartSpec({
+        xs: xs, xMin: 0, xMax: hi.hi, yMin: 0, yMax: Math.max.apply(null, to), labels: true,
+        series: [{ id: "re", name: "공주거리", cls: "s1", ys: re, label: "공주" }, { id: "br", name: "제동거리", cls: "s2", ys: br, noDraw: true }, { id: "to", name: "정지거리", cls: "s2", ys: to, label: "정지" }],
+        fill: { top: "to", bottom: "re", cls: "s2" },
+        legend: [{ cls: "s1", label: "공주거리" }, { cls: "s2", label: "정지거리" }, { cls: "s2", label: "제동거리 (음영)", area: true }],
+        marker: { x: v.v, y: r.total, cls: "s2", text: fmt(r.total, 1) + " m" },
+        xTip: function (x) { return fmt(x, 0) + " km/h"; }, tipFmt: function (y) { return fmt(y, 1) + " m"; },
+        aria: "속도별 공주거리와 정지거리 그래프. " + fmt(v.v, 0) + " km/h에서 정지거리 " + fmt(r.total, 1) + " 미터."
+      }));
+      T.steps([
+        ["속도를 m/s 로 바꾸기", "v = " + fmt(v.v, 1) + " / 3.6 = " + B(fmt(r.ms, 2) + " m/s")],
+        ["공주거리 (브레이크를 밟기 전까지 달린 거리)", "s₁ = " + fmt(r.ms, 2) + " × " + fmt(v.t, 2) + " = " + B(fmt(r.react, 1) + " m")],
+        ["제동거리 (밟은 뒤 멈출 때까지)", "s₂ = " + fmt(r.ms, 2) + "² / (2 × " + fmt(v.mu, 2) + " × 9.807) = " + B(fmt(r.brake, 1) + " m")],
+        ["정지거리", "s = " + fmt(r.react, 1) + " + " + fmt(r.brake, 1) + " = " + B(fmt(r.total, 1) + " m")]
+      ]);
+      T.$('[data-role="note"]').textContent = "속도가 2배가 되면 제동거리는 4배(v²에 비례), 마찰계수가 절반이 되면 2배(μ에 반비례)가 됩니다.";
+      T.table(["노면", "μ", "제동거리", "정지거리"], ROADS.map(function (x) { var c = calcBraking(v.v, v.t, x[2]); return [x[1], fmt(x[2], 1), fmt(c.brake, 1) + " m", fmt(c.total, 1) + " m"]; }), (function () { for (var i = 0; i < ROADS.length; i++) if (ROADS[i][2] === v.mu) return i; return -1; })());
+    }
+  });
+  brk.form.options("road", ROADS.map(function (x) { return [x[0], x[1] + " · " + x[2]]; }).concat([["custom", "직접 입력"]]), "dry");
+  brk.chart = Chart(brk.$(".c"));
+
+  /* ================= 4. 변속비·차속 ================= */
+  var GR = [3.62, 2.19, 1.41, 1.00, 0.83, 0.69];
+  var gin = [{ h: "타이어·종감속" }, { key: "tire", label: "타이어 규격", unit: "", def: "205/55R16", text: true, errMsg: "타이어 규격은 205/55R16 형식으로 입력하세요." }, { key: "fin", label: "종감속비", unit: ": 1", def: 3.9, min: 1, max: 8, name: "종감속비" }, { h: "변속비 (비우면 해당 단 제외)" }];
+  GR.forEach(function (g, i) { gin.push({ key: "g" + i, label: (i + 1) + "단", unit: ": 1", def: g, min: 0.2, max: 8, name: (i + 1) + "단 변속비", optional: true }); });
+  gin.push({ h: "운전 조건" }, { key: "lk", label: "회전수 기준", type: "select" }, { key: "max", label: "최고 회전수", unit: "rpm", def: 6500, min: 1000, max: 25000, int: true, name: "최고 회전수" },
+    { key: "sel", label: "현재 기어", type: "select" }, { key: "rpm", label: "현재 엔진 회전수", unit: "rpm", def: 3000, min: 100, max: 25000, int: true, name: "현재 회전수" },
+    { hint: "'배기량 연동'이면 배기량 탭의 행정에 맞춰 최고 회전수와 현재 회전수가 계산됩니다 (평균 피스톤 속도 일정 가정, 행정이 길수록 낮아짐). 변속비·종감속비는 그대로이므로 배기량이 커지면 같은 기어의 최고속은 낮아집니다. 숫자를 직접 고치면 '직접 입력'으로 바뀝니다." },
+    { hint: "변속비·종감속비는 예시용 가상의 값입니다. 계산은 타이어 미끄러짐과 하중 변형을 무시한 이론값입니다." });
+  var gears = Tab("gears", {
+    figs: [["v", "현재 차속"], ["vmax", "이 기어 최고속"], ["dia", "타이어 외경"], ["tot", "총감속비"]],
+    inputs: gin,
+    body: CARD("엔진 회전수와 차속", "가로축: 엔진 회전수 (rpm) · 세로축: 차속 (km/h) · 점은 현재 기어와 회전수", "c") + STEPS +
+      FORMULA([["타이어 외경", "D = 2 × (폭 × 편평비/100) + 림 × 25.4  [mm]"], ["총감속비", "i = 변속비 × 종감속비"], ["차속", "V = 0.377 × r × N / i  [km/h]  (r: 반경 m, N: rpm)"], ["0.377 의 정체", "2π × 60 / 1000 (분 → 시간, m → km)"], ["평균 피스톤 속도", "Sp = 2 × S × N / 60  [m/s]  (S: 행정 m, N: rpm)"]]) + DETAILS,
+    onInput: function (T, k) {
+      var F = T.form;
+      if (k === "max" || k === "rpm") F.lk.el.value = "manual";
+      else if (k === "lk" && F.lk.el.value === "link") T.applyLink();
+    },
+    compute: function (v, T) {
+      var tire = parseTire(v.tire); if (!tire) return { error: "타이어 규격을 읽을 수 없습니다. 205/55R16 형식으로 입력하세요.", keys: ["tire"] };
+      var list = [], i, bad = [];
+      for (i = 0; i < GR.length; i++) {
+        var raw = T.form["g" + i].el.value.trim();
+        if (raw === "") continue;
+        var g = parseNum(raw);
+        if (!isFinite(g) || g < 0.2 || g > 8) bad.push("g" + i); else list.push({ n: i + 1, ratio: g, key: "g" + i });
+      }
+      if (bad.length) return { error: "변속비는 0.2 ~ 8 사이의 숫자여야 합니다.", keys: bad };
+      if (!list.length) return { error: "변속비를 하나 이상 입력하세요.", keys: ["g0"] };
+      var sel = T.form.sel.el, prev = sel.value;
+      var opts = list.map(function (g) { return [String(g.n), g.n + "단 (" + fmt(g.ratio, 2) + ")"]; });
+      if (sel.options.length !== opts.length || Array.prototype.some.call(sel.options, function (o, k) { return o.value !== opts[k][0]; })) {
+        T.form.options("sel", opts, opts.some(function (o) { return o[0] === prev; }) ? prev : opts[Math.min(opts.length - 1, 3)][0]);
+      }
+      if (v.rpm > v.max) return { error: "현재 회전수가 최고 회전수보다 큽니다.", keys: ["rpm"] };
+      var cg = list.filter(function (g) { return String(g.n) === sel.value; })[0] || list[0];
+      return { tire: tire, list: list, cg: cg };
+    },
+    draw: function (T, m, v) {
+      var r = m.tire.radiusMm, cg = m.cg, fin = v.fin;
+      var V = speedKmh(r, v.rpm, cg.ratio, fin), Vmax = speedKmh(r, v.max, cg.ratio, fin);
+      T.fig("v", V, 1, "km/h", cg.n + "단 · " + fmt(v.rpm, 0) + " rpm"); T.fig("vmax", Vmax, 0, "km/h", fmt(v.max, 0) + " rpm 에서");
+      T.fig("dia", m.tire.diameter, 0, "mm", "반경 " + fmt(r, 1) + " mm"); T.fig("tot", cg.ratio * fin, 2, ": 1", fmt(cg.ratio, 2) + " × " + fmt(fin, 2));
+      var xs = lin(0, v.max, 41), maxV = speedKmh(r, v.max, Math.min.apply(null, m.list.map(function (g) { return g.ratio; })), fin);
+      gears.chart.set(chartSpec({
+        xs: xs, xMin: 0, xMax: v.max, yMin: 0, yMax: maxV, labels: true,
+        series: m.list.map(function (g) { return { id: "g" + g.n, name: g.n + "단", cls: g === cg ? "s1" : "sd", label: g.n + "단", ys: xs.map(function (x) { return speedKmh(r, x, g.ratio, fin); }) }; }),
+        legend: [{ cls: "s1", label: "선택한 기어" }, { cls: "sd", label: "다른 기어" }],
+        marker: { x: v.rpm, y: V, cls: "s1", text: fmt(V, 1) + " km/h" },
+        xTip: function (x) { return fmt(x, 0) + " rpm"; }, tipFmt: function (y) { return fmt(y, 1) + " km/h"; },
+        aria: "기어별 엔진 회전수와 차속 그래프. " + cg.n + "단 " + fmt(v.rpm, 0) + " rpm에서 " + fmt(V, 1) + " km/h."
+      }));
+      var t = m.tire;
+      T.steps([
+        ["타이어 외경과 반경 (" + t.width + "/" + t.aspect + "R" + t.rim + ")", "D = 2 × (" + t.width + " × " + fmt(t.aspect / 100, 2) + ") + " + t.rim + " × 25.4 = " + B(fmt(t.diameter, 1) + " mm") + "  →  r = " + fmt(r, 2) + " mm"],
+        ["총감속비 (" + cg.n + "단)", "i = " + fmt(cg.ratio, 2) + " × " + fmt(fin, 2) + " = " + B(fmt(cg.ratio * fin, 2))],
+        ["차속", "V = 0.377 × " + fmt(r / 1000, 4) + " × " + fmt(v.rpm, 0) + " / " + fmt(cg.ratio * fin, 2) + " = " + B(fmt(V, 1) + " km/h")],
+        ["(참고) 최고 회전수에서의 평균 피스톤 속도 — 배기량 탭의 행정 " + fmt(ENG.S, 1) + " mm 기준", "Sp = 2 × " + fmt(ENG.S / 1000, 4) + " × " + fmt(v.max, 0) + " / 60 = " + B(fmt(2 * ENG.S / 1000 * v.max / 60, 1) + " m/s")]
+      ]);
+      T.$('[data-role="note"]').textContent = "같은 회전수에서 변속비가 작은(높은) 기어일수록 차속이 빠르고, 같은 속도에서는 엔진 회전수가 낮아집니다.";
+      T.table(["기어", "변속비", "총감속비", fmt(v.rpm, 0) + " rpm 차속", fmt(v.max, 0) + " rpm 차속"], m.list.map(function (g) {
+        return [g.n + "단", fmt(g.ratio, 2), fmt(g.ratio * fin, 2), fmt(speedKmh(r, v.rpm, g.ratio, fin), 1) + " km/h", fmt(speedKmh(r, v.max, g.ratio, fin), 1) + " km/h"];
+      }), m.list.indexOf(cg));
+    }
+  });
+  (function () { var o = GR.map(function (g, i) { return [String(i + 1), (i + 1) + "단 (" + fmt(g, 2) + ")"]; }); gears.form.options("sel", o, "4"); })();
+  gears.chart = Chart(gears.$(".c"));
+  gears.form.options("lk", [["link", "배기량 연동 (행정 기준 최고 회전수)"], ["manual", "직접 입력"]], "link");
+  gears.applyLink = function () {   // 행정이 길수록 허용 회전수가 낮아진다 (Sp 일정)
+    var F = gears.form, f = REF.S / ENG.S;
+    if (F.lk.el.value !== "link") return;
+    F.set("max", String(Math.round(6500 * f / 50) * 50));
+    F.set("rpm", String(Math.round(3000 * f / 50) * 50));
+  };
+
+  /* ---------- 탭 전환: 주소의 # 값(plain token)과 동기화, 밑줄이 이동 ---------- */
+  var tabs = { compression: comp, power: pw, braking: brk, gears: gears }, ids = Object.keys(tabs);
+  var ind = $("#ind"), btns = ids.map(function (k) { return $("#tab-" + k); });
+  function show(id, focus) {
+    if (!tabs[id]) id = "compression";
+    ids.forEach(function (k, i) {
+      var on = k === id; btns[i].setAttribute("aria-selected", on); btns[i].tabIndex = on ? 0 : -1; tabs[k].sec.hidden = !on;
+      if (on) { ind.style.width = btns[i].offsetWidth + "px"; ind.style.transform = "translateX(" + btns[i].offsetLeft + "px)"; if (focus) btns[i].focus(); }
+    });
+    tabs[id].update();
+    try { history.replaceState(null, "", "#" + id); } catch (e) { /* 미리보기 환경에서는 주소 변경이 막힐 수 있다 */ }
+  }
+  btns.forEach(function (b, i) {
+    b.addEventListener("click", function () { show(ids[i]); });
+    b.addEventListener("keydown", function (e) {
+      var j = i; if (e.key === "ArrowRight") j = (i + 1) % ids.length; else if (e.key === "ArrowLeft") j = (i + ids.length - 1) % ids.length; else return;
+      e.preventDefault(); show(ids[j], true);
+    });
+  });
+  window.addEventListener("hashchange", function () { show(location.hash.slice(1)); });
+  window.addEventListener("resize", function () { var i = btns.findIndex(function (b) { return b.getAttribute("aria-selected") === "true"; }); if (i >= 0) { ind.style.width = btns[i].offsetWidth + "px"; ind.style.transform = "translateX(" + btns[i].offsetLeft + "px)"; } });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { var i = btns.findIndex(function (b) { return b.getAttribute("aria-selected") === "true"; }); if (i >= 0) { ind.style.width = btns[i].offsetWidth + "px"; ind.style.transform = "translateX(" + btns[i].offsetLeft + "px)"; } });
+  ids.forEach(function (k) { tabs[k].update(); });
+  show((location.hash || "").slice(1));
+})();
+</script>
+
+</body></html>
