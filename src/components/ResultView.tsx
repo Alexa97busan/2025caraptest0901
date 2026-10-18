@@ -107,31 +107,30 @@ export const ResultView: React.FC<ResultViewProps> = ({
   return (
     <div className="w-full max-w-2xl mx-auto py-6 px-3 sm:px-4">
       {/* Graded Test Report Card Container */}
-      <div className="relative bg-[#faf7ef] paper-texture-ivory rounded-2xl paper-shadow-vintage border-2 border-[#cfc3af] p-6 sm:p-8 overflow-hidden">
+      <div className="relative bg-(--a-card) paper-texture-ivory rounded-2xl paper-shadow-vintage border-2 border-(--a-sep) p-6 sm:p-8 overflow-hidden">
         
         {/* Washi Tape Header */}
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-44 h-7 washi-tape transform -rotate-1 pointer-events-none z-10 opacity-90" />
 
         {/* Official Header */}
-        <div className="text-center pb-4 mb-6 border-b-2 border-[#2b251e] pt-2">
-          <span className="font-mono-custom text-xs font-bold text-[#7d6f5c] px-3 py-1 bg-[#eae2d2] rounded-full border border-[#cfc2ae]">
+        <div className="text-center pb-4 mb-6 border-b border-(--a-sep) pt-2">
+          <span className="font-mono-custom text-xs font-bold text-(--a-label-2) px-3 py-1 bg-(--a-fill) rounded-full border border-(--a-sep)">
             국가공인 자동차진단평가사 2급 필기시험 채점표
           </span>
-          <h1 className="font-serif-kr text-2xl sm:text-3xl font-bold text-[#1f1b17] mt-2">
+          <h1 className="font-serif-kr text-2xl sm:text-3xl font-bold text-(--a-label) mt-2">
             {yearLabel} 검정 결과
           </h1>
         </div>
 
         {/* Score & Stamp Showcase Area */}
-        <div className="flex flex-col sm:flex-row items-center justify-around gap-6 p-6 bg-[#f4eee1] rounded-2xl border border-[#d6c9b5] mb-6 relative">
+        <div className="flex flex-col sm:flex-row items-center justify-around gap-6 p-6 bg-(--a-fill) rounded-2xl border border-(--a-sep) mb-6 relative">
           
           {/* Big Score with Red Pen Circle */}
           <div className="relative flex flex-col items-center justify-center p-4">
             <div className="relative">
-              <span className="font-mono-custom text-6xl sm:text-7xl font-extrabold text-[#dc2626] tracking-tight">
+              <span className="font-mono-custom text-6xl sm:text-7xl font-extrabold text-(--a-red) tracking-tight">
                 {scorePercent}
               </span>
-              <span className="text-2xl font-bold text-[#dc2626] ml-1">점</span>
+              <span className="text-2xl font-bold text-(--a-red) ml-1">점</span>
 
               {/* Hand-drawn Red Circle around score */}
               <svg
@@ -142,7 +141,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
                 <path
                   d="M 25,60 C 25,25 70,12 110,12 C 148,12 165,38 162,65 C 158,95 125,115 80,112 C 38,110 15,88 18,55 C 22,20 80,8 120,10"
                   fill="none"
-                  stroke="#dc2626"
+                  stroke="#ff3b30"
                   strokeWidth="3.5"
                   strokeLinecap="round"
                   className="animate-draw-circle"
@@ -150,7 +149,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
               </svg>
             </div>
 
-            <div className="text-xs font-serif-kr text-[#665745] font-semibold mt-3">
+            <div className="text-xs font-serif-kr text-(--a-label-2) font-semibold mt-3">
               정답 {correctCount}개 / 총 {total}문항
             </div>
           </div>
@@ -163,7 +162,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
               <StampBadge type="review" />
             )}
 
-            <p className="font-serif-kr text-xs text-center text-[#554737] max-w-[200px]">
+            <p className="font-serif-kr text-xs text-center text-(--a-label) max-w-[200px]">
               {isPassed
                 ? '축하합니다! 합격 기준 60점을 달성하셨습니다. 완벽한 실전 감각입니다.'
                 : '합격 기준(60점)에 미치지 못했습니다. 아래 오답노트를 다시 복습해 보세요.'}
@@ -172,38 +171,38 @@ export const ResultView: React.FC<ResultViewProps> = ({
         </div>
 
         {/* Statistics Summary: Category Performance Breakdown */}
-        <div className="mb-6 p-4 sm:p-5 bg-[#f8f5ed] rounded-xl border border-[#ded4c1] shadow-2xs">
-          <div className="flex items-center justify-between pb-3 border-b border-[#e5dcce] mb-3">
-            <h3 className="font-serif-kr font-bold text-sm text-[#3b3023] flex items-center gap-1.5">
-              <BarChart3 className="w-4 h-4 text-[#c2410c]" /> 과목 영역별 정답률 통계 요약
+        <div className="mb-6 p-4 sm:p-5 bg-(--a-card) rounded-xl border border-(--a-sep) shadow-2xs">
+          <div className="flex items-center justify-between pb-3 border-b border-(--a-sep) mb-3">
+            <h3 className="font-serif-kr font-bold text-sm text-(--a-label) flex items-center gap-1.5">
+              <BarChart3 className="w-4 h-4 text-(--a-accent)" /> 과목 영역별 정답률 통계 요약
             </h3>
-            <span className="font-mono-custom text-xs font-bold text-[#7d6f5c] px-2 py-0.5 bg-[#ede4d4] rounded border border-[#d6c9b6]">
+            <span className="font-mono-custom text-xs font-bold text-(--a-label-2) px-2 py-0.5 bg-(--a-fill) rounded border border-(--a-sep)">
               전체 정답률 {scorePercent}%
             </span>
           </div>
 
           {/* Strongest & Weakest Diagnostic Insight */}
           {categoryStats.length > 1 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-4 p-3 bg-[#f2ebd9] rounded-lg border border-[#ded2bd] text-xs font-serif-kr">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-4 p-3 bg-(--a-fill) rounded-lg border border-(--a-sep) text-xs font-serif-kr">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 flex items-center justify-center flex-shrink-0">
+                <div className="w-6 h-6 rounded-full bg-(--a-green-soft) border border-(--a-green-line) text-(--a-green) flex items-center justify-center flex-shrink-0">
                   <Sparkles className="w-3.5 h-3.5" />
                 </div>
                 <div className="leading-tight">
-                  <span className="text-[#6b5d4c] text-[11px] block">최고 득점 영역</span>
-                  <span className="font-bold text-[#1f1b17]">
+                  <span className="text-(--a-label-2) text-[11px] block">최고 득점 영역</span>
+                  <span className="font-bold text-(--a-label)">
                     {strongestCategory.name} ({strongestCategory.pct}%)
                   </span>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-rose-100 border border-rose-300 text-rose-800 flex items-center justify-center flex-shrink-0">
+                <div className="w-6 h-6 rounded-full bg-(--a-red-soft) border border-(--a-red-line) text-(--a-red) flex items-center justify-center flex-shrink-0">
                   <Target className="w-3.5 h-3.5" />
                 </div>
                 <div className="leading-tight">
-                  <span className="text-[#6b5d4c] text-[11px] block">집중 보강 영역</span>
-                  <span className="font-bold text-[#b91c1c]">
+                  <span className="text-(--a-label-2) text-[11px] block">집중 보강 영역</span>
+                  <span className="font-bold text-(--a-red)">
                     {weakestCategory.name} ({weakestCategory.pct}%)
                   </span>
                 </div>
@@ -220,46 +219,46 @@ export const ResultView: React.FC<ResultViewProps> = ({
               return (
                 <div 
                   key={stat.name}
-                  className="p-3 bg-[#fcfbfa] rounded-lg border border-[#e4dbcd] flex flex-col justify-between"
+                  className="p-3 bg-(--a-card) rounded-lg border border-(--a-sep) flex flex-col justify-between"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-serif-kr font-bold text-xs text-[#2b241c]">
+                    <span className="font-serif-kr font-bold text-xs text-(--a-label)">
                       {stat.name}
                     </span>
                     <div className="flex items-center gap-1.5">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold font-serif-kr ${
                         isHigh 
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
+                          ? 'bg-(--a-green-soft) text-(--a-green) border border-(--a-green-line)' 
                           : isPass 
-                          ? 'bg-amber-100 text-amber-900 border border-amber-200'
-                          : 'bg-rose-100 text-rose-800 border border-rose-200'
+                          ? 'bg-(--a-yellow-soft) text-(--a-orange) border border-(--a-yellow-line)'
+                          : 'bg-(--a-red-soft) text-(--a-red) border border-(--a-red-line)'
                       }`}>
                         {isHigh ? '우수' : isPass ? '합격권' : '보강필요'}
                       </span>
-                      <span className="font-mono-custom font-extrabold text-xs text-[#1f1b17]">
+                      <span className="font-mono-custom font-extrabold text-xs text-(--a-label)">
                         {stat.pct}%
                       </span>
                     </div>
                   </div>
 
                   {/* Progress Bar */}
-                  <div className="w-full h-2 bg-[#eae1d0] rounded-full overflow-hidden mb-2">
+                  <div className="w-full h-2 bg-(--a-fill) rounded-full overflow-hidden mb-2">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         isHigh 
-                          ? 'bg-[#15803d]' 
+                          ? 'bg-(--a-green)' 
                           : isPass 
-                          ? 'bg-[#d97706]' 
-                          : 'bg-[#dc2626]'
+                          ? 'bg-(--a-orange)' 
+                          : 'bg-(--a-red)'
                       }`}
                       style={{ width: `${stat.pct}%` }}
                     />
                   </div>
 
                   {/* Detailed Counts */}
-                  <div className="flex items-center justify-between text-[11px] font-mono-custom text-[#6f6150]">
-                    <span>정답 <strong className="text-emerald-700 font-bold">{stat.correct}</strong>문항</span>
-                    <span>오답 <strong className="text-rose-700 font-bold">{stat.wrong}</strong>문항</span>
+                  <div className="flex items-center justify-between text-[11px] font-mono-custom text-(--a-label-2)">
+                    <span>정답 <strong className="text-(--a-green) font-bold">{stat.correct}</strong>문항</span>
+                    <span>오답 <strong className="text-(--a-red) font-bold">{stat.wrong}</strong>문항</span>
                     <span>총 {stat.total}문항</span>
                   </div>
                 </div>
@@ -274,7 +273,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
             <button
               id="retryWrongOnlyBtn"
               onClick={onRetryWrongOnly}
-              className="py-3 px-4 bg-[#dc2626] hover:bg-[#b91c1c] text-white font-serif-kr font-bold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="py-3 px-4 bg-(--a-red) hover:bg-(--a-red) text-white font-serif-kr font-bold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <RotateCcw className="w-4 h-4" />
               <span>틀린 {wrongQuestions.length}문제만 다시 풀기</span>
@@ -284,7 +283,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
           <button
             id="restartAllBtn"
             onClick={onRestartAll}
-            className="py-3 px-4 bg-[#241f19] hover:bg-[#3b342a] text-[#faf8f2] font-serif-kr font-bold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="py-3 px-4 bg-(--a-accent) hover:opacity-90 text-white font-serif-kr font-semibold text-sm rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <BookOpen className="w-4 h-4" />
             <span>처음부터 다시 풀기</span>
@@ -293,13 +292,13 @@ export const ResultView: React.FC<ResultViewProps> = ({
 
         {/* Wrong Questions Notebook Review Section */}
         {wrongQuestions.length > 0 && (
-          <div className="mt-8 pt-6 border-t-2 border-[#d5cab7]">
+          <div className="mt-8 pt-6 border-t-2 border-(--a-sep)">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-serif-kr font-bold text-base text-[#241e17] flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 text-[#dc2626]" />
-                <span>오답노트 수기 바인더 ({wrongQuestions.length}문항)</span>
+              <h2 className="font-serif-kr font-bold text-base text-(--a-label) flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-(--a-red)" />
+                <span>오답 노트 ({wrongQuestions.length}문항)</span>
               </h2>
-              <span className="text-[11px] font-hand text-[#786957]">
+              <span className="text-[11px] font-hand text-(--a-label-2)">
                 터치하여 상세 해설 보기
               </span>
             </div>
@@ -311,7 +310,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
                 return (
                   <div
                     key={q.n}
-                    className="p-4 bg-[#fbf9f3] paper-texture-lined rounded-xl border border-[#d8cdba] shadow-2xs transition-all"
+                    className="p-4 bg-(--a-card) paper-texture-lined rounded-xl border border-(--a-sep) shadow-2xs transition-all"
                   >
                     <div
                       onClick={() => setExpandedIndex(isExpanded ? null : originalIndex)}
@@ -319,34 +318,34 @@ export const ResultView: React.FC<ResultViewProps> = ({
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono-custom text-xs font-bold px-2 py-0.5 bg-[#b91c1c] text-white rounded">
+                          <span className="font-mono-custom text-xs font-bold px-2 py-0.5 bg-(--a-red) text-white rounded">
                             Q{q.n}
                           </span>
-                          <span className="text-xs font-mono-custom text-[#736453]">
-                            내 답: <strong className="text-[#dc2626]">{(ans?.selected ?? 0) + 1}번</strong> · 
-                            정답: <strong className="text-[#15803d]">{q.answer + 1}번</strong>
+                          <span className="text-xs font-mono-custom text-(--a-label-2)">
+                            내 답: <strong className="text-(--a-red)">{(ans?.selected ?? 0) + 1}번</strong> · 
+                            정답: <strong className="text-(--a-green)">{q.answer + 1}번</strong>
                           </span>
                         </div>
-                        <p className="font-serif-kr text-sm font-semibold text-[#241f19]">
+                        <p className="font-serif-kr text-sm font-semibold text-(--a-label)">
                           {q.q}
                         </p>
                       </div>
 
-                      <button className="text-[#7a6b5a] p-1">
+                      <button className="text-(--a-label-2) p-1">
                         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </button>
                     </div>
 
                     {isExpanded && (
-                      <div className="mt-3 pt-3 border-t border-[#e2d5c0] text-xs font-serif-kr text-[#3c3225] leading-relaxed animate-fadeIn space-y-3">
+                      <div className="mt-3 pt-3 border-t border-(--a-sep) text-xs font-serif-kr text-(--a-label) leading-relaxed animate-fadeIn space-y-3">
                         {/* Diagram if available */}
                         {q.diagram && (
                           <QuestionDiagram type={q.diagram} />
                         )}
 
                         {/* Choice list breakdown */}
-                        <div className="bg-[#f2ece0] p-3 rounded-lg border border-[#ded1be] space-y-1.5">
-                          <div className="text-[11px] font-bold text-[#5c4e3f] mb-1 font-mono-custom">
+                        <div className="bg-(--a-fill) p-3 rounded-lg border border-(--a-sep) space-y-1.5">
+                          <div className="text-[11px] font-bold text-(--a-label-2) mb-1 font-mono-custom">
                             [선택지 검토]
                           </div>
                           {q.opts.map((opt, optIdx) => {
@@ -357,23 +356,23 @@ export const ResultView: React.FC<ResultViewProps> = ({
                                 key={optIdx}
                                 className={`p-1.5 rounded flex items-start gap-2 text-xs ${
                                   isCorrectPick
-                                    ? 'bg-emerald-100 text-emerald-900 font-bold border border-emerald-300'
+                                    ? 'bg-(--a-green-soft) text-(--a-green) font-bold border border-(--a-green-line)'
                                     : isUserPick
-                                    ? 'bg-rose-100 text-rose-900 font-medium border border-rose-300'
-                                    : 'text-[#5f5243]'
+                                    ? 'bg-(--a-red-soft) text-(--a-red) font-medium border border-(--a-red-line)'
+                                    : 'text-(--a-label-2)'
                                 }`}
                               >
-                                <span className="w-4 h-4 rounded-full bg-white/70 flex items-center justify-center font-mono-custom text-[10px] font-bold flex-shrink-0 mt-0.5">
+                                <span className="w-4 h-4 rounded-full bg-(--a-card)/70 flex items-center justify-center font-mono-custom text-[10px] font-bold flex-shrink-0 mt-0.5">
                                   {optIdx + 1}
                                 </span>
                                 <span className="flex-1 leading-snug">{opt}</span>
                                 {isCorrectPick && (
-                                  <span className="text-[10px] bg-emerald-700 text-white px-1.5 py-0.5 rounded flex-shrink-0">
+                                  <span className="text-[10px] bg-(--a-green) text-white px-1.5 py-0.5 rounded flex-shrink-0">
                                     정답
                                   </span>
                                 )}
                                 {isUserPick && !isCorrectPick && (
-                                  <span className="text-[10px] bg-rose-700 text-white px-1.5 py-0.5 rounded flex-shrink-0">
+                                  <span className="text-[10px] bg-(--a-red) text-white px-1.5 py-0.5 rounded flex-shrink-0">
                                     내 오답 선택
                                   </span>
                                 )}
@@ -383,11 +382,11 @@ export const ResultView: React.FC<ResultViewProps> = ({
                         </div>
 
                         {/* Detailed In-Depth Examiner Note */}
-                        <div className="p-3 bg-[#fef9eb] rounded-lg border border-[#e6d8bc]">
-                          <div className="font-bold text-[#b91c1c] mb-1.5 font-hand text-sm flex items-center gap-1">
-                            <span>✍️ 채점관 심층 수기 해설:</span>
+                        <div className="p-3 bg-(--a-fill) rounded-lg border border-(--a-sep)">
+                          <div className="font-bold text-(--a-red) mb-1.5 font-hand text-sm flex items-center gap-1">
+                            <span>해설</span>
                           </div>
-                          <p className="whitespace-pre-line leading-relaxed text-[#2f271f]">
+                          <p className="whitespace-pre-line leading-relaxed text-(--a-label)">
                             {q.note}
                           </p>
                         </div>
@@ -404,7 +403,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
         <div className="mt-6 text-center">
           <button
             onClick={onGoHome}
-            className="text-xs font-serif-kr text-[#665746] hover:text-[#1f1b17] hover:underline font-bold"
+            className="text-xs font-serif-kr text-(--a-label-2) hover:text-(--a-label) hover:underline font-bold"
           >
             ← 메인 시험지 선택으로 돌아가기
           </button>

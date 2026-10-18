@@ -356,3 +356,101 @@ body.is-landing { background: #ffffff; }
   font-size: 13px; color: #c7c2b8; text-decoration: none; font-family: inherit; background: none; border: 0; cursor: pointer;
 }
 .back-home:hover { color: #ffffff; }
+
+/* ===================== 진단평가사 앱 Apple 테마 =====================
+   기존 종이 노트 테마의 색·글꼴·질감을 Apple 시스템 스타일로 덮어씀.
+   컴포넌트의 색은 모두 아래 --a-* 토큰을 참조하므로 다크 모드가 자동 적용됨. */
+:root {
+  --a-bg: #f5f5f7;
+  --a-card: #ffffff;
+  --a-fill: #f5f5f7;
+  --a-fill-2: #e8e8ed;
+  --a-label: #1d1d1f;
+  --a-label-2: #6e6e73;
+  --a-label-3: #86868b;
+  --a-sep: #d2d2d7;
+  --a-accent: #0071e3;
+  --a-accent-soft: rgba(0, 113, 227, 0.08);
+  --a-accent-line: rgba(0, 113, 227, 0.35);
+  --a-red: #e30000;
+  --a-red-soft: rgba(255, 59, 48, 0.08);
+  --a-red-line: rgba(255, 59, 48, 0.32);
+  --a-green: #248a3d;
+  --a-green-soft: rgba(52, 199, 89, 0.12);
+  --a-green-line: rgba(52, 199, 89, 0.4);
+  --a-orange: #c93400;
+  --a-yellow-soft: rgba(255, 204, 0, 0.18);
+  --a-yellow-line: rgba(255, 159, 10, 0.4);
+  --a-inverse-bg: #1d1d1f;
+  --a-inverse-fg: #f5f5f7;
+  --a-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.06);
+  --a-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Helvetica Neue", sans-serif;
+  --a-mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --a-bg: #000000;
+    --a-card: #1c1c1e;
+    --a-fill: #2c2c2e;
+    --a-fill-2: #3a3a3c;
+    --a-label: #f5f5f7;
+    --a-label-2: #a1a1a6;
+    --a-label-3: #8e8e93;
+    --a-sep: #38383a;
+    --a-accent: #2997ff;
+    --a-accent-soft: rgba(41, 151, 255, 0.16);
+    --a-accent-line: rgba(41, 151, 255, 0.45);
+    --a-red: #ff453a;
+    --a-red-soft: rgba(255, 69, 58, 0.16);
+    --a-red-line: rgba(255, 69, 58, 0.45);
+    --a-green: #30d158;
+    --a-green-soft: rgba(48, 209, 88, 0.16);
+    --a-green-line: rgba(48, 209, 88, 0.45);
+    --a-orange: #ff9f0a;
+    --a-yellow-soft: rgba(255, 214, 10, 0.16);
+    --a-yellow-line: rgba(255, 214, 10, 0.4);
+    --a-inverse-bg: #f5f5f7;
+    --a-inverse-fg: #1d1d1f;
+    --a-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+}
+
+body {
+  background: var(--a-bg) !important;
+  color: var(--a-label) !important;
+  font-family: var(--a-font);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+}
+
+/* 손글씨·타자기·명조 → 시스템 글꼴 */
+.font-hand, .font-pen, .font-serif-kr { font-family: var(--a-font); letter-spacing: -0.01em; }
+.font-typewriter, .font-mono-custom { font-family: var(--a-font); font-variant-numeric: tabular-nums; letter-spacing: 0; }
+
+/* 종이 질감 → 깨끗한 카드 / 채운 면 */
+.paper-texture-ivory, .paper-texture-card { background: var(--a-card) !important; background-image: none !important; }
+.paper-texture-grid, .paper-texture-lined, .paper-texture-kraft { background: var(--a-fill) !important; background-image: none !important; }
+.paper-shadow-vintage, .paper-shadow-layer { box-shadow: var(--a-shadow) !important; }
+
+/* 장식(마스킹테이프, 클립, 바인더 구멍)은 숨김 */
+.washi-tape, .washi-tape-yellow, .paper-clip-shadow, .binder-hole { display: none !important; }
+
+.ink-blue { color: var(--a-accent); }
+.ink-red { color: var(--a-red); }
+.ink-pencil { color: var(--a-label-2); }
+
+/* 기출문제집 위 '처음 화면' 버튼: Apple 텍스트 링크 */
+.back-home { color: var(--a-accent); font-family: var(--a-font); font-size: 15px; margin: 8px 0 4px 20px; }
+.back-home:hover { color: var(--a-accent); text-decoration: underline; text-underline-offset: 3px; }
+
+/* 결과 배지: 도장 찍듯 회전하던 모션 → 살짝 커졌다 자리 잡는 모션 (상태가 바뀌었음을 알림) */
+@keyframes aBadgeIn {
+  0% { transform: scale(0.86); opacity: 0; }
+  60% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-stamp { animation: aBadgeIn 0.42s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-stamp { animation: none; }
+}

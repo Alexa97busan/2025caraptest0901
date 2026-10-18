@@ -284,7 +284,7 @@ export default function App() {
   if (view === 'home') return <Landing onOpenAppraiser={openAppraiser} />;
 
   return (
-    <main className="min-h-screen bg-[#242426] text-[#2c2b29] flex flex-col items-center justify-start pb-12">
+    <main className="min-h-screen bg-(--a-bg) text-(--a-label) flex flex-col items-center justify-start pb-12">
       {/* Outer Desk Ambient Mat */}
       <div className="w-full max-w-4xl pt-4 sm:pt-6">
         {view === 'setup' && (
