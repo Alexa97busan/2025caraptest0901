@@ -1,0 +1,54 @@
+# main 브랜치에 푸시(PR 병합 포함)될 때마다 앱을 빌드해 GitHub Pages에 배포합니다.
+# 저장소 Settings → Pages → Source를 "GitHub Actions"로 설정해야 동작합니다.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 배포가 겹치면 나중 것만 남기되, 진행 중인 배포는 끝까지 마칩니다.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Type check
+        run: npm run lint
+
+      # base를 상대 경로로 빌드해 https://<사용자>.github.io/<저장소>/ 같은 하위 경로에서도 동작하게 함
+      - name: Build
+        run: npx vite build --base=./
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

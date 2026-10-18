@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>물리 시스템 알기</title>
+<style>
+  /* Layout: 소개 → 문제 풀이 배너 → 시험 과목별 섹션(기초·엔진·섀시 2×2·전기) → 연결 개념 */
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --fill: rgba(118, 118, 128, 0.12);
+    --fg: #1c1c1e;
+    --fg-2: #6e6e73;
+    --line: rgba(60, 60, 67, 0.14);
+    --accent: #007aff;
+    --accent-soft: rgba(0, 122, 255, 0.12);
+    --spring: #ff9500;
+    --bob: #ff3b30;
+    --steel: #8e8e93;
+    --fluid: #af52de;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
+    --shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.05), 0 14px 34px rgba(0, 0, 0, 0.10);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+      --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+      --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+      --spring: #ff9f0a; --bob: #ff453a; --steel: #aeaeb2; --fluid: #bf5af2;
+      --shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+      --shadow-hover: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 14px 34px rgba(0, 0, 0, 0.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+    --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+    --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+    --spring: #ff9f0a; --bob: #ff453a; --steel: #aeaeb2; --fluid: #bf5af2;
+    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+    --shadow-hover: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 14px 34px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding-inline: 16px;
+    padding-block: 32px 48px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.55;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; display: grid; gap: 28px; }
+
+  header { display: grid; gap: 8px; }
+  .eyebrow { font-size: 0.78rem; font-weight: 600; color: var(--fg-2); letter-spacing: 0.02em; margin: 0; }
+  h1 { margin: 0; font-size: clamp(1.8rem, 5vw, 2.5rem); font-weight: 700; letter-spacing: -0.035em; line-height: 1.15; text-wrap: balance; }
+  .lead { margin: 0; color: var(--fg-2); max-width: 60ch; }
+
+  .section-title { font-size: 0.85rem; font-weight: 650; color: var(--fg-2); margin: 0 0 12px; }
+
+  /* 카드 = 링크 전체. 호버 시 살짝 떠오르고 화살표가 앞으로 → '이동한다'는 신호 */
+  .cards { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 720px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  .card {
+    display: grid; grid-template-rows: auto 1fr; min-width: 0;
+    background: var(--surface); border-radius: 22px; overflow: hidden;
+    box-shadow: var(--shadow); color: inherit; text-decoration: none;
+    transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out);
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+  .card:active { transform: translateY(0) scale(0.985); transition-duration: 0.12s; }
+  .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .preview { display: block; width: 100%; aspect-ratio: 16 / 8; background: var(--fill); }
+
+  .card-body { display: grid; gap: 10px; padding: 18px 20px 20px; align-content: start; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .step { font-size: 0.72rem; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+  .tag { font-size: 0.72rem; font-weight: 600; color: var(--fg-2); background: var(--fill); padding: 2px 8px; border-radius: 999px; }
+  .card h2 { margin: 0; font-size: 1.25rem; letter-spacing: -0.025em; }
+  .card p { margin: 0; font-size: 0.88rem; color: var(--fg-2); }
+  .formula {
+    font-size: 0.82rem; font-weight: 600; font-variant-numeric: tabular-nums;
+    padding: 8px 10px; border-radius: 10px; background: var(--fill); color: var(--fg);
+    overflow-x: auto; white-space: nowrap;
+  }
+  .learn { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 0.84rem; color: var(--fg-2); }
+  .open { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; font-weight: 650; color: var(--accent); margin-top: 4px; }
+  .open svg { width: 14px; height: 14px; transition: transform 0.3s var(--ease-out); }
+  .card:hover .open svg { transform: translateX(4px); }
+
+  /* 두 페이지를 잇는 개념 */
+  .bridge {
+    display: grid; gap: 6px; padding: 16px 20px; border-radius: 18px;
+    background: var(--surface); box-shadow: var(--shadow);
+  }
+  .bridge strong { font-size: 0.95rem; }
+  .bridge p { margin: 0; font-size: 0.86rem; color: var(--fg-2); }
+  .bridge code { font-family: inherit; font-weight: 650; color: var(--fg); }
+
+  /* 기초 카드: 넓은 화면에서 미리보기와 설명을 가로로 */
+  @media (min-width: 720px) {
+    .card.wide { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); grid-template-rows: none; }
+    .card.wide .preview { aspect-ratio: auto; height: 100%; min-height: 240px; }
+  }
+  .sections { display: grid; gap: 28px; }
+
+  .quiz-banner {
+    display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-radius: 20px;
+    background: var(--accent); color: #fff; text-decoration: none; box-shadow: var(--shadow);
+    transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out);
+  }
+  .quiz-banner:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+  .quiz-banner:active { transform: scale(0.985); transition-duration: 0.12s; }
+  .quiz-banner:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+  .quiz-icon { width: 40px; height: 40px; border-radius: 12px; background: rgba(255, 255, 255, 0.2); display: grid; place-items: center; flex-shrink: 0; }
+  .quiz-icon svg { width: 22px; height: 22px; }
+  .quiz-text { display: grid; gap: 2px; min-width: 0; flex: 1; }
+  .quiz-text strong { font-size: 1.05rem; }
+  .quiz-text small { font-size: 0.8rem; opacity: 0.85; }
+  .quiz-banner .open { color: #fff; margin: 0; flex-shrink: 0; }
+  .quiz-banner:hover .open svg { transform: translateX(4px); }
+  .meta:empty { display: none; }
+
+  footer { font-size: 0.78rem; color: var(--fg-2); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">자동차산업기사 · 인터랙티브 학습 · <a href="./" style="color:var(--accent);text-decoration:none;">← 기출문제집으로</a></p>
+    <h1>물리 시스템 알기</h1>
+    <p class="lead">교재의 공식과 그림을 직접 움직여 보며 익히는 시뮬레이터 8개와 연습 문제입니다. 섹션은 시험 과목 순서로 묶었습니다. 값을 바꾸면 결과가 바로 보이니, 외우기 전에 먼저 눈으로 이해해 보세요.</p>
+  </header>
+
+  <div class="sections">
+  <a class="quiz-banner" href="quiz.html">
+    <span class="quiz-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2 2 4-4"/><rect x="4" y="3" width="16" height="18" rx="2"/></svg></span>
+    <span class="quiz-text"><strong>기출 유형 문제 32개</strong><small>8개 단원 계산·개념 문제. 답을 고르면 해설과 해당 시뮬레이터로 연결됩니다</small></span>
+    <span class="open">풀기 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg></span>
+  </a>
+
+  <section>
+    <h2 class="section-title">기초 물리</h2>
+      <a class="card wide" href="pendulum.html">
+        <canvas class="preview" id="pvPendulum" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">진동과 에너지</span><span class="tag">3D</span></div>
+          <h2>단진자 3D</h2>
+          <p>실의 길이, 중력, 질량, 공기 저항을 바꾸며 주기와 역학적 에너지 보존을 확인합니다.</p>
+          <div class="formula">T = 2π√(L / g)</div>
+          <ul class="learn">
+            <li>주기는 질량과 무관하고 길이와 중력에만 달라짐</li>
+            <li>운동·위치 에너지의 교환과 감쇠에 의한 손실</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+  </section>
+
+  <section>
+    <h2 class="section-title">엔진</h2>
+      <a class="card wide" href="engine.html">
+        <canvas class="preview" id="pvEngine" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">4행정 사이클</span></div>
+          <h2>4행정 엔진 시뮬레이터</h2>
+          <p>흡입·압축·폭발·배기 행정과 밸브 타이밍 선도를 함께 보고, 배기량과 압축비를 계산합니다.</p>
+          <div class="formula">ε = (Vs + Vc) ÷ Vc · 오버랩 = IO + EC</div>
+          <ul class="learn">
+            <li>밸브 열림 기간과 오버랩 계산</li>
+            <li>배기량, 압축비, 평균 피스톤 속도, 폭발 간격</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+  </section>
+
+  <section>
+    <h2 class="section-title">섀시</h2>
+    <div class="cards">
+      <a class="card" href="suspension.html">
+        <canvas class="preview" id="pvSuspension" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">현가장치</span></div>
+          <h2>현가장치 시뮬레이터</h2>
+          <p>스프링 상수와 쇼크업소버 감쇠를 조절해 방지턱, 포트홀, 요철을 지날 때의 승차감과 접지력을 비교합니다.</p>
+          <div class="formula">ζ = c / (2√(k·m)) · f = (1/2π)√(k/m)</div>
+          <ul class="learn">
+            <li>부족·임계·과감쇠와 쇼크업소버 불량 증상</li>
+            <li>바운스 테스트, 공진, 스프링 아래 질량의 영향</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+      <a class="card" href="brake.html">
+        <canvas class="preview" id="pvBrake" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">제동장치</span></div>
+          <h2>브레이크 유압 시뮬레이터</h2>
+          <p>페달력이 페달비와 배력장치, 유압을 거쳐 캘리퍼에서 몇 배로 커지는지 계산 과정과 함께 봅니다.</p>
+          <div class="formula">P = F ÷ A · F휠 = P × A휠</div>
+          <ul class="learn">
+            <li>파스칼의 원리와 면적비에 따른 힘·이동량</li>
+            <li>공기 혼입 시 스펀지 현상, 베이퍼 록·페이드</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+      <a class="card" href="steering.html">
+        <canvas class="preview" id="pvSteering" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">조향장치</span></div>
+          <h2>조향 기하학 시뮬레이터</h2>
+          <p>애커먼 장토식으로 네 바퀴가 한 회전 중심을 도는 원리와 캠버·캐스터·토의 역할을 확인합니다.</p>
+          <div class="formula">R = L ÷ sin α + r</div>
+          <ul class="learn">
+            <li>최소 회전 반경 계산과 평행 조향의 미끄럼</li>
+            <li>얼라인먼트 요소별 역할과 타이어 편마모</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+      <a class="card" href="gearbox.html">
+        <canvas class="preview" id="pvGear" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">동력전달장치</span></div>
+          <h2>변속기 기어비 시뮬레이터</h2>
+          <p>변속비와 종감속비가 엔진 회전을 차속과 구동력으로 바꾸는 과정을 기어 애니메이션과 계산으로 봅니다.</p>
+          <div class="formula">총감속비 = 변속비 × 종감속비</div>
+          <ul class="learn">
+            <li>바퀴 회전수, 차속, 구동력 계산</li>
+            <li>차동장치: 좌 + 우 = 링기어 × 2</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">전기·전자</h2>
+    <div class="cards">
+      <a class="card" href="circuit.html">
+        <canvas class="preview" id="pvCircuit" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">옴의 법칙</span><span class="tag">진단</span></div>
+          <h2>전기회로 실습판</h2>
+          <p>전구 회로를 직렬·병렬로 바꾸고, 단선과 접촉 저항 고장을 멀티미터 전압 강하 시험으로 찾아봅니다.</p>
+          <div class="formula">V = I × R · P = V × I</div>
+          <ul class="learn">
+            <li>직렬·병렬 합성 저항과 전류 분배</li>
+            <li>단선 지점 양단에 전원 전압이 걸리는 이유</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+      <a class="card" href="relay.html">
+        <canvas class="preview" id="pvRelay" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">릴레이</span><span class="tag">진단 연습</span></div>
+          <h2>릴레이 회로 시뮬레이터</h2>
+          <p>경음기 릴레이 회로에서 작은 제어 전류가 큰 부하 전류를 켜는 과정을 보고, 숨겨진 고장을 멀티미터로 찾아냅니다.</p>
+          <div class="formula">85·86 코일 → 30·87 접점</div>
+          <ul class="learn">
+            <li>릴레이 단자 역할과 딸깍 소리의 의미</li>
+            <li>퓨즈·코일·접점·접지 고장 진단 연습</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+    </div>
+  </section>
+  </div>
+
+  <section class="bridge">
+    <strong>단진자와 현가장치는 같은 원리로 이어집니다</strong>
+    <p>단진자의 <code>공기 저항(Damping)</code>은 현가장치의 <code>쇼크업소버 감쇠 계수 c</code>와 같은 역할을 합니다. 둘 다 속도에 비례하는 저항으로 진동 에너지를 열로 바꿔 진폭을 줄입니다. 단진자에서 감쇠를 0으로 두면 계속 흔들리는 것처럼, 쇼크업소버가 불량이면 차체가 계속 출렁입니다.</p>
+  </section>
+
+  <footer>수치는 개념 이해를 위한 단순화 모델 기준입니다.</footer>
+</div>
+
+<script>
+(() => {
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let C = {};
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    ['fg', 'fg-2', 'line', 'accent', 'spring', 'bob', 'steel', 'surface', 'fluid'].forEach(t => { C[t] = cs.getPropertyValue('--' + t).trim(); });
+  }
+  readTokens();
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTokens);
+  new MutationObserver(readTokens).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  function setup(cv) {
+    const ctx = cv.getContext('2d');
+    const fit = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const r = cv.getBoundingClientRect();
+      cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cv._w = r.width; cv._h = r.height; cv._dirty = true;  // 크기 재설정은 캔버스를 지우므로 다시 그리기 표시
+    };
+    new ResizeObserver(fit).observe(cv);
+    fit();
+    return ctx;
+  }
+
+  const pv1 = document.getElementById('pvPendulum');
+  const pv2 = document.getElementById('pvSuspension');
+  const pv3 = document.getElementById('pvBrake');
+  const pv4 = document.getElementById('pvEngine');
+  const pv5 = document.getElementById('pvSteering');
+  const pvG = document.getElementById('pvGear');
+  const pvC = document.getElementById('pvCircuit');
+  const pvR = document.getElementById('pvRelay');
+  const ctx1 = setup(pv1), ctx2 = setup(pv2), ctx3 = setup(pv3), ctx4 = setup(pv4), ctx5 = setup(pv5), ctxG = setup(pvG), ctxC = setup(pvC), ctxR = setup(pvR);
+
+  // 단진자 미리보기: 감쇠 없이 일정하게 흔들림
+  function drawPendulum(t) {
+    const W = pv1._w, H = pv1._h, ctx = ctx1;
+    ctx.clearRect(0, 0, W, H);
+    const px = W / 2, py = H * 0.16, L = H * 0.6;
+    const a = (reduce ? 0.5 : Math.cos(t * 2.6)) * 0.55;
+    ctx.strokeStyle = C.steel; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(px - 70, py); ctx.lineTo(px + 70, py); ctx.stroke();
+    // 궤적 호
+    ctx.strokeStyle = C.accent; ctx.globalAlpha = 0.35; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(px, py, L, Math.PI / 2 - 0.55, Math.PI / 2 + 0.55); ctx.stroke();
+    ctx.globalAlpha = 1;
+    const bx = px + Math.sin(a) * L, by = py + Math.cos(a) * L;
+    ctx.strokeStyle = C['fg-2']; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.fillStyle = C.accent; ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.bob; ctx.beginPath(); ctx.arc(bx, by, Math.max(10, H * 0.07), 0, Math.PI * 2); ctx.fill();
+  }
+
+  // 현가장치 미리보기: 방지턱을 넘은 뒤 감쇠 진동 (ζ≈0.3)
+  function drawSuspension(t) {
+    const W = pv2._w, H = pv2._h, ctx = ctx2;
+    ctx.clearRect(0, 0, W, H);
+    const s = H / 150;
+    const groundY = H * 0.82, wx = W * 0.42;
+    const cycle = 3.2, local = reduce ? 1.4 : t % cycle;
+    // 차체 응답: 감쇠 정현파
+    const body = local < 0.25 ? Math.sin(local / 0.25 * Math.PI / 2) * 16 * s
+      : 16 * s * Math.exp(-2.4 * (local - 0.25)) * Math.cos(8.2 * (local - 0.25));
+    const wheel = local < 0.35 ? Math.sin(local / 0.35 * Math.PI) * 12 * s : 0;
+    // 노면과 지나간 방지턱
+    ctx.strokeStyle = C['fg-2']; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, groundY);
+    const bumpX = wx - local * 120 * s;
+    for (let x = 0; x <= W; x += 2) {
+      const d = x - bumpX;
+      const h = Math.abs(d) < 26 * s ? Math.cos(d / (26 * s) * Math.PI / 2) * 12 * s : 0;
+      ctx.lineTo(x, groundY - h);
+    }
+    ctx.stroke();
+    const R = 20 * s, hubY = groundY - R - wheel;
+    const bodyBottom = groundY - R - 34 * s - body;
+    // 스프링
+    const sx = wx - 6 * s, segs = 10, cw = 6 * s;
+    ctx.strokeStyle = C.spring; ctx.lineWidth = 2.5 * s; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(sx, hubY);
+    for (let i = 1; i < segs; i++) ctx.lineTo(sx + (i % 2 ? cw : -cw), hubY + (bodyBottom - hubY) * i / segs);
+    ctx.lineTo(sx, bodyBottom); ctx.stroke();
+    // 댐퍼
+    ctx.strokeStyle = C.steel; ctx.lineWidth = 2 * s;
+    ctx.beginPath(); ctx.moveTo(wx + 12 * s, bodyBottom); ctx.lineTo(wx + 12 * s, hubY); ctx.stroke();
+    ctx.fillStyle = C.steel; ctx.fillRect(wx + 8 * s, hubY - 18 * s, 8 * s, 18 * s);
+    // 바퀴
+    ctx.fillStyle = C.fg; ctx.beginPath(); ctx.arc(wx, hubY, R, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.steel; ctx.beginPath(); ctx.arc(wx, hubY, R * 0.55, 0, Math.PI * 2); ctx.fill();
+    // 차체
+    ctx.fillStyle = C.accent; ctx.globalAlpha = 0.9;
+    const bw = 120 * s, bh = 26 * s, x0 = wx - bw * 0.4, y0 = bodyBottom - bh, r = 8 * s;
+    ctx.beginPath();
+    ctx.moveTo(x0 + r, y0); ctx.arcTo(x0 + bw, y0, x0 + bw, y0 + bh, r); ctx.arcTo(x0 + bw, y0 + bh, x0, y0 + bh, r);
+    ctx.arcTo(x0, y0 + bh, x0, y0, r); ctx.arcTo(x0, y0, x0 + bw, y0, r); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+
+  // 브레이크 미리보기: 작은 피스톤 → 큰 피스톤으로 압력 전달
+  function drawBrake(t) {
+    const W = pv3._w, H = pv3._h, ctx = ctx3;
+    ctx.clearRect(0, 0, W, H);
+    const k = reduce ? 0.7 : (Math.sin(t * 1.8) + 1) / 2;
+    const s = H / 150, cy = H * 0.55;
+    const x1 = W * 0.22, x2 = W * 0.68, h1 = 18 * s, h2 = 52 * s;
+    ctx.globalAlpha = 0.25 + 0.55 * k; ctx.fillStyle = C.fluid;
+    ctx.fillRect(x1, cy - h1 / 2, x2 - x1, h1);
+    ctx.fillRect(x2, cy - h2 / 2, 40 * s, h2);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = C.steel;
+    ctx.fillRect(x1 - 14 * s + k * 26 * s, cy - h1 / 2, 8 * s, h1);
+    ctx.fillRect(x2 + 32 * s + k * 7 * s, cy - h2 / 2, 10 * s, h2);
+    ctx.fillStyle = C.fg;
+    ctx.fillRect(x2 + 58 * s, cy - h2 / 2 - 14 * s, 6 * s, h2 + 28 * s);
+    ctx.strokeStyle = C.spring; ctx.fillStyle = C.spring; ctx.lineWidth = 3 * s;
+    const ax = x1 - 44 * s + k * 26 * s;
+    ctx.beginPath(); ctx.moveTo(ax, cy); ctx.lineTo(ax + 22 * s, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ax + 28 * s, cy); ctx.lineTo(ax + 20 * s, cy - 5 * s); ctx.lineTo(ax + 20 * s, cy + 5 * s); ctx.closePath(); ctx.fill();
+  }
+
+  // 엔진 미리보기: 크랭크·커넥팅 로드·피스톤
+  function drawEngine(t) {
+    const W = pv4._w, H = pv4._h, ctx = ctx4;
+    ctx.clearRect(0, 0, W, H);
+    const th = reduce ? 2.2 : t * 2.4;
+    const S = H * 0.26, r = S / 2, l = S * 1.5, cx = W / 2;
+    const top = H * 0.1, crankY = top + S * 0.3 + r + l + S * 0.2;
+    const x = r * Math.cos(th) + Math.sqrt(l * l - Math.pow(r * Math.sin(th), 2));
+    const pTop = crankY - x - S * 0.2;
+    const bw = S * 0.9;
+    ctx.fillStyle = C.steel; ctx.globalAlpha = 0.35;
+    ctx.fillRect(cx - bw / 2 - 5, top - 4, 5, S * 1.6); ctx.fillRect(cx + bw / 2, top - 4, 5, S * 1.6);
+    ctx.globalAlpha = 1;
+    const power = (Math.floor(((th % (4 * Math.PI)) + 4 * Math.PI) % (4 * Math.PI) / Math.PI)) === 2;
+    ctx.globalAlpha = 0.35; ctx.fillStyle = power ? C.bob : C.accent;
+    ctx.fillRect(cx - bw / 2, top, bw, pTop - top);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = C.fg; ctx.fillRect(cx - bw / 2 + 1, pTop, bw - 2, S * 0.4);
+    const px = cx + r * Math.sin(th), py = crankY - r * Math.cos(th);
+    ctx.strokeStyle = C.steel; ctx.lineWidth = Math.max(4, S * 0.1); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cx, pTop + S * 0.2); ctx.lineTo(px, py); ctx.stroke();
+    ctx.fillStyle = C.steel; ctx.globalAlpha = 0.4;
+    ctx.beginPath(); ctx.arc(cx, crankY, r * 1.3, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1; ctx.fillStyle = C.accent;
+    ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // 조향 미리보기: 앞바퀴가 꺾이면 축선이 한 점에서 만남
+  function drawSteering(t) {
+    const W = pv5._w, H = pv5._h, ctx = ctx5;
+    ctx.clearRect(0, 0, W, H);
+    const s = H / 150;
+    const di = (reduce ? 0.55 : 0.35 + 0.25 * Math.sin(t * 1.2));
+    const L = 90 * s, T = 52 * s;
+    const cx = W * 0.66, fy = H * 0.2, ry = fy + L;
+    const xl = cx - T / 2, xr = cx + T / 2;
+    const dO = Math.atan(1 / (1 / Math.tan(di) + T / L));
+    const ox = xl - L / Math.tan(di);
+    ctx.setLineDash([4, 4]); ctx.strokeStyle = C.accent; ctx.lineWidth = 1.5;
+    [[xl, fy], [xr, fy]].forEach(([x, y]) => { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ox, ry); ctx.stroke(); });
+    ctx.strokeStyle = C['fg-2'];
+    ctx.beginPath(); ctx.moveTo(xr, ry); ctx.lineTo(Math.min(ox, 0), ry); ctx.stroke();
+    ctx.setLineDash([]);
+    const wheel = (x, y, a) => { ctx.save(); ctx.translate(x, y); ctx.rotate(-a); ctx.fillStyle = C.fg; ctx.fillRect(-4 * s, -11 * s, 8 * s, 22 * s); ctx.restore(); };
+    wheel(xl, fy, di); wheel(xr, fy, dO); wheel(xl, ry, 0); wheel(xr, ry, 0);
+    if (ox > 0) { ctx.fillStyle = C.accent; ctx.beginPath(); ctx.arc(ox, ry, 4, 0, Math.PI * 2); ctx.fill(); }
+  }
+
+
+  // 변속기 미리보기: 크기가 다른 두 기어가 맞물려 회전 (작은 기어가 더 빨리)
+  function drawGear(t) {
+    const W = pvG._w, H = pvG._h, ctx = ctxG;
+    ctx.clearRect(0, 0, W, H);
+    const a = reduce ? 0.3 : t * 1.2;
+    const g = (cx, cy, z, m, ang, col) => {
+      const R = z * m / 2;
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang); ctx.fillStyle = col; ctx.beginPath();
+      for (let i = 0; i < z; i++) { const b = i / z * Math.PI * 2, w = Math.PI / z;
+        [[R - m * 0.45, b - w * 0.55], [R + m * 0.45, b - w * 0.3], [R + m * 0.45, b + w * 0.3], [R - m * 0.45, b + w * 0.55]]
+          .forEach(([r, q], j) => (i || j) ? ctx.lineTo(Math.cos(q) * r, Math.sin(q) * r) : ctx.moveTo(Math.cos(q) * r, Math.sin(q) * r)); }
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = C.surface; ctx.beginPath(); ctx.arc(0, 0, R * 0.2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    };
+    const m = H / 34, z1 = 12, z2 = 24;
+    const x1 = W / 2 - (z1 + z2) * m / 4 - z1 * m / 4, x2 = x1 + (z1 + z2) * m / 2;
+    g(x1, H / 2, z1, m, a, C.accent);
+    g(x2, H / 2, z2, m, -a * z1 / z2 + Math.PI / z2, C.steel);
+  }
+
+  // 전기회로 미리보기: 닫힌 회로를 도는 전류와 켜진 전구
+  function drawCircuit(t) {
+    const W = pvC._w, H = pvC._h, ctx = ctxC;
+    ctx.clearRect(0, 0, W, H);
+    const L = W * 0.2, R = W * 0.8, T = H * 0.28, B = H * 0.75;
+    ctx.strokeStyle = C['fg-2']; ctx.lineWidth = 2.5;
+    ctx.strokeRect(L, T, R - L, B - T);
+    const per = 2 * ((R - L) + (B - T));
+    const at = d => { d = ((d % per) + per) % per;
+      if (d < B - T) return [L, B - d]; d -= B - T;
+      if (d < R - L) return [L + d, T]; d -= R - L;
+      if (d < B - T) return [R, T + d]; d -= B - T; return [R - d, B]; };
+    ctx.fillStyle = C.accent;
+    const off = reduce ? 0 : t * 40;
+    for (let d = 0; d < per; d += 18) { const [x, y] = at(d + off); ctx.beginPath(); ctx.arc(x, y, 2.6, 0, Math.PI * 2); ctx.fill(); }
+    const bx = (L + R) / 2, r = H * 0.09;
+    const gr = ctx.createRadialGradient(bx, T, r * 0.3, bx, T, r * 2.8); gr.addColorStop(0, C.spring); gr.addColorStop(1, 'transparent');
+    ctx.globalAlpha = 0.6; ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(bx, T, r * 2.8, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.fillStyle = C.surface; ctx.strokeStyle = C.fg; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(bx, T, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.spring; ctx.beginPath(); ctx.arc(bx, T, r * 0.7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.surface; ctx.fillRect(L - 14, (T + B) / 2 - 10, 28, 20);
+    ctx.strokeStyle = C.fg; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(L - 14, (T + B) / 2 - 5); ctx.lineTo(L + 14, (T + B) / 2 - 5); ctx.stroke();
+    ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(L - 8, (T + B) / 2 + 5); ctx.lineTo(L + 8, (T + B) / 2 + 5); ctx.stroke();
+  }
+
+
+  // 릴레이 미리보기: 코일이 켜지면 접점이 붙고 부하 쪽 전류가 흐름
+  function drawRelay(t) {
+    const W = pvR._w, H = pvR._h, ctx = ctxR;
+    ctx.clearRect(0, 0, W, H);
+    const on = reduce ? true : (t % 2.4) < 1.4;
+    const s = H / 150, cx = W / 2;
+    const bx = cx - 70 * s, bw = 140 * s, by = 30 * s, bh = 90 * s;
+    ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = C['fg-2']; ctx.lineWidth = 1.2;
+    ctx.strokeRect(bx, by, bw, bh); ctx.restore();
+    // 코일
+    const kx = bx + 40 * s;
+    ctx.strokeStyle = on ? C.accent : C.fg; ctx.lineWidth = on ? 3 : 2;
+    ctx.beginPath(); ctx.moveTo(kx, by); ctx.lineTo(kx, by + 20 * s);
+    for (let k = 0; k < 4; k++) ctx.arc(kx, by + 26 * s + k * 12 * s, 6 * s, -Math.PI / 2, Math.PI / 2);
+    ctx.lineTo(kx, by + bh); ctx.stroke();
+    // 접점
+    const jx = bx + 100 * s;
+    ctx.strokeStyle = C.fg; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(jx, by); ctx.lineTo(jx, by + 18 * s); ctx.lineTo(on ? jx : jx + 18 * s, by + 66 * s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(jx - 8 * s, by + 70 * s); ctx.lineTo(jx + 8 * s, by + 70 * s); ctx.moveTo(jx, by + 70 * s); ctx.lineTo(jx, by + bh); ctx.stroke();
+    ctx.save(); ctx.setLineDash([2, 3]); ctx.strokeStyle = on ? C.accent : C['fg-2']; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(kx + 10 * s, by + 45 * s); ctx.lineTo(jx - 4 * s, by + 45 * s); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = C.fg; ctx.font = `700 ${Math.max(10, 12 * s)}px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('86', kx, by - 4); ctx.fillText('30', jx, by - 4);
+    ctx.textBaseline = 'top'; ctx.fillText('85', kx, by + bh + 4); ctx.fillText('87', jx, by + bh + 4);
+    if (on) { ctx.fillStyle = C.spring; ctx.textBaseline = 'middle'; ctx.fillText('딸깍', (kx + jx) / 2, by + 75 * s); }
+  }
+
+  // 화면에 보일 때만 애니메이션
+  const visible = new Set();
+  const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? visible.add(e.target) : visible.delete(e.target)));
+  [pv1, pv2, pv3, pv4, pv5, pvG, pvC, pvR].forEach(c => io.observe(c));
+
+  let first = true;   // 첫 프레임은 화면 밖 카드도 그려 둠 (정지 상태로도 완성된 화면)
+  function loop(now) {
+    const t = now / 1000;
+    const all = first || reduce; first = false;
+    if (visible.has(pv1) || all || pv1._dirty) { drawPendulum(t); pv1._dirty = false; }
+    if (visible.has(pv2) || all || pv2._dirty) { drawSuspension(t); pv2._dirty = false; }
+    if (visible.has(pv3) || all || pv3._dirty) { drawBrake(t); pv3._dirty = false; }
+    if (visible.has(pv4) || all || pv4._dirty) { drawEngine(t); pv4._dirty = false; }
+    if (visible.has(pv5) || all || pv5._dirty) { drawSteering(t); pv5._dirty = false; }
+    if (visible.has(pvG) || all || pvG._dirty) { drawGear(t); pvG._dirty = false; }
+    if (visible.has(pvC) || all || pvC._dirty) { drawCircuit(t); pvC._dirty = false; }
+    if (visible.has(pvR) || all || pvR._dirty) { drawRelay(t); pvR._dirty = false; }
+    if (!reduce) requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

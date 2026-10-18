@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>단진자 3D</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <style>
+    :root {
+      /* Apple iOS / visionOS Light Theme (기본) */
+      --bg-canvas: #f2f2f7;
+      --glass-bg: rgba(255, 255, 255, 0.72);
+      --glass-border: rgba(255, 255, 255, 0.45);
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+      --card-bg: rgba(255, 255, 255, 0.55);
+      --card-border: rgba(0, 0, 0, 0.04);
+      --system-blue: #007aff;
+      --system-red: #ff3b30;
+      --system-green: #34c759;
+      --system-orange: #ff9500;
+      --label-primary: #1c1c1e;
+      --label-secondary: #8e8e93;
+      --label-tertiary: #c7c7cc;
+      --sheet-bg: rgba(242, 242, 247, 0.88);
+      --track-bg: rgba(120, 120, 128, 0.16);
+      --knob-bg: #ffffff;
+      --dock-indicator: rgba(0, 0, 0, 0.04);
+      /* 모션 토큰: 모든 전환이 같은 리듬을 쓰도록 한 곳에서 관리 */
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body.dark-theme {
+      /* Apple iOS / visionOS Dark Theme */
+      --bg-canvas: #000000;
+      --glass-bg: rgba(28, 28, 30, 0.75);
+      --glass-border: rgba(255, 255, 255, 0.15);
+      --glass-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+      --card-bg: rgba(44, 44, 46, 0.6);
+      --card-border: rgba(255, 255, 255, 0.06);
+      --system-blue: #0a84ff;
+      --system-red: #ff453a;
+      --system-green: #30d158;
+      --system-orange: #ff9f0a;
+      --label-primary: #ffffff;
+      --label-secondary: #8e8e93;
+      --label-tertiary: #48484a;
+      --sheet-bg: rgba(28, 28, 30, 0.88);
+      --track-bg: rgba(120, 120, 128, 0.32);
+      --knob-bg: #ffffff;
+      --dock-indicator: rgba(255, 255, 255, 0.08);
+    }
+
+    html { height: 100%; }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--label-primary);
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      transition: background-color 0.4s var(--ease-out), color 0.4s ease;
+      letter-spacing: -0.015em;
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      touch-action: none;
+    }
+
+    /* 키보드 사용자를 위한 포커스 링 (마우스 클릭 시에는 표시 안 함) */
+    button:focus-visible,
+    input[type=range]:focus-visible {
+      outline: 2px solid var(--system-blue);
+      outline-offset: 2px;
+    }
+
+    /* visionOS / iOS 18 스타일 플로팅 글래스 상단 아일랜드 */
+    .top-bar {
+      position: absolute;
+      top: env(safe-area-inset-top, 14px);
+      margin-top: 10px;
+      left: 14px;
+      right: 14px;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .island-capsule {
+      pointer-events: auto;
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px) saturate(190%);
+      -webkit-backdrop-filter: blur(24px) saturate(190%);
+      border: 1px solid var(--glass-border);
+      padding: 6px 14px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--glass-shadow);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .app-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #007aff, #5856d6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 0.72rem;
+      box-shadow: 0 2px 6px rgba(0, 122, 255, 0.35);
+    }
+
+    .island-capsule h1 {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--label-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .island-capsule .subtag {
+      font-size: 0.62rem;
+      font-weight: 600;
+      background: rgba(0, 122, 255, 0.12);
+      color: var(--system-blue);
+      padding: 2px 7px;
+      border-radius: 999px;
+    }
+
+    /* 우측 HUD 모듈 & 테마 버튼 */
+    .hud-cluster {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-circle {
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px) saturate(190%);
+      -webkit-backdrop-filter: blur(24px) saturate(190%);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: var(--glass-shadow);
+      transition: transform 0.18s var(--ease-out), background-color 0.2s;
+    }
+    .btn-circle:active {
+      transform: scale(0.92);
+    }
+    .hud-metrics {
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px) saturate(190%);
+      -webkit-backdrop-filter: blur(24px) saturate(190%);
+      border: 1px solid var(--glass-border);
+      border-radius: 18px;
+      padding: 5px 10px;
+      display: flex;
+      gap: 12px;
+      box-shadow: var(--glass-shadow);
+    }
+    .metric-pill {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 36px;
+    }
+    .metric-pill .caption {
+      font-size: 0.58rem;
+      font-weight: 500;
+      color: var(--label-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .metric-pill .digit {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--label-primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* visionOS 플로팅 탭바 (하단 도크) */
+    .bottom-dock {
+      position: absolute;
+      bottom: calc(env(safe-area-inset-bottom, 12px) + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      width: calc(100% - 28px);
+      max-width: 440px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(28px) saturate(200%);
+      -webkit-backdrop-filter: blur(28px) saturate(200%);
+      border: 1px solid var(--glass-border);
+      border-radius: 26px;
+      padding: 6px 8px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dock-item {
+      flex: 1;
+      height: 48px;
+      background: transparent;
+      border: none;
+      color: var(--label-secondary);
+      font-size: 0.72rem;
+      font-weight: 500;
+      border-radius: 18px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: color 0.2s var(--ease-out), background-color 0.2s var(--ease-out),
+                  transform 0.18s var(--ease-out), box-shadow 0.2s var(--ease-out);
+    }
+    /* 모든 도크 버튼에 동일한 눌림 피드백 (원본은 재생 버튼에만 있었음) */
+    .dock-item:active {
+      transform: scale(0.95);
+    }
+    .dock-item.active {
+      color: var(--system-blue);
+      background: var(--dock-indicator);
+      font-weight: 600;
+    }
+    .dock-item-play {
+      background: var(--system-blue);
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 4px 14px rgba(0, 122, 255, 0.35);
+    }
+    /* 일시정지 상태: 인라인 스타일 대신 클래스로 전환 → 테마와 transition이 그대로 적용됨 */
+    .dock-item-play.paused {
+      background: rgba(120, 120, 128, 0.2);
+      color: var(--label-primary);
+      box-shadow: none;
+    }
+
+    /* iOS 18 Sheet 컴포넌트 */
+    .sheet-scrim {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 25;
+      background: rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s var(--ease-out);
+    }
+    .sheet-scrim.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .apple-sheet {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      max-height: 82vh;
+      background: var(--sheet-bg);
+      backdrop-filter: blur(36px) saturate(210%);
+      -webkit-backdrop-filter: blur(36px) saturate(210%);
+      border-top: 1px solid var(--glass-border);
+      border-radius: 32px 32px 0 0;
+      z-index: 26;
+      box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.16);
+      padding: 12px 20px 92px;
+      transform: translateY(100%);
+      /* 닫힌 시트는 탭 포커스에서 제외 (transition 끝난 뒤 숨김) */
+      visibility: hidden;
+      transition: transform 0.36s var(--ease-out), visibility 0s linear 0.36s;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .apple-sheet.visible {
+      transform: translateY(0);
+      visibility: visible;
+      transition: transform 0.36s var(--ease-out), visibility 0s;
+    }
+    .sheet-grabber {
+      width: 36px;
+      height: 5px;
+      background: var(--label-tertiary);
+      border-radius: 3px;
+      margin: 2px auto 14px;
+    }
+    .sheet-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .sheet-headline {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: var(--label-primary);
+    }
+    .sheet-close-btn {
+      background: rgba(120, 120, 128, 0.16);
+      border: none;
+      color: var(--label-secondary);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.18s var(--ease-out);
+    }
+    .sheet-close-btn:active {
+      transform: scale(0.9);
+    }
+
+    /* iOS Inset Grouped 스타일 리스트 카드 */
+    .inset-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+    .inset-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .inset-title {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--label-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .inset-badge {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--system-blue);
+      font-variant-numeric: tabular-nums;
+      background: rgba(0, 122, 255, 0.1);
+      padding: 3px 8px;
+      border-radius: 8px;
+    }
+
+    /* iOS 감성 커스텀 슬라이더 */
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 28px;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 6px;
+      background: var(--track-bg);
+      border-radius: 3px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 24px;
+      width: 24px;
+      border-radius: 50%;
+      background: var(--knob-bg);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 0 1px rgba(0, 0, 0, 0.2);
+      margin-top: -9px;
+      transition: transform 0.15s var(--ease-out);
+    }
+    input[type=range]:active::-webkit-slider-thumb {
+      transform: scale(1.18);
+    }
+    /* Firefox도 같은 모양이 나오도록 (원본은 WebKit 전용) */
+    input[type=range]::-moz-range-track {
+      height: 6px;
+      background: var(--track-bg);
+      border-radius: 3px;
+    }
+    input[type=range]::-moz-range-thumb {
+      height: 24px;
+      width: 24px;
+      border: none;
+      border-radius: 50%;
+      background: var(--knob-bg);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 0 1px rgba(0, 0, 0, 0.2);
+      transition: transform 0.15s var(--ease-out);
+    }
+    input[type=range]:active::-moz-range-thumb {
+      transform: scale(1.18);
+    }
+
+    /* iOS 세그먼트 컨트롤러 (천체 선택) */
+    .segmented-control {
+      display: flex;
+      background: var(--track-bg);
+      padding: 2px;
+      border-radius: 12px;
+      gap: 2px;
+      margin-top: 8px;
+    }
+    .seg-item {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 7px 0;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--label-primary);
+      cursor: pointer;
+      transition: background-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+    }
+    .seg-item.active {
+      background: var(--knob-bg);
+      color: #1c1c1e;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    }
+
+    /* 메트릭 듀오 카드 */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .data-tile {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 12px 14px;
+    }
+    .tile-subtitle {
+      font-size: 0.72rem;
+      color: var(--label-secondary);
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .tile-value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--label-primary);
+      font-variant-numeric: tabular-nums;
+    }
+    .tile-unit {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--label-secondary);
+      margin-left: 2px;
+    }
+
+    /* iOS 캡슐형 프로그레스 바 */
+    .energy-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--label-primary);
+    }
+    .energy-item {
+      margin-bottom: 12px;
+    }
+    .energy-item:last-child {
+      margin-bottom: 0;
+    }
+    .energy-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .energy-meta .num {
+      font-variant-numeric: tabular-nums;
+    }
+    .capsule-track {
+      width: 100%;
+      height: 8px;
+      background: var(--track-bg);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    /* width 대신 transform: scaleX → 레이아웃 재계산 없이 GPU에서 처리 (매 프레임 갱신되는 바에 유리) */
+    .capsule-fill {
+      height: 100%;
+      width: 100%;
+      border-radius: 999px;
+      transform-origin: left center;
+      transform: scaleX(0);
+    }
+    .ek { color: var(--system-blue); }
+    .ep { color: var(--system-red); }
+    .et { color: var(--system-green); }
+    .capsule-fill.ek { background: var(--system-blue); }
+    .capsule-fill.ep { background: var(--system-red); }
+    .capsule-fill.et { background: var(--system-green); }
+
+    /* iPad / Mac 가로 대응 (플로팅 사이드 패널) */
+    @media (min-width: 840px) {
+      .top-bar { max-width: 1200px; margin: 16px auto 0; left: 24px; right: 24px; }
+      .bottom-dock { left: 24px; transform: none; width: 360px; bottom: 24px; }
+      .apple-sheet {
+        position: absolute;
+        top: 86px;
+        left: 24px;
+        bottom: 104px;
+        width: 380px;
+        max-height: none;
+        border-radius: 26px;
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--glass-shadow);
+        transform: translateX(-120%);
+        padding: 20px;
+      }
+      .apple-sheet.visible { transform: translateX(0); }
+      .sheet-scrim { display: none; }
+    }
+
+    /* 좁은 폰(iPhone SE 등)에서 상단 HUD가 제목과 겹치지 않게 */
+    @media (max-width: 380px) {
+      .island-capsule .subtag { display: none; }
+      .hud-metrics { gap: 8px; padding: 5px 8px; }
+    }
+
+    /* 시스템 '동작 줄이기' 설정 존중: UI 전환만 즉시 처리 (시뮬레이션 자체는 유지) */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+<!-- 3D 인터랙티브 무대 -->
+  <div id="canvas-container"></div>
+
+  <!-- 상단 Dynamic Island 스타일 헤더 -->
+  <header class="top-bar">
+    <div class="island-capsule">
+      <div class="app-icon" aria-hidden="true">⏱</div>
+      <h1>단진자 3D</h1>
+      <span class="subtag">v2.1</span>
+    </div>
+
+    <!-- 우측 테마 토글 및 SF 폰트 HUD -->
+    <div class="hud-cluster">
+      <a class="btn-circle" id="homeLink" href="lab.html" aria-label="물리 시스템 알기로 이동" style="text-decoration:none;color:var(--label-primary);">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+      </a>
+      <button class="btn-circle" id="themeToggleBtn" aria-label="화면 테마 변경">
+        <span id="themeSymbol" aria-hidden="true">🌙</span>
+      </button>
+
+      <div class="hud-metrics" aria-live="off">
+        <div class="metric-pill">
+          <span class="caption">각도</span>
+          <span class="digit" id="hudAngle">0.0°</span>
+        </div>
+        <div class="metric-pill">
+          <span class="caption">주기</span>
+          <span class="digit" id="hudPeriod">1.42s</span>
+        </div>
+        <div class="metric-pill">
+          <span class="caption">속도</span>
+          <span class="digit" id="hudVel">0.00</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- visionOS 감성 플로팅 탭바 (하단 도크) -->
+  <nav class="bottom-dock" aria-label="시뮬레이션 제어">
+    <button class="dock-item dock-item-play" id="btnPlayPause" aria-pressed="false">
+      <span id="playIcon" aria-hidden="true">⏸</span>
+      <span id="playText">일시정지</span>
+    </button>
+    <button class="dock-item" id="tabControls" data-target="sheetControls" aria-expanded="false" aria-controls="sheetControls">
+      <span aria-hidden="true">🎛️</span>
+      <span>물리 조절</span>
+    </button>
+    <button class="dock-item" id="tabMetrics" data-target="sheetMetrics" aria-expanded="false" aria-controls="sheetMetrics">
+      <span aria-hidden="true">📈</span>
+      <span>에너지 분석</span>
+    </button>
+    <button class="dock-item" id="btnQuickReset">
+      <span aria-hidden="true">↺</span>
+      <span>초기화</span>
+    </button>
+    <button class="dock-item" id="btnCamReset">
+      <span aria-hidden="true">⊙</span>
+      <span>시점정렬</span>
+    </button>
+  </nav>
+
+  <!-- 딤 배경 오버레이 -->
+  <div class="sheet-scrim" id="sheetScrim"></div>
+
+  <!-- [Sheet 1] 물리 설정 (iOS Inset Grouped) -->
+  <section class="apple-sheet" id="sheetControls" aria-labelledby="sheetControlsTitle">
+    <div class="sheet-grabber"></div>
+    <div class="sheet-nav">
+      <h2 class="sheet-headline" id="sheetControlsTitle">물리 파라미터 조작</h2>
+      <button class="sheet-close-btn" data-dismiss aria-label="닫기">✕</button>
+    </div>
+
+    <!-- 실의 길이 -->
+    <div class="inset-card">
+      <div class="inset-header">
+        <label class="inset-title" for="sliderLen">실의 길이 (Length)</label>
+        <span class="inset-badge"><span id="txtLen">50</span> cm</span>
+      </div>
+      <input type="range" id="sliderLen" min="5" max="150" step="1" value="50">
+    </div>
+
+    <!-- 시뮬레이션 배속 -->
+    <div class="inset-card">
+      <div class="inset-header">
+        <label class="inset-title" for="sliderSpeed">시뮬레이션 재생 배속</label>
+        <span class="inset-badge"><span id="txtSpeed">1.0</span>x</span>
+      </div>
+      <input type="range" id="sliderSpeed" min="0.1" max="3.0" step="0.1" value="1.0">
+    </div>
+
+    <!-- 시작 각도 -->
+    <div class="inset-card">
+      <div class="inset-header">
+        <label class="inset-title" for="sliderAngleInit">시작 진동 각도 (θ)</label>
+        <span class="inset-badge"><span id="txtAngleInit">45</span>°</span>
+      </div>
+      <input type="range" id="sliderAngleInit" min="-90" max="90" step="1" value="45">
+    </div>
+
+    <!-- 추 질량 -->
+    <div class="inset-card">
+      <div class="inset-header">
+        <label class="inset-title" for="sliderMass">추의 질량 (Mass)</label>
+        <span class="inset-badge"><span id="txtMass">1.0</span> kg</span>
+      </div>
+      <input type="range" id="sliderMass" min="0.2" max="5.0" step="0.1" value="1.0">
+    </div>
+
+    <!-- 공기 저항 감쇠 -->
+    <div class="inset-card">
+      <div class="inset-header">
+        <label class="inset-title" for="sliderDamping">공기 저항 (Damping)</label>
+        <span class="inset-badge"><span id="txtDamping">0.05</span></span>
+      </div>
+      <input type="range" id="sliderDamping" min="0.0" max="0.4" step="0.01" value="0.05">
+    </div>
+
+    <!-- 중력가속도 세그먼트 컨트롤 -->
+    <div class="inset-card">
+      <div class="inset-header">
+        <label class="inset-title" for="sliderGrav">중력 가속도 (Gravity)</label>
+        <span class="inset-badge"><span id="txtGrav">9.80</span> m/s²</span>
+      </div>
+      <input type="range" id="sliderGrav" min="0" max="30" step="0.01" value="9.8">
+
+      <div class="segmented-control" role="group" aria-label="천체 프리셋">
+        <button class="seg-item active" data-g="9.8" aria-pressed="true">지구</button>
+        <button class="seg-item" data-g="1.62" aria-pressed="false">달</button>
+        <button class="seg-item" data-g="3.71" aria-pressed="false">화성</button>
+        <button class="seg-item" data-g="24.79" aria-pressed="false">목성</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- [Sheet 2] 실시간 데이터 & 에너지 보존 -->
+  <section class="apple-sheet" id="sheetMetrics" aria-labelledby="sheetMetricsTitle">
+    <div class="sheet-grabber"></div>
+    <div class="sheet-nav">
+      <h2 class="sheet-headline" id="sheetMetricsTitle">실시간 물리 분석</h2>
+      <button class="sheet-close-btn" data-dismiss aria-label="닫기">✕</button>
+    </div>
+
+    <div class="grid-2">
+      <div class="data-tile">
+        <div class="tile-subtitle">진동 각도</div>
+        <div class="tile-value"><span id="mAngle">0.0</span><span class="tile-unit">°</span></div>
+      </div>
+      <div class="data-tile">
+        <div class="tile-subtitle">이론 주기 (T, 소각 근사)</div>
+        <div class="tile-value"><span id="mPeriod">1.42</span><span class="tile-unit">s</span></div>
+      </div>
+      <div class="data-tile">
+        <div class="tile-subtitle">현재 선속도</div>
+        <div class="tile-value"><span id="mVel">0.00</span><span class="tile-unit">m/s</span></div>
+      </div>
+      <div class="data-tile">
+        <div class="tile-subtitle">각속도 (ω)</div>
+        <div class="tile-value"><span id="mOmega">0.00</span><span class="tile-unit">rad/s</span></div>
+      </div>
+    </div>
+
+    <div class="inset-card">
+      <div class="energy-title">역학적 에너지 보존</div>
+
+      <div class="energy-item">
+        <div class="energy-meta">
+          <span class="ek">운동 에너지 (Ek)</span>
+          <span class="num" id="mEkVal">0.00 J</span>
+        </div>
+        <div class="capsule-track"><div class="capsule-fill ek" id="mEkBar"></div></div>
+      </div>
+
+      <div class="energy-item">
+        <div class="energy-meta">
+          <span class="ep">위치 에너지 (Ep)</span>
+          <span class="num" id="mEpVal">0.00 J</span>
+        </div>
+        <div class="capsule-track"><div class="capsule-fill ep" id="mEpBar"></div></div>
+      </div>
+
+      <div class="energy-item">
+        <div class="energy-meta">
+          <span class="et">총 역학적 에너지 (Total)</span>
+          <span class="num" id="mTotalVal">0.00 J</span>
+        </div>
+        <div class="capsule-track"><div class="capsule-fill et" id="mTotalBar"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // --- 1. Three.js 엔진 세팅 ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+
+    const PALETTE = {
+      light: {
+        bg: 0xf2f2f7,
+        fog: 0xf2f2f7,
+        grid1: 0x007aff,
+        grid2: 0xd1d1d6,
+        floor: 0xffffff,
+        string: 0x3a3a3c,
+        trail: 0x007aff,
+        ambient: 1.0,
+        symbol: '🌙'
+      },
+      dark: {
+        bg: 0x000000,
+        fog: 0x000000,
+        grid1: 0x0a84ff,
+        grid2: 0x1c1c1e,
+        floor: 0x0a0a0c,
+        string: 0x8e8e93,
+        trail: 0x0a84ff,
+        ambient: 0.65,
+        symbol: '☀️'
+      }
+    };
+
+    let activeTheme = 'light';
+    scene.background = new THREE.Color(PALETTE.light.bg);
+    scene.fog = new THREE.FogExp2(PALETTE.light.fog, 0.025);
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+    const isMobile = () => window.innerWidth < 768;
+    const homeCameraPos = () => new THREE.Vector3(0, 1.25, isMobile() ? 4.5 : 3.8);
+    const HOME_TARGET = new THREE.Vector3(0, 0.25, 0);
+    camera.position.copy(homeCameraPos());
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.target.copy(HOME_TARGET);
+    controls.maxPolarAngle = Math.PI / 2 + 0.08;
+
+    // 조명
+    const ambientLight = new THREE.AmbientLight(0xffffff, PALETTE.light.ambient);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
+    keyLight.position.set(2, 6, 3);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 1024;
+    keyLight.shadow.mapSize.height = 1024;
+    scene.add(keyLight);
+
+    const fillLight = new THREE.PointLight(0x007aff, 1.2, 8);
+    fillLight.position.set(0, 1.6, 1);
+    scene.add(fillLight);
+
+    // 바닥
+    let gridHelper = new THREE.GridHelper(10, 20, PALETTE.light.grid1, PALETTE.light.grid2);
+    gridHelper.position.y = -1.2;
+    scene.add(gridHelper);
+
+    const floorMat = new THREE.MeshStandardMaterial({ color: PALETTE.light.floor, roughness: 0.9, metalness: 0.05 });
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -1.205;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // --- 2. Apple 제품 마감 스타일의 단진자 3D 기구 ---
+    const PIVOT_Y = 1.05;
+    const pivotGroup = new THREE.Group();
+    pivotGroup.position.set(0, PIVOT_Y, 0);
+    scene.add(pivotGroup);
+
+    // 아노다이징 알루미늄 스탠드
+    const standMat = new THREE.MeshStandardMaterial({ color: 0x8e8e93, metalness: 0.85, roughness: 0.18 });
+    const standBar = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 1.2, 32), standMat);
+    standBar.rotation.z = Math.PI / 2;
+    pivotGroup.add(standBar);
+
+    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 2.3, 32), standMat);
+    pillar.position.set(0.58, -1.05, 0);
+    pillar.castShadow = true;
+    pivotGroup.add(pillar);
+
+    // 피벗 볼 베어링
+    const hinge = new THREE.Mesh(
+      new THREE.SphereGeometry(0.04, 32, 32),
+      new THREE.MeshStandardMaterial({ color: 0x007aff, metalness: 0.9, roughness: 0.1 })
+    );
+    pivotGroup.add(hinge);
+
+    const pendulumArm = new THREE.Group();
+    pivotGroup.add(pendulumArm);
+
+    // 실
+    const stringMat = new THREE.MeshBasicMaterial({ color: PALETTE.light.string });
+    const stringMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.0028, 0.0028, 1, 16), stringMat);
+    pendulumArm.add(stringMesh);
+
+    // 세라믹 글래스 마감의 추 (Bob)
+    const bobMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.08, 32, 32),
+      new THREE.MeshPhysicalMaterial({
+        color: 0xff3b30,
+        roughness: 0.1,
+        metalness: 0.2,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.05
+      })
+    );
+    bobMesh.castShadow = true;
+    pendulumArm.add(bobMesh);
+
+    // 네온 트레일 (링 버퍼 대신 시프트 방식 — 100점이라 비용 무시 가능)
+    const MAX_TRAIL = 100;
+    const trailPositions = new Float32Array(MAX_TRAIL * 3);
+    const trailGeo = new THREE.BufferGeometry();
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+    const trailMat = new THREE.LineBasicMaterial({ color: PALETTE.light.trail, transparent: true, opacity: 0.85 });
+    const trailLine = new THREE.Line(trailGeo, trailMat);
+    trailLine.frustumCulled = false; // 바운딩 스피어가 갱신되지 않아 잘려 보이는 문제 방지
+    scene.add(trailLine);
+    let trailCount = 0;
+
+    function resetTrail() {
+      trailCount = 0;
+      trailPositions.fill(0);
+      trailGeo.setDrawRange(0, 0);
+      trailGeo.attributes.position.needsUpdate = true;
+    }
+
+    function addTrailPoint(x, y, z) {
+      if (trailCount < MAX_TRAIL) {
+        trailCount++;
+      } else {
+        trailPositions.copyWithin(0, 3);
+      }
+      const i = (trailCount - 1) * 3;
+      trailPositions[i] = x;
+      trailPositions[i + 1] = y;
+      trailPositions[i + 2] = z;
+      trailGeo.setDrawRange(0, trailCount);
+      trailGeo.attributes.position.needsUpdate = true;
+    }
+
+    // --- 3. 테마 토글 (Apple Light / Dark) ---
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const themeSymbol = document.getElementById('themeSymbol');
+
+    function applyAppleTheme(mode) {
+      activeTheme = mode;
+      const t = PALETTE[mode];
+
+      document.body.classList.toggle('dark-theme', mode === 'dark');
+      themeSymbol.textContent = t.symbol;
+      themeToggleBtn.setAttribute('aria-label', mode === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환');
+
+      scene.background.setHex(t.bg);
+      scene.fog.color.setHex(t.fog);
+      floorMat.color.setHex(t.floor);
+      stringMat.color.setHex(t.string);
+      trailMat.color.setHex(t.trail);
+      ambientLight.intensity = t.ambient;
+
+      // GridHelper는 색을 바꿀 API가 없어 새로 만듦 → 이전 것은 GPU 메모리에서 해제
+      scene.remove(gridHelper);
+      gridHelper.geometry.dispose();
+      gridHelper.material.dispose();
+      gridHelper = new THREE.GridHelper(10, 20, t.grid1, t.grid2);
+      gridHelper.position.y = -1.2;
+      scene.add(gridHelper);
+    }
+
+    themeToggleBtn.addEventListener('click', () => {
+      applyAppleTheme(activeTheme === 'light' ? 'dark' : 'light');
+    });
+
+    // 첫 진입 시 OS 다크 모드 설정을 따름
+    const hostTheme = document.documentElement.getAttribute('data-theme');
+    if (hostTheme === 'dark' || (!hostTheme && window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      applyAppleTheme('dark');
+    }
+
+    // --- 4. 시뮬레이션 상태 변수 ---
+    let lengthCm = 50;
+    let lengthM = 0.5;
+    let angle = 45 * Math.PI / 180;
+    let angleVel = 0;
+    let gravity = 9.80;
+    let mass = 1.0;
+    let damping = 0.05;
+    let timeScale = 1.0;
+    let isRunning = true;
+
+    function syncPendulumModel() {
+      lengthM = lengthCm / 100;
+      stringMesh.scale.set(1, lengthM, 1);
+      stringMesh.position.set(0, -lengthM / 2, 0);
+
+      const scale = 0.75 + (mass / 5.0) * 0.55;
+      bobMesh.scale.set(scale, scale, scale);
+      bobMesh.position.set(0, -lengthM, 0);
+      resetTrail();
+    }
+    syncPendulumModel();
+
+    // --- 5. iOS Sheet & Tab Navigation ---
+    const sheetScrim = document.getElementById('sheetScrim');
+    const sheets = document.querySelectorAll('.apple-sheet');
+    const dockTabs = document.querySelectorAll('.dock-item[data-target]');
+
+    function showSheet(id) {
+      dismissSheets();
+      const target = document.getElementById(id);
+      if (!target) return;
+      target.classList.add('visible');
+      sheetScrim.classList.add('visible');
+      const activeTab = document.querySelector(`.dock-item[data-target="${id}"]`);
+      if (activeTab) {
+        activeTab.classList.add('active');
+        activeTab.setAttribute('aria-expanded', 'true');
+      }
+    }
+
+    function dismissSheets() {
+      sheets.forEach(s => s.classList.remove('visible'));
+      sheetScrim.classList.remove('visible');
+      dockTabs.forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    sheetScrim.addEventListener('click', dismissSheets);
+    document.querySelectorAll('[data-dismiss]').forEach(b => b.addEventListener('click', dismissSheets));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') dismissSheets();
+    });
+
+    dockTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const targetId = tab.dataset.target;
+        const target = document.getElementById(targetId);
+        if (target.classList.contains('visible')) {
+          dismissSheets();
+        } else {
+          showSheet(targetId);
+        }
+      });
+    });
+
+    // 컨트롤 이벤트 바인딩
+    const sliderLen = document.getElementById('sliderLen');
+    const txtLen = document.getElementById('txtLen');
+    sliderLen.addEventListener('input', (e) => {
+      lengthCm = parseFloat(e.target.value);
+      txtLen.textContent = lengthCm;
+      syncPendulumModel();
+    });
+
+    const sliderSpeed = document.getElementById('sliderSpeed');
+    const txtSpeed = document.getElementById('txtSpeed');
+    sliderSpeed.addEventListener('input', (e) => {
+      timeScale = parseFloat(e.target.value);
+      txtSpeed.textContent = timeScale.toFixed(1);
+    });
+
+    const sliderAngleInit = document.getElementById('sliderAngleInit');
+    const txtAngleInit = document.getElementById('txtAngleInit');
+    sliderAngleInit.addEventListener('input', (e) => {
+      const deg = parseFloat(e.target.value);
+      txtAngleInit.textContent = deg;
+      angle = deg * Math.PI / 180;
+      angleVel = 0;
+      resetTrail();
+    });
+
+    const sliderMass = document.getElementById('sliderMass');
+    const txtMass = document.getElementById('txtMass');
+    sliderMass.addEventListener('input', (e) => {
+      mass = parseFloat(e.target.value);
+      txtMass.textContent = mass.toFixed(1);
+      syncPendulumModel();
+    });
+
+    const sliderDamping = document.getElementById('sliderDamping');
+    const txtDamping = document.getElementById('txtDamping');
+    sliderDamping.addEventListener('input', (e) => {
+      damping = parseFloat(e.target.value);
+      txtDamping.textContent = damping.toFixed(2);
+    });
+
+    const sliderGrav = document.getElementById('sliderGrav');
+    const txtGrav = document.getElementById('txtGrav');
+    const segItems = document.querySelectorAll('.seg-item');
+
+    // 슬라이더와 프리셋이 같은 표시 형식(소수 2자리)을 쓰고,
+    // 슬라이더 값이 프리셋과 같아지면 해당 세그먼트가 다시 켜지도록 한 곳에서 동기화
+    function setGravity(g) {
+      gravity = g;
+      txtGrav.textContent = g.toFixed(2);
+      segItems.forEach(b => {
+        const on = Math.abs(parseFloat(b.dataset.g) - g) < 0.005;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', String(on));
+      });
+    }
+
+    sliderGrav.addEventListener('input', (e) => setGravity(parseFloat(e.target.value)));
+
+    segItems.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const g = parseFloat(btn.dataset.g);
+        sliderGrav.value = g;
+        setGravity(g);
+      });
+    });
+
+    // 하단 버튼
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const playIcon = document.getElementById('playIcon');
+    const playText = document.getElementById('playText');
+    btnPlayPause.addEventListener('click', () => {
+      isRunning = !isRunning;
+      playIcon.textContent = isRunning ? '⏸' : '▶';
+      playText.textContent = isRunning ? '일시정지' : '재생';
+      btnPlayPause.classList.toggle('paused', !isRunning);
+      btnPlayPause.setAttribute('aria-pressed', String(!isRunning));
+    });
+
+    document.getElementById('btnQuickReset').addEventListener('click', () => {
+      const initDeg = parseFloat(sliderAngleInit.value);
+      angle = initDeg * Math.PI / 180;
+      angleVel = 0;
+      resetTrail();
+    });
+
+    // 시점 정렬: 순간이동 대신 0.6초 ease-out으로 돌아가 '어디서 어디로 왔는지'를 보여줌
+    const prefersReducedMotion = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let camTween = null;
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+    document.getElementById('btnCamReset').addEventListener('click', () => {
+      const toPos = homeCameraPos();
+      if (prefersReducedMotion) {
+        camera.position.copy(toPos);
+        controls.target.copy(HOME_TARGET);
+        return;
+      }
+      camTween = {
+        start: performance.now(),
+        duration: 600,
+        fromPos: camera.position.clone(),
+        fromTarget: controls.target.clone(),
+        toPos
+      };
+    });
+    // 사용자가 직접 드래그하면 진행 중인 카메라 애니메이션을 즉시 양보
+    controls.addEventListener('start', () => { camTween = null; });
+
+    function updateCameraTween(now) {
+      if (!camTween) return;
+      const t = Math.min((now - camTween.start) / camTween.duration, 1);
+      const k = easeOutCubic(t);
+      camera.position.lerpVectors(camTween.fromPos, camTween.toPos, k);
+      controls.target.lerpVectors(camTween.fromTarget, HOME_TARGET, k);
+      if (t >= 1) camTween = null;
+    }
+
+    // --- 6. 고정밀 서브스텝 물리 적분 (반암시적 오일러) ---
+    let lastTime = performance.now();
+
+    function updatePhysics(dt) {
+      if (!isRunning) return;
+      const effectiveDt = dt * timeScale;
+      const subSteps = 8;
+      const subDt = effectiveDt / subSteps;
+
+      for (let i = 0; i < subSteps; i++) {
+        const alpha = -(gravity / lengthM) * Math.sin(angle) - (damping / mass) * angleVel;
+        angleVel += alpha * subDt;
+        angle += angleVel * subDt;
+      }
+    }
+
+    // --- 7. 메인 렌더 및 Apple UI 계측 동기화 ---
+    const hudAngle = document.getElementById('hudAngle');
+    const hudPeriod = document.getElementById('hudPeriod');
+    const hudVel = document.getElementById('hudVel');
+
+    const mAngle = document.getElementById('mAngle');
+    const mPeriod = document.getElementById('mPeriod');
+    const mVel = document.getElementById('mVel');
+    const mOmega = document.getElementById('mOmega');
+
+    const mEkVal = document.getElementById('mEkVal');
+    const mEpVal = document.getElementById('mEpVal');
+    const mTotalVal = document.getElementById('mTotalVal');
+    const mEkBar = document.getElementById('mEkBar');
+    const mEpBar = document.getElementById('mEpBar');
+    const mTotalBar = document.getElementById('mTotalBar');
+
+    const bobWorldPos = new THREE.Vector3();
+    const setBar = (el, ratio) => {
+      el.style.transform = `scaleX(${Math.min(Math.max(ratio, 0), 1)})`;
+    };
+
+    function renderLoop(now) {
+      requestAnimationFrame(renderLoop);
+
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+
+      updatePhysics(dt);
+      updateCameraTween(now);
+
+      pendulumArm.rotation.z = angle;
+
+      if (isRunning) {
+        bobMesh.getWorldPosition(bobWorldPos);
+        addTrailPoint(bobWorldPos.x, bobWorldPos.y, bobWorldPos.z);
+      }
+
+      const deg = (angle * 180 / Math.PI).toFixed(1);
+      const v = Math.abs(angleVel * lengthM);
+      const period = gravity > 0
+        ? (2 * Math.PI * Math.sqrt(lengthM / gravity)).toFixed(2)
+        : '∞'; // 무중력이면 진동하지 않음 (원본은 0.01로 나눠 63s 같은 값이 표시됨)
+
+      const h = lengthM * (1 - Math.cos(angle));
+      const Ep = mass * gravity * h;
+      const Ek = 0.5 * mass * v * v;
+      const E_total = Ep + Ek;
+
+      hudAngle.textContent = `${deg}°`;
+      hudPeriod.textContent = `${period}s`;
+      hudVel.textContent = v.toFixed(2);
+
+      mAngle.textContent = deg;
+      mPeriod.textContent = period;
+      mVel.textContent = v.toFixed(2);
+      mOmega.textContent = angleVel.toFixed(2);
+
+      mEkVal.textContent = `${Ek.toFixed(2)} J`;
+      mEpVal.textContent = `${Ep.toFixed(2)} J`;
+      mTotalVal.textContent = `${E_total.toFixed(2)} J`;
+
+      const maxRef = Math.max(mass * gravity * lengthM * 1.5, 0.1);
+      setBar(mEkBar, Ek / maxRef);
+      setBar(mEpBar, Ep / maxRef);
+      setBar(mTotalBar, E_total / maxRef);
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    requestAnimationFrame(renderLoop);
+  </script>
+</body>
+</html>

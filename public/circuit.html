@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>전기회로 실습판</title>
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --fill: rgba(118, 118, 128, 0.12);
+    --fg: #1c1c1e;
+    --fg-2: #6e6e73;
+    --line: rgba(60, 60, 67, 0.14);
+    --accent: #007aff;
+    --accent-soft: rgba(0, 122, 255, 0.12);
+    --good: #248a3d;
+    --good-soft: rgba(52, 199, 89, 0.16);
+    --warn: #c93400;
+    --warn-soft: rgba(255, 149, 0, 0.18);
+    --bad: #d70015;
+    --bad-soft: rgba(255, 59, 48, 0.14);
+    --steel: #9aa1ab;
+    --steel-dark: #636366;
+    --metal: #c9ced6;
+    --tire: #2c2c2e;
+    --hot: #ff9500;
+    --fire: #ff3b30;
+    --fluid: #af52de;
+    --cool: #5ac8fa;
+    --knob: #ffffff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+      --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+      --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+      --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+      --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+      --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+      --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+      --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+      --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+    --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+    --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+    --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+    --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+    --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+    --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+    --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding-inline: 16px;
+    padding-block: 20px 40px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-icon { width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0; background: var(--accent); display: grid; place-items: center; }
+  .brand-icon svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  h1 { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.025em; text-wrap: balance; }
+  .sub { margin: 0; font-size: 0.82rem; color: var(--fg-2); }
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .model-tag { font-size: 0.75rem; font-weight: 600; color: var(--fg-2); background: var(--fill); padding: 4px 10px; border-radius: 999px; }
+  .home-link { color: var(--accent); background: var(--accent-soft); text-decoration: none; transition: transform 0.18s var(--ease-out); }
+  .home-link:active { transform: scale(0.95); }
+  .home-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .main { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 920px) {
+    .main { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; }
+    .side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  }
+  .col { display: grid; gap: 14px; min-width: 0; }
+
+  .panel { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: 16px; min-width: 0; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .panel-title { font-size: 0.95rem; font-weight: 650; margin: 0; }
+  .hint { font-size: 0.75rem; color: var(--fg-2); margin: 0; }
+
+  .stage { position: relative; padding: 0; overflow: hidden; }
+  .stage canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
+  @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3.2; } }
+  .stage-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-top: 1px solid var(--line); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  button { font: inherit; color: inherit; }
+  .btn {
+    border: none; cursor: pointer; border-radius: 12px; padding: 9px 14px;
+    font-size: 0.85rem; font-weight: 600; background: var(--fill); color: var(--fg);
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: transform 0.18s var(--ease-out), background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  .btn:active, .btn.is-held { transform: scale(0.95); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-hold.is-held { background: var(--hot); color: #fff; }
+  .btn svg { width: 14px; height: 14px; fill: currentColor; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .metrics { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 700px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { background: var(--surface); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); display: grid; gap: 4px; min-width: 0; align-content: start; }
+  .tile-label { font-size: 0.72rem; font-weight: 600; color: var(--fg-2); }
+  .tile-value { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.15; overflow-wrap: anywhere; }
+  .tile-unit { font-size: 0.78rem; font-weight: 500; color: var(--fg-2); margin-left: 3px; letter-spacing: 0; }
+  .chip { justify-self: start; font-size: 0.7rem; font-weight: 650; padding: 2px 8px; border-radius: 999px; background: var(--fill); color: var(--fg-2); transition: background-color 0.25s var(--ease-out), color 0.25s var(--ease-out); }
+  .chip.good { background: var(--good-soft); color: var(--good); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .chip.info { background: var(--accent-soft); color: var(--accent); }
+
+  .calc { display: grid; gap: 6px; font-size: 0.84rem; font-variant-numeric: tabular-nums; }
+  .calc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--fill); align-items: baseline; }
+  .calc-row span:first-child { color: var(--fg-2); overflow-wrap: anywhere; }
+  .calc-row b { font-weight: 700; white-space: nowrap; }
+
+  .seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--fill); border-radius: 11px; padding: 2px; }
+  .seg-thumb { position: absolute; top: 2px; bottom: 2px; left: 0; width: 0; background: var(--knob); border-radius: 9px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); transition: transform 0.32s var(--ease-out), width 0.32s var(--ease-out), opacity 0.2s; }
+  .seg button { position: relative; z-index: 1; border: none; background: transparent; cursor: pointer; padding: 7px 2px; font-size: 0.78rem; font-weight: 500; border-radius: 9px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg button[aria-pressed="true"] { font-weight: 650; color: #1c1c1e; }
+  .seg-caption { margin-top: 8px; font-size: 0.76rem; color: var(--fg-2); min-height: 1.2em; }
+
+  .field { display: grid; gap: 4px; padding-block: 10px; border-top: 1px solid var(--line); }
+  .field:first-of-type { border-top: none; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field label { font-size: 0.86rem; font-weight: 600; }
+  .field small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .badge { font-size: 0.85rem; font-weight: 650; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 26px; background: transparent; cursor: pointer; margin: 0; }
+  input[type=range]::-webkit-slider-runnable-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8.5px; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); transition: transform 0.15s var(--ease-out); }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.18); }
+  input[type=range]::-moz-range-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border: none; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); }
+
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .switch-row label { font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+  .switch-row label small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .switch { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+  .switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--fill); transition: background-color 0.25s var(--ease-out); }
+  .switch span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15); transition: transform 0.3s var(--ease-out); }
+  .switch input:checked + span { background: var(--good); }
+  .switch input.danger:checked + span { background: var(--bad); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .notes { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 760px) { .notes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .note { min-width: 0; }
+  .note h3 { font-size: 0.9rem; margin: 0 0 6px; }
+  .note p, .note li { font-size: 0.84rem; color: var(--fg-2); margin: 0; }
+  .note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .note b { color: var(--fg); font-weight: 650; }
+  .note table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .note th, .note td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .note th { color: var(--fg-2); font-weight: 600; }
+  .note td { color: var(--fg); }
+  h2.section { font-size: 1.05rem; margin: 0; letter-spacing: -0.02em; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+
+  #stage { touch-action: none; }
+  .prob-q { margin: 0; font-size: 0.95rem; font-weight: 600; line-height: 1.55; }
+  .opts { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 620px) { .opts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .opt { display: flex; align-items: center; gap: 10px; text-align: left; cursor: pointer; border: 1.5px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 14px; padding: 10px 12px; font-size: 0.9rem; font-weight: 500; min-width: 0; transition: border-color 0.2s var(--ease-out), background-color 0.2s var(--ease-out), transform 0.18s var(--ease-out); }
+  .opt:hover:not(:disabled) { border-color: var(--accent); }
+  .opt:active:not(:disabled) { transform: scale(0.98); }
+  .opt:disabled { cursor: default; }
+  .opt .no { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--fill); font-size: 0.78rem; font-weight: 700; color: var(--fg-2); }
+  .opt.correct { border-color: var(--good); background: var(--good-soft); }
+  .opt.correct .no { background: var(--good); color: #fff; }
+  .opt.wrong { border-color: var(--bad); background: var(--bad-soft); animation: shake 0.32s var(--ease-out); }
+  .opt.wrong .no { background: var(--bad); color: #fff; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 60% { transform: translateX(3px); } }
+  .prob-ex { margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--fill); font-size: 0.86rem; color: var(--fg-2); font-variant-numeric: tabular-nums; }
+  .prob-ex .ok { color: var(--good); } .prob-ex .ng { color: var(--bad); }
+  .prob-body { display: grid; gap: 12px; margin-top: 12px; }
+  input:disabled, .seg button:disabled { opacity: 0.45; cursor: not-allowed; }
+  @media (prefers-reduced-motion: reduce) { .opt.wrong { animation: none; } }
+  .meter { display: grid; gap: 2px; padding: 12px 14px; border-radius: 16px; background: var(--tire); color: #f5f5f7; box-shadow: var(--shadow); }
+  .meter-label { font-size: 0.72rem; font-weight: 600; color: #98989f; }
+  .meter-value { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: #64d2ff; line-height: 1.1; }
+  .meter-note { font-size: 0.75rem; color: #c7c7cc; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>
+      </div>
+      <div>
+        <h1>전기회로 실습판</h1>
+        <p class="sub">전구 회로를 직렬·병렬로 바꾸고, 단선과 접촉 저항 고장을 멀티미터로 찾아봅니다</p>
+      </div>
+    </div>
+    <div class="tag-row">
+      <span class="model-tag">옴의 법칙 · 전압 강하 시험</span>
+      <a class="model-tag home-link" href="lab.html">← 물리 시스템 알기</a>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="col">
+      <section class="panel stage" aria-label="회로도">
+        <canvas id="stage" role="img" aria-label="배터리, 전구, 커넥터 접촉부로 이루어진 회로와 흐르는 전류, 멀티미터 측정 위치"></canvas>
+        <div class="stage-bar">
+          <span class="hint">빨강·검정 탐침을 끌어 회로의 ○ 측정점에 꽂으세요. 점을 탭해도 탐침이 번갈아 옮겨집니다.</span>
+          <button class="btn" id="btnExample">시험 예제 불러오기</button>
+        </div>
+      </section>
+
+      <div class="metrics">
+        <div class="tile">
+          <span class="tile-label">합성 저항</span>
+          <span class="tile-value"><span id="mR">0</span><span class="tile-unit">Ω</span></span>
+          <span class="chip info" id="cR">직렬</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">전체 전류</span>
+          <span class="tile-value"><span id="mI">0</span><span class="tile-unit">A</span></span>
+          <span class="chip" id="cI">I = V ÷ R</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">전체 소비 전력</span>
+          <span class="tile-value"><span id="mP">0</span><span class="tile-unit">W</span></span>
+          <span class="chip" id="cP">P = V × I</span>
+        </div>
+        <div class="meter" aria-live="polite">
+          <span class="meter-label" id="meterLabel">멀티미터 · 빨강 − 검정</span>
+          <span class="meter-value"><span id="meterV">12.00</span> V</span>
+          <span class="meter-note" id="meterNote">배터리 전압</span>
+        </div>
+      </div>
+
+      <section class="panel" aria-label="문제 풀기">
+        <div class="panel-head">
+          <h2 class="panel-title">문제 풀기</h2>
+          <span class="hint" id="probScore" aria-live="polite">답을 고르면 바로 채점됩니다</span>
+        </div>
+        <div class="seg" id="segProb" role="group" aria-label="문제 종류">
+          <span class="seg-thumb" aria-hidden="true"></span>
+          <button data-v="calc" aria-pressed="true">계산 문제</button>
+          <button data-v="diag" aria-pressed="false">고장 진단</button>
+          <button data-v="auto" aria-pressed="false">자동차 문제</button>
+        </div>
+        <div class="prob-body">
+          <p class="prob-q" id="probQ"></p>
+          <div class="opts" id="probOpts"></div>
+          <p class="prob-ex" id="probEx" aria-live="polite" hidden></p>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="btnNew">새 문제</button>
+            <button class="btn" id="btnEnd" hidden>끝내기 (원래 회로로)</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">계산 과정</h2></div>
+        <div class="calc" id="calc"></div>
+        <p class="hint" id="exampleText" style="margin-top:10px;">예제: 12V 전원에 2Ω과 4Ω 저항을 직렬로 연결했을 때 전류와 각 저항의 전압은?</p>
+      </section>
+    </div>
+
+    <aside class="col side">
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">회로 구성</h2></div>
+        <p class="hint" id="lockNote" hidden style="margin-bottom:8px;">문제를 푸는 동안 회로 설정이 잠깁니다. 「끝내기」를 누르면 원래대로 돌아옵니다.</p>
+        <div class="seg" id="segMode" role="group" aria-label="연결 방식">
+          <span class="seg-thumb" aria-hidden="true"></span>
+          <button data-v="series" aria-pressed="true">직렬</button>
+          <button data-v="parallel" aria-pressed="false">병렬</button>
+        </div>
+        <div class="field" style="margin-top:6px;">
+          <div class="field-head"><label for="inV">전원 전압</label><span class="badge"><span id="vV">12.0</span> V</span></div>
+          <input type="range" id="inV" min="6" max="14.4" step="0.1" value="12">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inR1">전구 1 저항</label><span class="badge"><span id="vR1">6.0</span> Ω</span></div>
+          <input type="range" id="inR1" min="1" max="24" step="0.5" value="6">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inR2">전구 2 저항</label><span class="badge"><span id="vR2">6.0</span> Ω</span></div>
+          <input type="range" id="inR2" min="1" max="24" step="0.5" value="6">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="inR3">전구 3 저항</label><span class="badge"><span id="vR3">12.0</span> Ω</span></div>
+          <input type="range" id="inR3" min="1" max="24" step="0.5" value="12">
+        </div>
+        <div class="switch-row">
+          <label for="inUse3">전구 3 연결</label>
+          <div class="switch"><input type="checkbox" id="inUse3" role="switch" checked><span></span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">고장 넣기</h2></div>
+        <div class="switch-row" style="border-top:none;padding-top:0;">
+          <label for="inOpen">전구 2 단선<small>필라멘트가 끊어진 상태</small></label>
+          <div class="switch"><input type="checkbox" id="inOpen" class="danger" role="switch"><span></span></div>
+        </div>
+        <div class="field" style="margin-top:6px;">
+          <div class="field-head"><label for="inRc">커넥터 접촉 저항<small>부식·헐거움. 정상은 거의 0</small></label><span class="badge"><span id="vRc">0.00</span> Ω</span></div>
+          <input type="range" id="inRc" min="0" max="3" step="0.05" value="0">
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">멀티미터 빠른 배치</h2></div>
+        <div class="seg" id="segProbe" role="group" aria-label="측정 위치">
+          <span class="seg-thumb" aria-hidden="true"></span>
+          <button data-v="bat" aria-pressed="true">전원</button>
+          <button data-v="0" aria-pressed="false">전구1</button>
+          <button data-v="1" aria-pressed="false">전구2</button>
+          <button data-v="2" aria-pressed="false">전구3</button>
+          <button data-v="rc" aria-pressed="false">접촉부</button>
+        </div>
+        <div class="seg-caption">회로도에서 탐침을 직접 끌어 원하는 곳에 꽂을 수 있습니다. 버튼은 자주 재는 위치로 바로 옮깁니다. 표시값은 <b>빨강 전위 − 검정 전위</b>입니다.</div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2 class="section">자동차산업기사 시험 포인트</h2></div>
+    <div class="notes">
+      <div class="note">
+        <h3>옴의 법칙과 전력</h3>
+        <ul>
+          <li><b>V = I × R</b>. 전류는 전압에 비례하고 저항에 반비례한다.</li>
+          <li>전력 <b>P = V × I = I²R = V²/R</b> (W). 12V 21W 전구의 저항은 약 144 ÷ 21 ≈ 6.9Ω.</li>
+          <li>전력량 = 전력 × 시간 (Wh). 축전지 용량은 Ah(전류 × 시간)로 표시한다.</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>직렬과 병렬</h3>
+        <ul>
+          <li><b>직렬</b>: 합성 저항 = R1 + R2 + …, 전류는 어디서나 같고 전압은 저항에 비례해 나뉜다.</li>
+          <li><b>병렬</b>: 1/R = 1/R1 + 1/R2 + …, 각 가지의 전압이 같고 전류가 나뉜다. 자동차 전장품은 대부분 병렬.</li>
+          <li>키르히호프 1법칙: 한 점에 들어오는 전류의 합 = 나가는 전류의 합. 2법칙: 닫힌 회로에서 기전력의 합 = 전압 강하의 합.</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>전압 강하 시험과 단선 진단</h3>
+        <ul>
+          <li>회로가 작동하는 상태(전류가 흐를 때)에서 배선·커넥터 양 끝의 전압을 잰다. 정상 접점은 강하가 <b>매우 작다</b>(대략 0.1~0.2V 이하).</li>
+          <li>접촉 저항이 크면 그곳에서 전압이 빠져 전구가 어두워진다.</li>
+          <li>직렬 회로에서 단선된 부품 양 끝을 재면 <b>전원 전압이 그대로</b> 나온다. 전류가 0이라 다른 곳에서는 강하가 없기 때문이다.</li>
+          <li>퓨즈는 회로에 <b>직렬</b>로 연결해 과전류를 차단한다.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ---------- 공통: 테마 토큰, 캔버스, 세그먼트, 길게 누르기 ----------
+  const $ = id => document.getElementById(id);
+  const C = {};
+  const TOKEN_NAMES = ['bg', 'surface', 'fill', 'fg', 'fg-2', 'line', 'accent', 'good', 'warn', 'bad', 'steel', 'steel-dark', 'metal', 'tire', 'hot', 'fire', 'fluid', 'cool', 'knob'];
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    TOKEN_NAMES.forEach(t => { C[t] = cs.getPropertyValue('--' + t).trim(); });
+    C.font = getComputedStyle(document.body).fontFamily;
+  }
+  readTokens();
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTokens);
+  new MutationObserver(readTokens).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+  const REDUCE = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  function fitCanvas(cv) {
+    const ctx = cv.getContext('2d');
+    const fit = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const r = cv.getBoundingClientRect();
+      cv.width = Math.round(r.width * dpr);
+      cv.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cv._w = r.width; cv._h = r.height;
+    };
+    new ResizeObserver(fit).observe(cv);
+    fit();
+    return ctx;
+  }
+
+  function setChip(el, text, tone) {
+    el.textContent = text;
+    el.className = 'chip' + (tone ? ' ' + tone : '');
+  }
+
+  // 선택 표시가 미끄러져 이동하는 세그먼트 컨트롤
+  function initSeg(root, onPick) {
+    const thumb = root.querySelector('.seg-thumb');
+    const btns = [...root.querySelectorAll('button')];
+    function place(animate) {
+      const on = btns.find(b => b.getAttribute('aria-pressed') === 'true');
+      if (!animate) thumb.style.transition = 'none';
+      if (on) {
+        thumb.style.opacity = 1;
+        thumb.style.width = on.offsetWidth + 'px';
+        thumb.style.transform = `translateX(${on.offsetLeft}px)`;
+      } else {
+        thumb.style.opacity = 0;
+      }
+      if (!animate) { void thumb.offsetWidth; thumb.style.transition = ''; }
+    }
+    function select(v) {
+      btns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+      place(true);
+    }
+    btns.forEach(b => b.addEventListener('click', () => { select(b.dataset.v); onPick(b.dataset.v); }));
+    new ResizeObserver(() => place(false)).observe(root);
+    return { select, clear: () => select(null) };
+  }
+
+  // 누르고 있는 동안 on, 떼면 off (마우스·터치·키보드)
+  function holdButton(btn, onChange) {
+    const on = e => { if (e) e.preventDefault(); btn.classList.add('is-held'); onChange(true); };
+    const off = () => { if (!btn.classList.contains('is-held')) return; btn.classList.remove('is-held'); onChange(false); };
+    btn.addEventListener('pointerdown', e => { btn.setPointerCapture(e.pointerId); on(e); });
+    btn.addEventListener('pointerup', off);
+    btn.addEventListener('pointercancel', off);
+    btn.addEventListener('lostpointercapture', off);
+    btn.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) on(e); });
+    btn.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') off(); });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const DEG = Math.PI / 180;
+
+
+  const P = { mode: 'series', V: 12, R: [6, 6, 12], use3: true, open2: false, Rc: 0 };
+  let Q = null;   // 진행 중인 문제 (아래 '문제 풀기')
+  const isDiag = () => Q && Q.type === 'diag';
+  const RcEff = () => P.Rc + (isDiag() ? Q.rc : 0);                       // 숨은 접촉 저항 포함
+  const masked = () => Q && !Q.answered;                                  // 답 고르기 전
+  const maskNums = () => masked() && (Q.type === 'calc' || Q.mask);      // 계산·회로형 문제는 숫자까지 가림
+
+  // ---------- 회로 계산 ----------
+  function solve() {
+    const n = P.use3 ? 3 : 2;
+    const loads = P.R.slice(0, n).map((r, i) => ({ r, open: (i === 1 && P.open2) || (isDiag() && Q.open === i) }));
+    let Rt, I, branch = [], drops = [], vc;
+    if (P.mode === 'series') {
+      const anyOpen = loads.some(l => l.open);
+      Rt = anyOpen ? Infinity : loads.reduce((s, l) => s + l.r, 0) + RcEff();
+      I = anyOpen ? 0 : P.V / Rt;
+      // 단선이면 끊어진 부품 양 끝에 전원 전압이 걸림
+      drops = loads.map(l => l.open ? P.V : I * l.r);
+      branch = loads.map(() => I);
+      vc = I * RcEff();
+    } else {
+      const g = loads.reduce((s, l) => s + (l.open ? 0 : 1 / l.r), 0);
+      const Rp = g > 0 ? 1 / g : Infinity;
+      Rt = Rp + RcEff();
+      I = isFinite(Rt) ? P.V / Rt : 0;
+      const Vp = isFinite(Rp) ? I * Rp : P.V;
+      drops = loads.map(() => Vp);
+      branch = loads.map(l => l.open ? 0 : Vp / l.r);
+      vc = I * RcEff();
+    }
+    const power = loads.map((l, i) => l.open ? 0 : drops[i] * branch[i]);
+    return { n, loads, Rt, I, branch, drops, vc, power, Ptot: P.V * I };
+  }
+
+  const f = (v, d = 2) => isFinite(v) ? v.toFixed(d) : '∞';
+
+  function updateText() {
+    const s = solve();
+    $('vV').textContent = P.V.toFixed(1);
+    P.R.forEach((r, i) => { $('vR' + (i + 1)).textContent = r.toFixed(1); });
+    $('vRc').textContent = P.Rc.toFixed(2);
+    const hide = maskNums();
+    $('mR').textContent = hide ? '?' : f(s.Rt);
+    setChip($('cR'), P.mode === 'series' ? '직렬' : '병렬', 'info');
+    $('mI').textContent = hide ? '?' : f(s.I);
+    setChip($('cI'), s.I === 0 ? '전류 없음 · 회로 끊김' : 'I = V ÷ R', s.I === 0 ? 'bad' : '');
+    $('mP').textContent = hide ? '?' : f(s.Ptot, 1);
+    if (hide) setChip($('cI'), 'I = V ÷ R', '');
+    setChip($('cP'), !masked() && RcEff() > 0.001 ? `접촉부 손실 ${f(s.vc * s.I, 1)}W` : 'P = V × I', !masked() && RcEff() > 0.2 ? 'warn' : '');
+
+    // 계산 과정
+    const rows = [];
+    if (P.mode === 'series') {
+      const parts = s.loads.map(l => l.open ? '∞(단선)' : +l.r.toFixed(2)).join(' + ') + (RcEff() > 0 ? ` + ${RcEff()}` : '');
+      rows.push([`① 합성 저항 = ${parts}`, `${f(s.Rt)} Ω`]);
+      rows.push([`② 전류 = ${P.V.toFixed(1)} ÷ ${f(s.Rt)}`, `${f(s.I)} A`]);
+      s.loads.forEach((l, i) => rows.push([`③ 전구${i + 1} 전압 = ${l.open ? '단선 → 전원 전압' : `${f(s.I)} × ${+l.r.toFixed(2)}`}`, `${f(s.drops[i])} V`]));
+    } else {
+      const inv = s.loads.map(l => l.open ? '0(단선)' : `1/${+l.r.toFixed(2)}`).join(' + ');
+      const Rp = isFinite(s.Rt) ? s.Rt - RcEff() : Infinity;
+      rows.push([`① 병렬 합성 1/R = ${inv}`, `${f(Rp)} Ω`]);
+      if (RcEff() > 0) rows.push([`  + 접촉 저항 ${RcEff()} (직렬)`, `${f(s.Rt)} Ω`]);
+      rows.push([`② 전체 전류 = ${P.V.toFixed(1)} ÷ ${f(s.Rt)}`, `${f(s.I)} A`]);
+      s.loads.forEach((l, i) => rows.push([`③ 전구${i + 1} 전류 = ${f(s.drops[i])}V ÷ ${l.open ? '∞' : +l.r.toFixed(2)}`, `${f(s.branch[i])} A`]));
+    }
+    rows.push([`④ 전력 = ${P.V.toFixed(1)} × ${f(s.I)}`, `${f(s.Ptot, 1)} W`]);
+    $('calc').innerHTML = masked()
+      ? '<div class="calc-row"><span>문제를 풀고 나면 계산 과정이 열립니다</span><b>?</b></div>'
+      : rows.map(([a, b]) => `<div class="calc-row"><span>${a}</span><b>${b}</b></div>`).join('');
+    buildSegments();
+    updateMeter();
+  }
+
+  const modeSeg = initSeg($('segMode'), v => { P.mode = v; updateText(); });
+  const probeSeg = initSeg($('segProbe'), v => { setPreset(v); });
+  $('inV').addEventListener('input', e => { P.V = parseFloat(e.target.value); updateText(); });
+  [0, 1, 2].forEach(i => $('inR' + (i + 1)).addEventListener('input', e => { P.R[i] = parseFloat(e.target.value); updateText(); }));
+  $('inUse3').addEventListener('change', e => { P.use3 = e.target.checked; updateText(); });
+  $('inOpen').addEventListener('change', e => { P.open2 = e.target.checked; updateText(); });
+  $('inRc').addEventListener('input', e => { P.Rc = parseFloat(e.target.value); updateText(); });
+
+  function loadExample() {
+    Object.assign(P, { mode: 'series', V: 12, R: [2, 4, P.R[2]], use3: false, open2: false, Rc: 0 });
+    modeSeg.select('series'); probeSeg.select('1');
+    $('inV').value = 12; $('inR1').value = 2; $('inR2').value = 4; $('inUse3').checked = false; $('inOpen').checked = false; $('inRc').value = 0;
+    updateText();
+    setPreset('1');
+    $('exampleText').textContent = '예제 풀이: 합성 저항 2 + 4 = 6Ω, 전류 12 ÷ 6 = 2A, 2Ω 양단 2 × 2 = 4V, 4Ω 양단 2 × 4 = 8V (합 12V = 전원 전압, 키르히호프 2법칙).';
+  }
+  $('btnExample').addEventListener('click', loadExample);
+
+  // ---------- 회로도 ----------
+  const stage = $('stage'), ctx = fitCanvas(stage);
+  let G = null;           // 화면 좌표 (크기 바뀌면 다시 계산)
+  let segs = [];          // 전류 점 애니메이션 구간 {a, b, i, phase}
+
+  function layout() {
+    const W = stage._w, H = stage._h;
+    const L = W * 0.12, R = W * 0.9, T = H * 0.24, B = H * 0.8;
+    const s = solve();
+    const xs = [];
+    for (let k = 0; k < s.n; k++) xs.push(L + (R - L) * (0.3 + 0.62 * k / Math.max(1, s.n - 1)));
+    const u = Math.min(W, H) / 100;
+    const by = (T + B) / 2, bw = Math.max(18, u * 6), r = Math.max(12, u * 5);
+    const pos = P.mode === 'series' ? xs.map(x => [x, T]) : xs.map(x => [x, (T + B) / 2]);
+    return { W, H, L, R, T, B, xs, s, u, by, bw, r, pos };
+  }
+
+  function buildSegments() {
+    if (!stage._w) return;
+    G = layout();
+    const { L, R, T, B, xs, s } = G;
+    const old = segs;
+    const list = [];
+    const xc = L + (xs[0] - L) * 0.45;               // 접촉부 위치 (아래 선)
+    if (P.mode === 'series') {
+      list.push([[L, B], [L, T], s.I], [[L, T], [R, T], s.I], [[R, T], [R, B], s.I], [[R, B], [L, B], s.I]);
+    } else {
+      list.push([[L, B], [L, T], s.I]);
+      let rem = s.I, prev = L;
+      xs.forEach((x, k) => { list.push([[prev, T], [x, T], rem]); rem -= s.branch[k]; prev = x; });
+      xs.forEach((x, k) => list.push([[x, T], [x, B], s.branch[k]]));
+      let acc = 0;
+      for (let k = xs.length - 1; k >= 0; k--) { acc += s.branch[k]; list.push([[xs[k], B], [k ? xs[k - 1] : L, B], acc]); }
+    }
+    segs = list.map(([a, b, i], idx) => ({ a, b, i, phase: old[idx] ? old[idx].phase : 0 }));
+    G.xc = xc;
+  }
+  new ResizeObserver(() => { buildSegments(); updateMeter(); }).observe(stage);
+
+
+  // ---------- 측정점과 전위 ----------
+  // 회로의 각 점은 하나의 '마디(node)'에 속함. 멀티미터는 두 마디의 전위차(빨강 − 검정)를 읽음
+  function nodeVoltages(s) {
+    const NV = { P: P.V, G: 0 };
+    if (P.mode === 'series') {
+      let cur = P.V;
+      s.loads.forEach((l, k) => {
+        // 단선이면 전류가 0 → 끊어진 곳 아래쪽은 모두 접지(0V)와 같은 전위
+        cur = l.open ? 0 : cur - s.I * l.r;
+        NV['n' + k] = Math.abs(cur) < 1e-9 ? 0 : cur;
+      });
+    } else {
+      NV.B = s.I * RcEff();          // 아래 레일 = 접촉 저항만큼 떠 있음
+    }
+    return NV;
+  }
+
+  function testPoints() {
+    if (!G) return [];
+    const { L, R, T, B, xs, u, by, bw, r, pos, s } = G;
+    const xc = G.xc;
+    const pts = [
+      { id: 'bp', x: L + bw * 0.75, y: by - u * 2, node: 'P', name: '배터리 +' },
+      { id: 'bn', x: L + bw * 0.4, y: by + u * 2, node: 'G', name: '배터리 −' },
+      { id: 'tl', x: L, y: T, node: 'P', name: '왼쪽 위 배선' }
+    ];
+    const last = P.mode === 'series' ? 'n' + (s.n - 1) : 'B';
+    pos.forEach(([x, y], k) => {
+      if (P.mode === 'series') {
+        pts.push({ id: `k${k}a`, x: x - r, y, node: k ? 'n' + (k - 1) : 'P', name: `전구${k + 1} 왼쪽 단자` });
+        pts.push({ id: `k${k}b`, x: x + r, y, node: 'n' + k, name: `전구${k + 1} 오른쪽 단자` });
+      } else {
+        pts.push({ id: `k${k}a`, x, y: y - r, node: 'P', name: `전구${k + 1} 위 단자` });
+        pts.push({ id: `k${k}b`, x, y: y + r, node: 'B', name: `전구${k + 1} 아래 단자` });
+      }
+    });
+    const xr = P.mode === 'series' ? R : xs[xs.length - 1];
+    pts.push(
+      { id: 'tr', x: xr, y: T, node: P.mode === 'series' ? last : 'P', name: '오른쪽 위 배선' },
+      { id: 'br', x: xr, y: B, node: last, name: '오른쪽 아래 배선' },
+      { id: 'cr', x: xc + u * 4, y: B, node: last, name: '커넥터 오른쪽' },
+      { id: 'cl', x: xc - u * 4, y: B, node: 'G', name: '커넥터 왼쪽' },
+      { id: 'bl', x: L, y: B, node: 'G', name: '왼쪽 아래 배선' }
+    );
+    return pts;
+  }
+
+  const probes = {
+    red: { pt: 'bp', x: 0, y: 0, ready: false },
+    black: { pt: 'bn', x: 0, y: 0, ready: false }
+  };
+  let drag = null, hover = null, lastMoved = 'black';
+
+  function meterBox() {
+    const w = Math.max(64, G.u * 18);
+    return { x: G.W - w - 10, y: G.H * 0.05, w, h: 26 };
+  }
+  function parkPos(key) {
+    const m = meterBox();
+    return key === 'red' ? [m.x + m.w * 0.3, m.y + m.h + 22] : [m.x + m.w * 0.7, m.y + m.h + 22];
+  }
+  const findPt = id => testPoints().find(t => t.id === id);
+
+  function setPreset(v) {
+    if (v === 'bat') { probes.red.pt = 'bp'; probes.black.pt = 'bn'; }
+    else if (v === 'rc') { probes.red.pt = 'cr'; probes.black.pt = 'cl'; }
+    else { probes.red.pt = `k${v}a`; probes.black.pt = `k${v}b`; }
+    updateMeter();
+  }
+
+  function updateMeter() {
+    if (!G) return;
+    const s = solve();
+    const NV = nodeVoltages(s);
+    const pts = testPoints();
+    ['red', 'black'].forEach(k => { if (probes[k].pt && !pts.find(t => t.id === probes[k].pt)) probes[k].pt = null; });
+    const rp = pts.find(t => t.id === probes.red.pt), bp = pts.find(t => t.id === probes.black.pt);
+    if (!rp || !bp) {
+      $('meterLabel').textContent = '멀티미터 · 탐침 연결 대기';
+      $('meterV').textContent = '- - -';
+      $('meterNote').textContent = !rp && !bp ? '빨강·검정 탐침을 회로의 점에 꽂으세요' : `${rp ? '검정' : '빨강'} 탐침도 꽂아야 전압이 나옵니다`;
+      return;
+    }
+    const v = NV[rp.node] - NV[bp.node];
+    if (maskNums()) {
+      $('meterLabel').textContent = `빨강 ${rp.name} · 검정 ${bp.name}`;
+      $('meterV').textContent = '?';
+      $('meterNote').textContent = '답을 고른 뒤 측정값으로 확인해 보세요';
+      return;
+    }
+    $('meterLabel').textContent = `빨강 ${rp.name} · 검정 ${bp.name}`;
+    $('meterV').textContent = (Math.abs(v) < 0.005 ? 0 : v).toFixed(2);
+    let note;
+    const pair = [rp.id, bp.id].sort().join();
+    const k = rp.id[0] === 'k' && bp.id[0] === 'k' && rp.id[1] === bp.id[1] ? +rp.id[1] : -1;
+    if (rp.node === bp.node) note = '같은 마디(사이에 부품 없음) → 전위차 0V';
+    else if (pair === 'cl,cr') note = s.I === 0 ? '전류가 없으면 강하도 0 · 작동 상태에서 재세요' : Math.abs(v) > 0.2 ? '강하가 큼 → 접촉 불량 의심' : '강하가 작음 → 정상 접점';
+    else if (k >= 0 && s.loads[k] && s.loads[k].open) note = P.mode === 'series' ? '단선된 곳 → 전원 전압이 그대로 걸림' : '병렬이라 단선돼도 전압은 걸림 · 전류 0';
+    else if (k >= 0 && s.I === 0) note = '다른 곳이 끊겨 전류 없음 → 강하 0V';
+    else if (v < -0.005) note = '음(−)의 값 → 탐침 극성이 반대. 빨강을 전위가 높은 쪽(+)에';
+    else if (k >= 0) note = `이 전구의 전압 강하 = ${f(s.branch[k])}A × ${+s.loads[k].r.toFixed(2)}Ω`;
+    else note = '두 점 사이 부품들의 전압 강하 합';
+    $('meterNote').textContent = note;
+  }
+
+  function nearestPoint(x, y, max) {
+    let best = null, bd = max;
+    testPoints().forEach(t => { const d = Math.hypot(t.x - x, t.y - y); if (d < bd) { bd = d; best = t; } });
+    return best;
+  }
+  const localXY = e => { const r = stage.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+
+  stage.addEventListener('pointerdown', e => {
+    if (!G) return;
+    const [x, y] = localXY(e);
+    let hit = null, best = 26;
+    ['red', 'black'].forEach(k => { const d = Math.hypot(probes[k].x - x, probes[k].y - y); if (d < best) { best = d; hit = k; } });
+    if (hit) {
+      e.preventDefault();
+      drag = hit; hover = nearestPoint(x, y, 30);
+      stage.setPointerCapture(e.pointerId);
+      probes[hit].x = x; probes[hit].y = y;
+      return;
+    }
+    const tp = nearestPoint(x, y, 24);
+    if (tp) {
+      // 점을 탭하면: 빠져 있는 탐침이 있으면 그것부터, 둘 다 꽂혀 있으면 직전에 옮기지 않은 쪽이 이동
+      const key = !probes.red.pt ? 'red' : !probes.black.pt ? 'black' : (lastMoved === 'red' ? 'black' : 'red');
+      probes[key].pt = tp.id; lastMoved = key;
+      probeSeg.clear(); updateMeter();
+    }
+  });
+  stage.addEventListener('pointermove', e => {
+    if (!G) return;
+    const [x, y] = localXY(e);
+    if (drag) {
+      probes[drag].x = x; probes[drag].y = y;
+      hover = nearestPoint(x, y, 30);
+    } else {
+      const near = ['red', 'black'].some(k => Math.hypot(probes[k].x - x, probes[k].y - y) < 26) || nearestPoint(x, y, 24);
+      stage.style.cursor = near ? 'pointer' : 'default';
+    }
+  });
+  const endDrag = () => {
+    if (!drag) return;
+    probes[drag].pt = hover ? hover.id : null;   // 점 근처에서 놓으면 꽂히고, 아니면 멀티미터 쪽으로 돌아감
+    lastMoved = drag; drag = null; hover = null;
+    probeSeg.clear(); updateMeter();
+  };
+  stage.addEventListener('pointerup', endDrag);
+  stage.addEventListener('pointercancel', endDrag);
+
+  // 탐침 끝은 목표 위치로 감속하며 이동 (꽂힐 때 '착' 붙는 느낌)
+  function animateProbes(dt) {
+    if (!G) return;
+    const k = REDUCE ? 1 : 1 - Math.exp(-16 * dt);
+    ['red', 'black'].forEach(key => {
+      const p = probes[key];
+      if (drag === key) return;
+      const tp = p.pt && findPt(p.pt);
+      const [tx, ty] = tp ? [tp.x, tp.y] : parkPos(key);
+      if (!p.ready) { p.x = tx; p.y = ty; p.ready = true; return; }
+      p.x += (tx - p.x) * k; p.y += (ty - p.y) * k;
+    });
+  }
+
+  function drawProbes() {
+    const { u } = G;
+    const pts = testPoints();
+    // 측정점
+    pts.forEach(t => {
+      const isHover = hover && hover.id === t.id;
+      ctx.lineWidth = isHover ? 2.5 : 1.5;
+      ctx.strokeStyle = isHover ? C.accent : C['fg-2'];
+      ctx.fillStyle = C.surface;
+      ctx.beginPath(); ctx.arc(t.x, t.y, isHover ? 9 : (drag ? 5.5 : 4.5), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    });
+    if (hover && drag) {
+      ctx.fillStyle = C.accent; ctx.font = `650 ${Math.max(11, u * 2.8)}px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(hover.name, hover.x, hover.y - 13);
+    }
+    // 멀티미터 본체
+    const m = meterBox();
+    ctx.fillStyle = C.tire; roundRect(ctx, m.x, m.y, m.w, m.h, 7); ctx.fill();
+    ctx.fillStyle = C.cool; ctx.font = `700 13px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const val = $('meterV').textContent;
+    ctx.fillText(val === '- - -' ? '- - - V' : val + ' V', m.x + m.w / 2, m.y + m.h / 2);
+    // 리드선과 탐침 (드래그 중인 것을 위에)
+    const order = drag === 'red' ? ['black', 'red'] : ['red', 'black'];
+    order.forEach(key => {
+      const p = probes[key], col = key === 'red' ? C.fire : C.fg;
+      const jx = m.x + m.w * (key === 'red' ? 0.3 : 0.7), jy = m.y + m.h;
+      ctx.strokeStyle = col; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(jx, jy); ctx.quadraticCurveTo(jx, (jy + p.y) / 2 + 20, p.x, p.y); ctx.stroke();
+      const big = drag === key ? 10 : 7.5;
+      if (drag === key) { ctx.fillStyle = col; ctx.globalAlpha = 0.18; ctx.beginPath(); ctx.arc(p.x, p.y, 18, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+      ctx.fillStyle = col; ctx.strokeStyle = C.surface; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(p.x, p.y, big, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = C.surface; ctx.font = `800 ${big + 2}px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(key === 'red' ? '+' : '−', p.x, p.y + 0.5);
+    });
+  }
+
+  function bulb(x, y, r, bright, open, label, sub) {
+    const u = G.u;
+    if (bright > 0.01) {
+      const g = ctx.createRadialGradient(x, y, r * 0.3, x, y, r * 3);
+      g.addColorStop(0, C.hot); g.addColorStop(1, 'transparent');
+      ctx.globalAlpha = clamp(bright, 0, 1) * 0.7; ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, y, r * 3, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = C.surface; ctx.strokeStyle = C.fg; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.globalAlpha = 0.25 + 0.75 * clamp(bright, 0, 1);
+    ctx.fillStyle = C.hot; ctx.beginPath(); ctx.arc(x, y, r * 0.75, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    // 필라멘트 (단선이면 끊김)
+    ctx.strokeStyle = C.fg; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (open) { ctx.moveTo(x - r * 0.6, y + r * 0.2); ctx.lineTo(x - r * 0.15, y - r * 0.3); ctx.moveTo(x + r * 0.15, y - r * 0.1); ctx.lineTo(x + r * 0.6, y + r * 0.2); }
+    else { ctx.moveTo(x - r * 0.6, y + r * 0.2); ctx.quadraticCurveTo(x, y - r * 0.9, x + r * 0.6, y + r * 0.2); }
+    ctx.stroke();
+    ctx.fillStyle = open ? C.bad : C.fg; ctx.font = `650 ${Math.max(11, u * 3)}px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(label, x, y + r + 6);
+    ctx.fillStyle = C['fg-2']; ctx.font = `500 ${Math.max(10, u * 2.6)}px ${C.font}`;
+    ctx.fillText(sub, x, y + r + 6 + Math.max(13, u * 3.4));
+  }
+
+  function draw() {
+    if (!G || G.W !== stage._w || G.H !== stage._h) buildSegments();
+    if (!G) return;
+    const { W, H, L, R, T, B, xs, u } = G;
+    const s = solve();
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = C.surface; ctx.fillRect(0, 0, W, H);
+
+    // 배선
+    ctx.strokeStyle = C['steel-dark']; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    segs.forEach(sg => { ctx.beginPath(); ctx.moveTo(...sg.a); ctx.lineTo(...sg.b); ctx.stroke(); });
+
+    // 전류 점: 구간마다 전류에 비례한 속도
+    const gap = Math.max(14, u * 4);
+    ctx.fillStyle = C.accent;
+    segs.forEach(sg => {
+      if (sg.i <= 1e-6) return;
+      const len = Math.hypot(sg.b[0] - sg.a[0], sg.b[1] - sg.a[1]);
+      for (let d = sg.phase % gap; d < len; d += gap) {
+        const t = d / len;
+        ctx.beginPath(); ctx.arc(lerp(sg.a[0], sg.b[0], t), lerp(sg.a[1], sg.b[1], t), Math.max(2, u * 0.7), 0, Math.PI * 2); ctx.fill();
+      }
+    });
+
+    // 배터리 (+ 위쪽)
+    const by = (T + B) / 2, bw = Math.max(18, u * 6);
+    ctx.fillStyle = C.surface; ctx.fillRect(L - bw, by - u * 5, bw * 2, u * 10);
+    ctx.strokeStyle = C.fg; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(L - bw, by - u * 2); ctx.lineTo(L + bw, by - u * 2); ctx.stroke();
+    ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(L - bw * 0.55, by + u * 2); ctx.lineTo(L + bw * 0.55, by + u * 2); ctx.stroke();
+    ctx.fillStyle = C.fg; ctx.font = `700 ${Math.max(11, u * 3)}px ${C.font}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText('+', L - bw - 4, by - u * 2);
+    ctx.fillText('−', L - bw - 4, by + u * 2);
+    ctx.textAlign = 'left';
+    ctx.fillText(`${P.V.toFixed(1)}V`, L + bw + 6, by);
+
+    // 접촉부
+    const xc = G.xc;
+    const rcShown = masked() ? P.Rc : RcEff();
+    const bad = rcShown > 0.001;
+    ctx.fillStyle = C.surface; ctx.fillRect(xc - u * 4, B - u * 3, u * 8, u * 6);
+    ctx.strokeStyle = bad ? C.bad : C['steel-dark']; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(xc - u * 4, B);
+    for (let k = 0; k <= 6; k++) ctx.lineTo(xc - u * 3 + k * u, B + (k % 2 ? -u * 1.6 : u * 1.6));
+    ctx.lineTo(xc + u * 4, B); ctx.stroke();
+    ctx.fillStyle = bad ? C.bad : C['fg-2']; ctx.font = `600 ${Math.max(10, u * 2.6)}px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(bad ? `접촉부 ${rcShown.toFixed(2)}Ω` : '커넥터', xc, B + u * 3);
+
+    // 전구
+    const r = Math.max(12, u * 5);
+    const pos = P.mode === 'series' ? xs.map(x => [x, T]) : xs.map(x => [x, (T + B) / 2]);
+    s.loads.forEach((l, k) => {
+      const rated = 144 / l.r;                            // 12V 기준 정격 전력
+      const bright = l.open ? 0 : s.power[k] / rated;
+      const showOpen = l.open && !(masked() && isDiag() && !(k === 1 && P.open2));
+      bulb(pos[k][0], pos[k][1], r, bright, showOpen, `전구${k + 1} ${+l.r.toFixed(2)}Ω`, masked() ? '' : showOpen ? '단선' : `${f(s.branch[k])}A · ${f(s.power[k], 1)}W`);
+    });
+
+    drawProbes();
+  }
+
+
+  // ---------- 문제 풀기 ----------
+  // Q: 진행 중인 문제. calc = 계산 문제, diag = 숨은 고장 찾기
+  let probKind = 'calc', snapshot = null, score = { ok: 0, all: 0 };
+  const NICE = {
+    series2: [[2, 4], [3, 3], [2, 10], [4, 8], [1, 5], [6, 6], [3, 9]],
+    series3: [[2, 4, 6], [1, 2, 3], [2, 2, 8], [3, 4, 5], [1, 1, 4]],
+    parallel2: [[6, 6], [4, 12], [3, 6], [12, 12], [6, 12]],
+    parallel3: [[6, 6, 6], [4, 6, 12], [12, 12, 6], [3, 6, 6]]
+  };
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+  const nice = v => String(+v.toFixed(2));
+  const CTRL_IDS = ['inV', 'inR1', 'inR2', 'inR3', 'inUse3', 'inOpen', 'inRc', 'btnExample'];
+
+  function syncControls() {
+    modeSeg.select(P.mode);
+    $('inV').value = P.V; $('inR1').value = P.R[0]; $('inR2').value = P.R[1]; $('inR3').value = P.R[2];
+    $('inUse3').checked = P.use3; $('inOpen').checked = P.open2; $('inRc').value = P.Rc;
+  }
+  function setLocked(on) {
+    CTRL_IDS.forEach(id => { $(id).disabled = on; });
+    document.querySelectorAll('#segMode button').forEach(b => { b.disabled = on; });
+    $('lockNote').hidden = !on;
+  }
+
+  function applyCircuit(mode, R) {
+    const full = [...R, ...[6, 6, 12].slice(R.length)];
+    Object.assign(P, { mode, V: 12, R: full.slice(0, 3), use3: R.length === 3, open2: false, Rc: 0 });
+    syncControls();
+  }
+
+  function genCalc() {
+    const mode = Math.random() < 0.5 ? 'series' : 'parallel';
+    const n = Math.random() < 0.5 ? 2 : 3;
+    const R = pick(NICE[mode + n]);
+    applyCircuit(mode, R);
+    Q = { type: 'calc', answered: false };
+    const s = solve();
+    const k = Math.floor(Math.random() * n);
+    const sumR = R.reduce((a, b) => a + b, 0);
+    const Rp = 1 / R.reduce((a, b) => a + 1 / b, 0);
+    const list = R.map(r => r + 'Ω').join(', ');
+    const kinds = mode === 'series' ? ['R', 'I', 'Vk', 'P'] : ['R', 'I', 'Ik', 'P'];
+    const kind = pick(kinds);
+    const conn = mode === 'series' ? '직렬' : '병렬';
+    let q, ans, unit, wrong, ex;
+    if (kind === 'R') {
+      q = `12V 전원에 ${list} 전구를 ${conn}로 연결했습니다. 합성 저항은?`; unit = 'Ω';
+      ans = s.Rt; wrong = [mode === 'series' ? Rp : sumR, ans * 2, ans / 2, R[0]];
+      ex = mode === 'series' ? `직렬 합성 저항 = ${R.join(' + ')} = ${nice(ans)}Ω` : `병렬: 1/R = ${R.map(r => '1/' + r).join(' + ')} → R = ${nice(ans)}Ω`;
+    } else if (kind === 'I') {
+      q = `12V 전원에 ${list} 전구를 ${conn}로 연결했습니다. 전원에서 나오는 전체 전류는?`; unit = 'A';
+      ans = s.I; wrong = [12 / (mode === 'series' ? Rp : sumR), 12 / R[0], ans * 2, ans / 2];
+      ex = `합성 저항 ${nice(s.Rt)}Ω → I = 12 ÷ ${nice(s.Rt)} = ${nice(ans)}A`;
+    } else if (kind === 'Vk') {
+      q = `12V 전원에 ${list} 전구를 직렬로 연결했습니다. 전구${k + 1}(${R[k]}Ω) 양단의 전압은?`; unit = 'V';
+      ans = s.drops[k]; wrong = [12, 12 - ans, 12 / R.length, s.I * sumR / 2];
+      ex = `전류 I = 12 ÷ ${sumR} = ${nice(s.I)}A → 전구${k + 1} 전압 = ${nice(s.I)} × ${R[k]} = ${nice(ans)}V (저항에 비례해 전압이 나뉨)`;
+    } else if (kind === 'Ik') {
+      q = `12V 전원에 ${list} 전구를 병렬로 연결했습니다. 전구${k + 1}(${R[k]}Ω)에 흐르는 전류는?`; unit = 'A';
+      ans = s.branch[k]; wrong = [s.I, 12 / sumR, s.I / R.length === ans ? ans * 2 : s.I / R.length, ans / 2];
+      ex = `병렬은 각 가지에 전원 전압 12V가 그대로 걸림 → I = 12 ÷ ${R[k]} = ${nice(ans)}A`;
+    } else {
+      q = `12V 전원에 ${list} 전구를 ${conn}로 연결했습니다. 회로 전체 소비 전력은?`; unit = 'W';
+      ans = s.Ptot; wrong = [144 / (mode === 'series' ? Rp : sumR), 12 * 12, ans * 2, ans / 2];
+      ex = `전체 전류 ${nice(s.I)}A → P = V × I = 12 × ${nice(s.I)} = ${nice(ans)}W`;
+    }
+    // 오답 후보: 직렬·병렬 혼동, 2배·절반 실수 등에서 정답과 다른 값 3개
+    const opts = [ans];
+    shuffle(wrong).forEach(w => { if (opts.length < 4 && w > 0 && isFinite(w) && opts.every(o => Math.abs(o - w) > 0.011)) opts.push(w); });
+    let m = 3; while (opts.length < 4) { const w = ans * m++; if (opts.every(o => Math.abs(o - w) > 0.011)) opts.push(w); }
+    Q.opts = shuffle(opts).map(v => ({ label: nice(v) + ' ' + unit, ok: Math.abs(v - ans) < 1e-9 }));
+    Q.q = q; Q.ex = ex + ' · 이제 멀티미터로 직접 재서 확인해 보세요.';
+  }
+
+  const DIAG = [
+    { id: 'o0', label: '전구1 단선' }, { id: 'o1', label: '전구2 단선' }, { id: 'o2', label: '전구3 단선' }, { id: 'rc', label: '커넥터 접촉 불량' }
+  ];
+  let lastDiag = null;
+  function genDiag() {
+    const mode = Math.random() < 0.5 ? 'series' : 'parallel';
+    applyCircuit(mode, pick(NICE[mode + 3]));
+    const f = pick(DIAG.filter(d => d.id !== lastDiag));   // 같은 고장이 연달아 나오지 않게
+    lastDiag = f.id;
+    Q = { type: 'diag', answered: false, fault: f.id, open: f.id[0] === 'o' ? +f.id[1] : -1, rc: f.id === 'rc' ? 1.5 : 0 };
+    Q.q = `${mode === 'series' ? '직렬' : '병렬'} 회로에 고장이 하나 숨어 있습니다. 전구 상태를 보고 멀티미터로 구간별 전압을 재서 원인을 고르세요. (그림에는 고장 위치가 표시되지 않습니다)`;
+    Q.opts = DIAG.map(d => ({ label: d.label, ok: d.id === f.id }));
+    const k = Q.open + 1;
+    Q.ex = f.id === 'rc'
+      ? `커넥터 접촉 저항이 커졌습니다. 전구가 모두 조금씩 어두워지고, 커넥터 왼쪽–오른쪽을 재면 전압 강하가 크게 나옵니다.`
+      : mode === 'series'
+        ? `끊어진 것은 전구${k}입니다. 직렬이라 전구가 모두 꺼지고, 전구${k} 양 끝에만 12V가 걸리며 다른 전구 양단은 0V입니다.`
+        : `끊어진 것은 전구${k}입니다. 병렬이라 전구${k}만 꺼집니다. 양 끝에 전압은 걸리는데 전류가 0이므로 전구 자체의 단선입니다.`;
+  }
+
+
+  // ---------- 자동차 전기 문제 ----------
+  // setup이 있으면 실습판 회로를 그 상황으로 바꾸고, 답하기 전까지 숫자를 가림
+  const R55 = 144 / 55, R21 = 144 / 21, R10 = 144 / 10;   // 12V 기준 전구 저항 (R = V² ÷ P)
+  const AUTO = [
+    { q: '12V 55W 전조등 전구의 저항은 약 얼마인가?', o: ['2.62Ω', '4.58Ω', '0.22Ω', '660Ω'], a: 0,
+      setup: { mode: 'parallel', R: [R55, R55] },
+      e: 'P = V²/R → R = V² ÷ P = 144 ÷ 55 ≈ 2.62Ω. 회로가 전조등 2개 병렬로 바뀌었습니다. 전구 하나 양단을 재면 12V입니다.' },
+    { q: '좌우 전조등(12V 55W 2개)을 병렬로 켰을 때 배터리에서 나오는 전체 전류는?', o: ['4.58A', '9.17A', '18.33A', '2.29A'], a: 1,
+      setup: { mode: 'parallel', R: [R55, R55] },
+      e: '전체 전력 55 × 2 = 110W → I = P ÷ V = 110 ÷ 12 ≈ 9.17A. 전구 하나에는 약 4.58A씩 흐릅니다.' },
+    { q: '제동등(12V 21W 2개 병렬) 회로의 커넥터에 접촉 저항 0.5Ω이 생겼다. 전구 양단 전압은 약 얼마가 되는가?', o: ['12V', '10.5V', '6V', '1.5V'], a: 1,
+      setup: { mode: 'parallel', R: [R21, R21], Rc: 0.5 },
+      e: '전구 병렬 합성 6.86 ÷ 2 ≈ 3.43Ω, 접촉 저항을 더하면 3.93Ω → I = 12 ÷ 3.93 ≈ 3.05A. 접촉부에서 3.05 × 0.5 ≈ 1.5V가 빠져 전구에는 약 10.5V만 걸리고 어두워집니다. 멀티미터로 커넥터 양쪽을 재 보세요.' },
+    { q: '12V 21W 전구 2개를 실수로 직렬 연결했다. 전구 하나가 소비하는 전력은?', o: ['21W', '10.5W', '5.25W', '42W'], a: 2,
+      setup: { mode: 'series', R: [R21, R21] },
+      e: '전구마다 6V씩 나뉘어 걸림 → P = V²/R = 36 ÷ 6.86 ≈ 5.25W. 전압이 절반이면 전력은 1/4이 되어 매우 어둡습니다.' },
+    { q: '방향지시등(12V 21W 2개 병렬)에서 전구 하나가 단선되면 점멸은 어떻게 되는가?', o: ['점멸이 빨라진다', '점멸이 느려진다', '변화 없다', '양쪽 모두 꺼진다'], a: 0,
+      setup: { mode: 'parallel', R: [R21, R21], open2: true },
+      e: '흐르는 전류가 약 3.5A에서 1.75A로 줄어듭니다. 플래셔 유닛이 전류 감소를 감지해 점멸을 빠르게 해서 운전자에게 전구 단선을 알립니다. 실습판에서 전구2가 단선된 상태입니다.' },
+    { q: '60Ah 배터리로 미등(총 20W)을 켜 둔 채 방치했다. 배터리가 완전히 방전될 때까지 이론상 약 몇 시간인가?', o: ['3시간', '12시간', '36시간', '72시간'], a: 2,
+      setup: { mode: 'parallel', R: [R10, R10] },
+      e: '전류 I = 20 ÷ 12 ≈ 1.67A → 60Ah ÷ 1.67A ≈ 36시간. 실제로는 시동이 걸리지 않는 시점이 훨씬 빠릅니다.' },
+    { q: '12V 60Ah 배터리 2개를 직렬로 연결하면?', o: ['12V 120Ah', '24V 60Ah', '24V 120Ah', '12V 60Ah'], a: 1,
+      e: '직렬은 전압이 더해지고 용량(Ah)은 그대로입니다 → 24V 60Ah. 대형 트럭·버스의 24V 전기장치가 이 방식입니다.' },
+    { q: '12V 60Ah 배터리 2개를 병렬로 연결하면?', o: ['12V 120Ah', '24V 60Ah', '24V 120Ah', '12V 60Ah'], a: 0,
+      e: '병렬은 전압이 그대로이고 용량(Ah)이 더해집니다 → 12V 120Ah.' },
+    { q: '시동 전동기가 12V에서 150A를 소비할 때 소비 전력은?', o: ['12.5W', '162W', '1.8kW', '18kW'], a: 2,
+      e: 'P = V × I = 12 × 150 = 1800W = 1.8kW. 큰 전류가 흐르므로 배터리 단자와 시동 회로 배선이 굵습니다.' },
+    { q: '경음기 전류 4A가 저항 0.05Ω인 배선을 지날 때 배선에서 생기는 전압 강하는?', o: ['0.02V', '0.2V', '2V', '80V'], a: 1,
+      e: 'V = I × R = 4 × 0.05 = 0.2V. 전류가 큰 회로일수록 작은 저항에서도 강하가 커집니다.' },
+    { q: '전조등을 켠 상태에서 배터리 단자는 12.6V, 전조등 단자는 11.4V였다. 올바른 판단은?', o: ['정상 범위다', '배선·커넥터·접지에서 강하가 커서 점검이 필요하다', '전구 자체 불량이다', '배터리 과충전이다'], a: 1,
+      e: '배터리와 부하 사이에서 1.2V가 빠졌습니다. 작동 상태에서 구간별로 전압 강하를 재서 강하가 큰 커넥터·스위치·접지를 찾아 수리합니다.' },
+    { q: '12V 21W 전구를 꺼진 상태에서 멀티미터 저항 모드로 재면, 계산값(약 6.86Ω)과 비교해 어떻게 측정되는가?', o: ['훨씬 작게 측정된다', '똑같이 측정된다', '훨씬 크게 측정된다', '측정되지 않는다(무한대)'], a: 0,
+      e: '텅스텐 필라멘트는 온도가 오르면 저항이 커집니다. 6.86Ω은 켜져서 뜨거울 때의 값이고, 차가운 상태에서는 그보다 훨씬 작게(대략 1Ω 안팎) 측정됩니다. 무한대가 나오면 단선입니다.' },
+    { q: '미등 전구(12V 5W) 4개를 병렬로 켰을 때 전체 전류는?', o: ['0.42A', '1.67A', '6.67A', '20A'], a: 1,
+      e: '전체 전력 5 × 4 = 20W → I = 20 ÷ 12 ≈ 1.67A. 전구 하나에는 약 0.42A가 흐릅니다.' },
+    { q: '전조등 회로의 접지 볼트가 부식되었을 때 나타나는 증상으로 가장 알맞은 것은?', o: ['전조등이 평소보다 어둡거나 깜빡인다', '전조등이 더 밝아진다', '퓨즈가 즉시 끊어진다', '배터리 전압이 올라간다'], a: 0,
+      setup: { mode: 'parallel', R: [R55, R55], Rc: 0.6 },
+      e: '접지 쪽에 저항이 생기면 그곳에서 전압이 빠져 전구에 걸리는 전압이 줄어듭니다. 전류는 오히려 줄어서 퓨즈는 끊어지지 않습니다. 실습판에서 커넥터(접지 쪽) 양단을 재 보세요.' }
+  ];
+  let autoQueue = [];
+
+  function genAuto() {
+    if (!autoQueue.length) autoQueue = shuffle(AUTO.map((_, i) => i));   // 전부 한 번씩 나온 뒤 다시 섞음
+    const item = AUTO[autoQueue.pop()];
+    if (item.setup) {
+      const su = item.setup;
+      const full = [...su.R, ...[6, 6, 12].slice(su.R.length)];
+      Object.assign(P, { mode: su.mode, V: 12, R: full.slice(0, 3), use3: su.R.length === 3, open2: !!su.open2, Rc: su.Rc || 0 });
+      syncControls();
+    }
+    Q = { type: 'auto', mask: !!item.setup, answered: false, q: item.q, ex: item.e,
+          opts: shuffle(item.o.map((label, i) => ({ label, ok: i === item.a }))) };
+  }
+
+  function renderProblem() {
+    const box = $('probOpts');
+    if (!Q) {
+      $('probQ').textContent = {
+        calc: '「새 문제」를 누르면 회로가 무작위로 바뀌고 계산 문제가 나옵니다. 답을 고르기 전까지 화면의 숫자는 가려집니다.',
+        diag: '「새 문제」를 누르면 고장 하나가 몰래 들어갑니다. 멀티미터로 재서 원인을 찾아보세요.',
+        auto: `「새 문제」를 누르면 전조등·제동등·방향지시등·배터리 같은 자동차 전기 문제(${AUTO.length}개)가 나옵니다. 회로가 필요한 문제는 실습판이 그 상황으로 바뀝니다.`
+      }[probKind];
+      box.innerHTML = ''; $('probEx').hidden = true; $('btnEnd').hidden = true;
+      return;
+    }
+    $('probQ').textContent = Q.q;
+    box.innerHTML = Q.opts.map((o, i) => `<button class="opt" data-i="${i}"><span class="no">${'①②③④'[i]}</span><span>${o.label}</span></button>`).join('');
+    box.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => answer(+b.dataset.i)));
+    $('probEx').hidden = true; $('btnEnd').hidden = false;
+  }
+
+  function answer(i) {
+    if (!Q || Q.answered) return;
+    Q.answered = true;
+    const ok = Q.opts[i].ok;
+    score.all++; if (ok) score.ok++;
+    $('probScore').textContent = `이번에 ${score.ok} / ${score.all} 정답`;
+    $('probOpts').querySelectorAll('.opt').forEach((b, j) => {
+      b.disabled = true;
+      if (Q.opts[j].ok) b.classList.add('correct');
+      else if (j === i) b.classList.add('wrong');
+    });
+    const ex = $('probEx');
+    ex.innerHTML = `<b class="${ok ? 'ok' : 'ng'}">${ok ? '정답입니다' : '오답입니다'}</b> ${Q.ex}`;
+    ex.hidden = false;
+    updateText();
+  }
+
+  const probSeg = initSeg($('segProb'), v => { probKind = v; if (!Q) renderProblem(); });
+  $('btnNew').addEventListener('click', () => {
+    if (!snapshot) snapshot = JSON.parse(JSON.stringify(P));
+    ({ calc: genCalc, diag: genDiag, auto: genAuto })[probKind]();
+    setLocked(true);
+    updateText(); renderProblem();
+  });
+  $('btnEnd').addEventListener('click', () => {
+    Q = null;
+    if (snapshot) { Object.assign(P, snapshot); snapshot = null; }
+    syncControls(); setLocked(false);
+    updateText(); renderProblem();
+  });
+  renderProblem();
+
+  let last = performance.now();
+  function loop(now) {
+    requestAnimationFrame(loop);
+    const dt = Math.min((now - last) / 1000, 0.05); last = now;
+    // 1A당 초당 약 18px 이동 (전류가 클수록 빠름)
+    if (!REDUCE) segs.forEach(sg => { sg.phase += sg.i * 18 * dt; });
+    animateProbes(dt);
+    draw();
+  }
+  updateText();
+  if (location.hash === '#example') loadExample();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

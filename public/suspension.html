@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>현가장치 시뮬레이터</title>
+<style>
+  /* Layout: 왼쪽 '관찰'(애니메이션·지표·그래프), 오른쪽 '조작'(프리셋·노면·파라미터), 아래 '시험 포인트' */
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --fill: rgba(118, 118, 128, 0.12);
+    --fg: #1c1c1e;
+    --fg-2: #6e6e73;
+    --line: rgba(60, 60, 67, 0.14);
+    --accent: #007aff;
+    --accent-soft: rgba(0, 122, 255, 0.12);
+    --good: #248a3d;
+    --good-soft: rgba(52, 199, 89, 0.16);
+    --warn: #c93400;
+    --warn-soft: rgba(255, 149, 0, 0.18);
+    --bad: #d70015;
+    --bad-soft: rgba(255, 59, 48, 0.14);
+    --chassis: #c9ced6;
+    --chassis-edge: #9aa1ab;
+    --tire: #2c2c2e;
+    --rim: #aeb2b8;
+    --ground: #e1e2e7;
+    --road: #3a3a3c;
+    --spring: #ff9500;
+    --damper: #636366;
+    --ghost: #ff3b30;
+    --knob: #ffffff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+      --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+      --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+      --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+      --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+      --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+      --chassis: #48484a; --chassis-edge: #6c6c70; --tire: #0b0b0c; --rim: #8e8e93;
+      --ground: #1c1c1e; --road: #8e8e93; --spring: #ff9f0a; --damper: #aeaeb2;
+      --ghost: #ff453a; --knob: #f5f5f7;
+      --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+    --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+    --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+    --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+    --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+    --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+    --chassis: #48484a; --chassis-edge: #6c6c70; --tire: #0b0b0c; --rim: #8e8e93;
+    --ground: #1c1c1e; --road: #8e8e93; --spring: #ff9f0a; --damper: #aeaeb2;
+    --ghost: #ff453a; --knob: #f5f5f7;
+    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding-inline: 16px;
+    padding-block: 20px 40px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+
+  /* 헤더 */
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-icon {
+    width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+    background: var(--accent); display: grid; place-items: center;
+  }
+  .brand-icon svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  h1 { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.025em; text-wrap: balance; }
+  .sub { margin: 0; font-size: 0.82rem; color: var(--fg-2); }
+  .model-tag {
+    font-size: 0.75rem; font-weight: 600; color: var(--fg-2);
+    background: var(--fill); padding: 4px 10px; border-radius: 999px;
+  }
+  .home-link {
+    color: var(--accent); background: var(--accent-soft); text-decoration: none;
+    transition: transform 0.18s var(--ease-out);
+  }
+  .home-link:active { transform: scale(0.95); }
+  .home-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .main { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 920px) {
+    .main { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; }
+    .side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  }
+  .col { display: grid; gap: 14px; min-width: 0; }
+
+  .panel {
+    background: var(--surface);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    padding: 16px;
+    min-width: 0;
+  }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .panel-title { font-size: 0.95rem; font-weight: 650; margin: 0; }
+  .hint { font-size: 0.75rem; color: var(--fg-2); }
+
+  /* 무대 */
+  .stage { position: relative; padding: 0; overflow: hidden; }
+  .stage canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
+  @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3; } }
+  .stage-bar {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
+    padding: 10px 12px; border-top: 1px solid var(--line);
+  }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  button { font: inherit; color: inherit; }
+  .btn {
+    border: none; cursor: pointer; border-radius: 12px; padding: 9px 14px;
+    font-size: 0.85rem; font-weight: 600; background: var(--fill); color: var(--fg);
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: transform 0.18s var(--ease-out), background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+    touch-action: manipulation;
+  }
+  .btn:active, .btn.is-held { transform: scale(0.95); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-press.is-held { background: var(--spring); color: #fff; }
+  .btn svg { width: 14px; height: 14px; fill: currentColor; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* 지표 타일 */
+  .metrics { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 700px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { background: var(--surface); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); display: grid; gap: 4px; min-width: 0; align-content: start; }
+  .tile-label { font-size: 0.72rem; font-weight: 600; color: var(--fg-2); }
+  .tile-value { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .tile-unit { font-size: 0.78rem; font-weight: 500; color: var(--fg-2); margin-left: 3px; letter-spacing: 0; }
+  .chip {
+    justify-self: start; font-size: 0.7rem; font-weight: 650; padding: 2px 8px; border-radius: 999px;
+    background: var(--fill); color: var(--fg-2);
+    transition: background-color 0.25s var(--ease-out), color 0.25s var(--ease-out);
+  }
+  .chip.good { background: var(--good-soft); color: var(--good); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.bad  { background: var(--bad-soft);  color: var(--bad); }
+
+  /* 그래프 */
+  .chart canvas { display: block; width: 100%; height: 190px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.75rem; color: var(--fg-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  .legend i.dash { background: repeating-linear-gradient(90deg, var(--ghost) 0 4px, transparent 4px 7px) !important; }
+
+  /* 세그먼트 컨트롤: 선택 표시가 미끄러져 이동 → 무엇이 바뀌었는지 눈으로 따라감 */
+  .seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--fill); border-radius: 11px; padding: 2px; }
+  .seg-thumb {
+    position: absolute; top: 2px; bottom: 2px; left: 0; width: 0;
+    background: var(--knob); border-radius: 9px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    transition: transform 0.32s var(--ease-out), width 0.32s var(--ease-out), opacity 0.2s;
+  }
+  .seg button {
+    position: relative; z-index: 1; border: none; background: transparent; cursor: pointer;
+    padding: 7px 2px; font-size: 0.78rem; font-weight: 500; border-radius: 9px; color: var(--fg);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .seg button[aria-pressed="true"] { font-weight: 650; color: #1c1c1e; }
+  .seg-caption { margin-top: 8px; font-size: 0.76rem; color: var(--fg-2); min-height: 1.2em; }
+
+  .field { display: grid; gap: 4px; padding-block: 10px; border-top: 1px solid var(--line); }
+  .field:first-of-type { border-top: none; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field label { font-size: 0.86rem; font-weight: 600; }
+  .field small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .badge { font-size: 0.85rem; font-weight: 650; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 26px; background: transparent; cursor: pointer; margin: 0; }
+  input[type=range]::-webkit-slider-runnable-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8.5px; border-radius: 50%;
+    background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3);
+    transition: transform 0.15s var(--ease-out);
+  }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.18); }
+  input[type=range]::-moz-range-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-moz-range-thumb {
+    width: 22px; height: 22px; border: none; border-radius: 50%; background: var(--knob);
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3);
+  }
+
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .switch-row label { font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+  .switch { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+  .switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--fill); transition: background-color 0.25s var(--ease-out); }
+  .switch span::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%;
+    background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s var(--ease-out);
+  }
+  .switch input:checked + span { background: var(--good); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* 시험 포인트 */
+  .notes { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 760px) { .notes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .notes h2 { font-size: 1.05rem; margin: 0; letter-spacing: -0.02em; }
+  .note h3 { font-size: 0.9rem; margin: 0 0 6px; }
+  .note p, .note li { font-size: 0.84rem; color: var(--fg-2); margin: 0; }
+  .note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .note b { color: var(--fg); font-weight: 650; }
+  .note table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .note th, .note td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .note th { color: var(--fg-2); font-weight: 600; }
+  .note td { color: var(--fg); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 2v3M12 19v3M8 5h8M8 19h8M9 8l6 2-6 2 6 2-6 2"/></svg>
+      </div>
+      <div>
+        <h1>현가장치 시뮬레이터</h1>
+        <p class="sub">스프링과 쇼크업소버가 노면 충격을 어떻게 다루는지 직접 바꿔 보며 확인합니다</p>
+      </div>
+    </div>
+    <div class="btn-row">
+      <span class="model-tag">1/4 차량(쿼터카) 2자유도 모델</span>
+      <a class="model-tag home-link" href="lab.html">← 물리 시스템 알기</a>
+    </div>
+  </header>
+
+  <div class="main">
+    <!-- 관찰 영역 -->
+    <div class="col">
+      <section class="panel stage" aria-label="현가장치 애니메이션">
+        <canvas id="stage" role="img" aria-label="노면 위를 달리는 바퀴, 스프링, 쇼크업소버, 차체의 측면 애니메이션"></canvas>
+        <div class="stage-bar">
+          <div class="btn-row">
+            <button class="btn btn-primary" id="btnPlay" aria-pressed="false">
+              <svg viewBox="0 0 14 14" aria-hidden="true" id="playIco"><rect x="2" y="1.5" width="3.5" height="11" rx="1"/><rect x="8.5" y="1.5" width="3.5" height="11" rx="1"/></svg>
+              <span id="playTxt">일시정지</span>
+            </button>
+            <button class="btn" id="btnReset">처음부터</button>
+          </div>
+          <button class="btn btn-press" id="btnPress" aria-describedby="pressHint">차체 누르기</button>
+        </div>
+      </section>
+      <p class="hint" id="pressHint" style="margin:-6px 4px 0;">바운스 테스트: 「차체 누르기」를 누르고 있다가 떼면 차체가 몇 번 출렁이는지 볼 수 있습니다. 평탄로에서 하면 잘 보입니다.</p>
+
+      <div class="metrics">
+        <div class="tile">
+          <span class="tile-label">차체 고유진동수</span>
+          <span class="tile-value"><span id="mFn">1.30</span><span class="tile-unit">Hz</span></span>
+          <span class="chip" id="cFn">78 cpm</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">감쇠비 ζ</span>
+          <span class="tile-value" id="mZeta">0.31</span>
+          <span class="chip" id="cZeta">부족감쇠</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">차체 최대 변위 (최근 5초)</span>
+          <span class="tile-value"><span id="mPeak">0.0</span><span class="tile-unit">cm</span></span>
+          <span class="chip" id="cPeak">노면 대비</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">최소 접지력 (최근 5초)</span>
+          <span class="tile-value"><span id="mGrip">100</span><span class="tile-unit">%</span></span>
+          <span class="chip" id="cGrip">접지 양호</span>
+        </div>
+      </div>
+
+      <section class="panel chart">
+        <div class="panel-head">
+          <h2 class="panel-title">상하 변위 그래프</h2>
+          <div class="legend">
+            <span><i style="background:var(--road)"></i>노면</span>
+            <span><i style="background:var(--spring)"></i>바퀴</span>
+            <span><i style="background:var(--accent)"></i>차체</span>
+            <span id="legendGhost" hidden><i class="dash"></i>쇼크업소버 불량 차체</span>
+          </div>
+        </div>
+        <canvas id="chart" role="img" aria-label="최근 5초 동안 노면, 바퀴, 차체의 높이 변화 그래프"></canvas>
+      </section>
+    </div>
+
+    <!-- 조작 영역 -->
+    <aside class="col side">
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">세팅 프리셋</h2></div>
+        <div class="seg" id="segPreset" role="group" aria-label="세팅 프리셋">
+          <span class="seg-thumb" aria-hidden="true"></span>
+          <button data-v="normal" aria-pressed="true">일반 승용</button>
+          <button data-v="sport" aria-pressed="false">스포츠</button>
+          <button data-v="worn" aria-pressed="false">쇼바 불량</button>
+          <button data-v="over" aria-pressed="false">과감쇠</button>
+        </div>
+        <div class="seg-caption" id="presetCaption">부드럽게 1~2번 출렁이고 멈추는 일반적인 승용차 세팅</div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">노면</h2></div>
+        <div class="seg" id="segRoad" role="group" aria-label="노면 종류">
+          <span class="seg-thumb" aria-hidden="true"></span>
+          <button data-v="bump" aria-pressed="true">방지턱</button>
+          <button data-v="pothole" aria-pressed="false">포트홀</button>
+          <button data-v="wave" aria-pressed="false">연속 요철</button>
+          <button data-v="flat" aria-pressed="false">평탄로</button>
+        </div>
+        <div class="seg-caption" id="roadCaption">높이 10cm · 길이 3.6m 원호형 과속방지턱, 40m마다 반복</div>
+
+        <div class="field" style="margin-top:6px;">
+          <div class="field-head">
+            <label for="inSpeed">주행 속도</label>
+            <span class="badge"><span id="vSpeed">30</span> km/h</span>
+          </div>
+          <input type="range" id="inSpeed" min="5" max="80" step="1" value="30">
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">현가장치 파라미터</h2></div>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="inK">스프링 상수 k<small>클수록 단단함</small></label>
+            <span class="badge"><span id="vK">20.0</span> kN/m</span>
+          </div>
+          <input type="range" id="inK" min="8" max="60" step="0.5" value="20">
+        </div>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="inC">감쇠 계수 c<small>쇼크업소버 저항력</small></label>
+            <span class="badge"><span id="vC">1500</span> N·s/m</span>
+          </div>
+          <input type="range" id="inC" min="0" max="9000" step="50" value="1500">
+        </div>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="inMs">스프링 위 질량<small>차체 무게의 1/4</small></label>
+            <span class="badge"><span id="vMs">300</span> kg</span>
+          </div>
+          <input type="range" id="inMs" min="150" max="600" step="10" value="300">
+        </div>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="inMu">스프링 아래 질량<small>바퀴·브레이크·너클</small></label>
+            <span class="badge"><span id="vMu">40</span> kg</span>
+          </div>
+          <input type="range" id="inMu" min="15" max="100" step="1" value="40">
+        </div>
+
+        <div class="switch-row">
+          <label for="inGhost">쇼크업소버 불량 차량과 겹쳐 보기<small style="display:block;font-size:0.72rem;color:var(--fg-2);font-weight:500;">같은 조건에서 c를 거의 0으로 한 차량</small></label>
+          <div class="switch"><input type="checkbox" id="inGhost" role="switch"><span></span></div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>자동차산업기사 시험 포인트</h2></div>
+    <div class="notes">
+      <div class="note">
+        <h3>쇼크업소버의 역할</h3>
+        <ul>
+          <li>스프링의 <b>자유진동을 흡수(감쇠)</b>해 진폭을 빨리 줄인다.</li>
+          <li>작동유가 피스톤의 <b>오리피스(밸브)</b>를 지날 때 생기는 저항으로 진동 에너지를 <b>열에너지</b>로 바꾼다.</li>
+          <li>승차감과 <b>타이어 접지성</b>을 함께 좋게 한다. 위의 「최소 접지력」이 그 효과를 보여준다.</li>
+          <li>바운스 테스트에서 손을 뗀 뒤 <b>1~2회 안에</b> 멈춰야 정상이다. 계속 출렁이면 감쇠력 부족(누유·마모)이다.</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>감쇠비 ζ = c / (2√(k·m))</h3>
+        <ul>
+          <li><b>ζ &lt; 1 부족감쇠</b>: 진동하면서 줄어든다. 일반 승용차는 대략 0.2~0.4.</li>
+          <li><b>ζ = 1 임계감쇠</b>: 진동 없이 가장 빨리 원위치.</li>
+          <li><b>ζ &gt; 1 과감쇠</b>: 출렁임은 없지만 충격이 차체로 그대로 전해져 딱딱하다.</li>
+          <li>고유진동수 f = (1/2π)√(k/m). 승차감이 좋은 범위는 <b>60~90 cpm</b>(약 1.0~1.5Hz).</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>질량별 진동 종류</h3>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>구분</th><th>진동</th><th>운동</th></tr></thead>
+            <tbody>
+              <tr><td rowspan="4">스프링 위</td><td>바운싱</td><td>Z축 상하</td></tr>
+              <tr><td>피칭</td><td>Y축 회전</td></tr>
+              <tr><td>롤링</td><td>X축 회전</td></tr>
+              <tr><td>요잉</td><td>Z축 회전</td></tr>
+              <tr><td rowspan="3">스프링 아래</td><td>휠 홉</td><td>Z축 상하</td></tr>
+              <tr><td>휠 트램프</td><td>X축 회전</td></tr>
+              <tr><td>와인드 업</td><td>Y축 회전</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:8px;">스프링 아래 질량이 <b>작을수록</b> 승차감과 접지성이 좋다. 슬라이더로 직접 확인해 보세요.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ---------- 파라미터 ----------
+  const G = 9.81;
+  const KT = 200000;          // 타이어 수직 강성 (N/m)
+  const C_WORN = 120;         // 쇼크업소버 불량 비교 차량의 감쇠 계수
+  const P = { ms: 300, mu: 40, k: 20000, c: 1500, speedKmh: 30, road: 'bump', ghost: false };
+
+  const PRESETS = {
+    normal: { k: 20000, c: 1500, caption: '부드럽게 1~2번 출렁이고 멈추는 일반적인 승용차 세팅' },
+    sport:  { k: 34000, c: 4200, caption: '스프링과 감쇠를 모두 높여 출렁임이 적고 단단한 세팅' },
+    worn:   { k: 20000, c: 150,  caption: '작동유가 새거나 마모되어 감쇠력이 거의 없는 쇼크업소버' },
+    over:   { k: 20000, c: 6500, caption: '감쇠가 지나쳐 출렁임은 없지만 충격이 그대로 전해지는 세팅' }
+  };
+  const ROADS = {
+    bump:    '높이 10cm · 길이 3.6m 원호형 과속방지턱, 40m마다 반복',
+    pothole: '깊이 5cm · 길이 0.6m 포트홀, 40m마다 반복',
+    wave:    '높이 ±2cm · 파장 4m 연속 요철. 약 20km/h 부근에서 차체 공진이 생깁니다',
+    flat:    '평탄한 노면. 「차체 누르기」로 바운스 테스트를 해 보세요'
+  };
+
+  // 노면 높이 (m), x는 주행 거리 (m)
+  function roadAt(x) {
+    if (P.road === 'flat') return 0;
+    if (P.road === 'wave') return 0.02 * Math.sin(2 * Math.PI * x / 4);
+    const local = ((x % 40) + 40) % 40;
+    if (P.road === 'bump' && local >= 12 && local <= 15.6) return 0.10 * Math.sin(Math.PI * (local - 12) / 3.6);
+    if (P.road === 'pothole' && local >= 12 && local <= 12.6) return -0.05 * Math.sin(Math.PI * (local - 12) / 0.6);
+    return 0;
+  }
+
+  // ---------- 물리: 2자유도 쿼터카 (정적 평형점 기준 변위) ----------
+  const newState = () => ({ xs: 0, vs: 0, xu: 0, vu: 0, ft: 1 });
+  let car = newState();
+  let ghost = newState();
+  let dist = 0, simTime = 0, running = true, pushing = false;
+
+  function step(s, c, dt, r) {
+    const fst = (P.ms + P.mu) * G;
+    const fs = -P.k * (s.xs - s.xu) - c * (s.vs - s.vu);       // 차체가 받는 현가 힘
+    const fpush = pushing ? -3500 : 0;                          // 바운스 테스트로 누르는 힘
+    const ft = Math.max(0, fst + KT * (r - s.xu));             // 타이어 힘 (당길 수는 없음 → 0이면 바퀴 들림)
+    const as = (fs + fpush) / P.ms;
+    const au = (-fs + ft - fst) / P.mu;
+    s.vs += as * dt; s.vu += au * dt;
+    s.xs += s.vs * dt; s.xu += s.vu * dt;
+    s.ft = ft / fst;
+  }
+
+  const HIST_SEC = 5;
+  let hist = [];
+
+  function advance(frameDt) {
+    const sub = 0.0005;
+    const n = Math.ceil(frameDt / sub);
+    const h = frameDt / n;
+    const v = P.speedKmh / 3.6;
+    let minFt = Infinity, minGhostFt = Infinity;
+    for (let i = 0; i < n; i++) {
+      dist += v * h;
+      simTime += h;
+      const r = roadAt(dist);
+      step(car, P.c, h, r);
+      if (P.ghost) step(ghost, C_WORN, h, r);
+      minFt = Math.min(minFt, car.ft);
+      minGhostFt = Math.min(minGhostFt, ghost.ft);
+    }
+    hist.push({ t: simTime, r: roadAt(dist), xs: car.xs, xu: car.xu, gs: ghost.xs, ft: minFt });
+    while (hist.length && hist[0].t < simTime - HIST_SEC) hist.shift();
+  }
+
+  // ---------- 테마 토큰 → 캔버스 색 ----------
+  let C = {};
+  const TOKENS = ['bg', 'surface', 'fg', 'fg-2', 'line', 'accent', 'chassis', 'chassis-edge', 'tire', 'rim', 'ground', 'road', 'spring', 'damper', 'ghost', 'fill'];
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    TOKENS.forEach(t => { C[t] = cs.getPropertyValue('--' + t).trim(); });
+  }
+  readTokens();
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTokens);
+  new MutationObserver(readTokens).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+
+  // ---------- 캔버스 크기 ----------
+  const stage = document.getElementById('stage');
+  const chart = document.getElementById('chart');
+  const sctx = stage.getContext('2d');
+  const cctx = chart.getContext('2d');
+  function fit(cv, ctx) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const r = cv.getBoundingClientRect();
+    cv.width = Math.round(r.width * dpr);
+    cv.height = Math.round(r.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cv._w = r.width; cv._h = r.height;
+  }
+  const ro = new ResizeObserver(() => { fit(stage, sctx); fit(chart, cctx); });
+  ro.observe(stage); ro.observe(chart);
+
+  // ---------- 무대 그리기 ----------
+  const V_EX = 3; // 세로 변위 과장 배율
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawStage() {
+    const W = stage._w, H = stage._h;
+    if (!W) return;
+    const ctx = sctx;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = C.surface;
+    ctx.fillRect(0, 0, W, H);
+
+    const viewM = W < 500 ? 3.6 : 4.6;        // 화면에 보이는 노면 길이 (m)
+    const hs = Math.min(W / viewM, H / 2.4);  // 가로 px/m (높이도 넘지 않게)
+    const vs = hs * V_EX;                     // 세로 px/m (변위만 과장)
+    const wheelX = W * 0.36;
+    const groundY = H * 0.8;
+    const R = 0.31 * hs;
+
+    // 노면
+    const x0 = dist - wheelX / hs;
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    for (let px = 0; px <= W; px += 2) {
+      ctx.lineTo(px, groundY - roadAt(x0 + px / hs) * vs);
+    }
+    ctx.lineTo(W, H);
+    ctx.closePath();
+    ctx.fillStyle = C.ground;
+    ctx.fill();
+    ctx.beginPath();
+    for (let px = 0; px <= W; px += 2) {
+      const y = groundY - roadAt(x0 + px / hs) * vs;
+      px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+    }
+    ctx.strokeStyle = C.road; ctx.lineWidth = 2; ctx.stroke();
+
+    // 1m 눈금 (속도감)
+    ctx.fillStyle = C['fg-2'];
+    const firstM = Math.ceil(x0);
+    for (let m = firstM; m < x0 + W / hs; m++) {
+      const px = (m - x0) * hs;
+      ctx.globalAlpha = m % 5 === 0 ? 0.5 : 0.2;
+      ctx.fillRect(px, groundY + 8, 1, m % 5 === 0 ? 8 : 4);
+    }
+    ctx.globalAlpha = 1;
+
+    // 바퀴
+    const hubY = groundY - R - car.xu * vs;
+    const susLen = 0.5 * hs;
+    const bodyBottom = (groundY - R) - susLen - car.xs * vs;
+    const bodyH = 0.42 * hs, bodyW = Math.min(2.0 * hs, W * 0.55);
+
+    // 비교 차량(쇼바 불량) 차체 윤곽
+    if (P.ghost) {
+      const gb = (groundY - R) - susLen - ghost.xs * vs;
+      ctx.save();
+      ctx.setLineDash([6, 5]);
+      ctx.strokeStyle = C.ghost; ctx.lineWidth = 2;
+      roundRect(ctx, wheelX - bodyW * 0.42, gb - bodyH, bodyW, bodyH, 12);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 스프링 (코일)
+    const sx = wheelX - 0.11 * hs;
+    const topY = bodyBottom, botY = hubY;
+    const coils = 7, cw = 0.075 * hs;
+    ctx.beginPath();
+    ctx.moveTo(sx, botY);
+    const segs = coils * 2;
+    for (let i = 1; i < segs; i++) {
+      const y = botY + (topY - botY) * (i / segs);
+      ctx.lineTo(sx + (i % 2 ? cw : -cw), y);
+    }
+    ctx.lineTo(sx, topY);
+    ctx.strokeStyle = C.spring; ctx.lineWidth = Math.max(2.5, hs * 0.022); ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // 쇼크업소버 (실린더 + 로드)
+    const dx = wheelX + 0.13 * hs;
+    const cylH = susLen * 0.55, cylW = 0.07 * hs;
+    ctx.strokeStyle = C.damper; ctx.lineWidth = Math.max(2, hs * 0.016);
+    ctx.beginPath(); ctx.moveTo(dx, topY); ctx.lineTo(dx, botY - cylH * 0.6); ctx.stroke();
+    ctx.fillStyle = C.damper;
+    roundRect(ctx, dx - cylW / 2, botY - cylH, cylW, cylH, 4); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(sx, botY); ctx.lineTo(dx, botY); ctx.stroke();
+
+    // 바퀴 (회전하는 스포크로 주행감)
+    ctx.fillStyle = C.tire;
+    ctx.beginPath(); ctx.arc(wheelX, hubY, R, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.rim;
+    ctx.beginPath(); ctx.arc(wheelX, hubY, R * 0.6, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = C.tire; ctx.lineWidth = 2;
+    const rot = dist / 0.31;
+    for (let i = 0; i < 5; i++) {
+      const a = rot + i * Math.PI * 2 / 5;
+      ctx.beginPath();
+      ctx.moveTo(wheelX + Math.cos(a) * R * 0.15, hubY + Math.sin(a) * R * 0.15);
+      ctx.lineTo(wheelX + Math.cos(a) * R * 0.55, hubY + Math.sin(a) * R * 0.55);
+      ctx.stroke();
+    }
+
+    // 차체 (스프링 위 질량)
+    ctx.fillStyle = C.chassis;
+    roundRect(ctx, wheelX - bodyW * 0.42, bodyBottom - bodyH, bodyW, bodyH, 12);
+    ctx.fill();
+    ctx.strokeStyle = C['chassis-edge']; ctx.lineWidth = 1; ctx.stroke();
+
+    // 라벨
+    const fs = W < 500 ? 11 : 12;
+    ctx.font = `600 ${fs}px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillStyle = C.fg;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`스프링 위 질량 ${P.ms}kg`, wheelX - bodyW * 0.42 + 12, bodyBottom - bodyH / 2);
+    ctx.fillStyle = C['fg-2'];
+    ctx.fillText(`스프링 아래 ${P.mu}kg`, wheelX + R + 8, hubY + R * 0.55);
+    ctx.textAlign = 'right';
+    ctx.fillText(`세로 변위 ×${V_EX} 확대`, W - 12, 18);
+    ctx.textAlign = 'left';
+    if (car.ft <= 0.0001) {
+      ctx.fillStyle = C.ghost;
+      ctx.fillText('바퀴 들림', wheelX - R, groundY + 26);
+    }
+  }
+
+  // ---------- 그래프 ----------
+  const RANGES = [3, 5, 8, 12, 16, 20, 30, 40];
+  let yRange = 12;
+
+  function drawChart() {
+    const W = chart._w, H = chart._h;
+    if (!W) return;
+    const ctx = cctx;
+    ctx.clearRect(0, 0, W, H);
+    const padL = 36, padR = 8, padT = 8, padB = 22;
+    const pw = W - padL - padR, ph = H - padT - padB;
+
+    let maxAbs = 0;
+    hist.forEach(p => {
+      maxAbs = Math.max(maxAbs, Math.abs(p.r), Math.abs(p.xs), Math.abs(p.xu), P.ghost ? Math.abs(p.gs) : 0);
+    });
+    const need = maxAbs * 100 * 1.1;
+    yRange = RANGES.find(r => r >= need) || 40;
+
+    const tEnd = simTime, tStart = tEnd - HIST_SEC;
+    const X = t => padL + (t - tStart) / HIST_SEC * pw;
+    const Y = m => padT + ph / 2 - (m * 100 / yRange) * (ph / 2);
+
+    // 격자와 축 라벨
+    ctx.font = `500 10px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillStyle = C['fg-2'];
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    [-yRange, -yRange / 2, 0, yRange / 2, yRange].forEach(v => {
+      const y = Y(v / 100);
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+      ctx.fillText(`${+v.toFixed(1)}`, padL - 6, y);
+    });
+    ctx.save(); ctx.translate(9, padT + ph / 2); ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center'; ctx.fillText('cm', 0, 0); ctx.restore();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let s = 0; s <= HIST_SEC; s++) {
+      const x = padL + s / HIST_SEC * pw;
+      ctx.fillText(s === HIST_SEC ? '지금' : `-${HIST_SEC - s}s`, x, H - padB + 6);
+    }
+
+    function line(key, color, width, dash) {
+      if (hist.length < 2) return;
+      ctx.save();
+      ctx.beginPath();
+      hist.forEach((p, i) => { const x = X(p.t), y = Y(p[key]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+      ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineJoin = 'round';
+      if (dash) ctx.setLineDash(dash);
+      ctx.stroke();
+      ctx.restore();
+    }
+    line('r', C.road, 1.5);
+    line('xu', C.spring, 1.8);
+    if (P.ghost) line('gs', C.ghost, 1.8, [5, 4]);
+    line('xs', C.accent, 2.5);
+
+    // 현재 값 끝점 강조
+    if (hist.length) {
+      const last = hist[hist.length - 1];
+      ctx.fillStyle = C.accent;
+      ctx.beginPath(); ctx.arc(X(last.t), Y(last.xs), 3.5, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // ---------- 지표 ----------
+  const $ = id => document.getElementById(id);
+  function setChip(el, text, tone) {
+    el.textContent = text;
+    el.className = 'chip' + (tone ? ' ' + tone : '');
+  }
+
+  function updateStatic() {
+    const fn = Math.sqrt(P.k / P.ms) / (2 * Math.PI);
+    const zeta = P.c / (2 * Math.sqrt(P.k * P.ms));
+    $('mFn').textContent = fn.toFixed(2);
+    const cpm = Math.round(fn * 60);
+    setChip($('cFn'), `${cpm} cpm · ${cpm >= 60 && cpm <= 90 ? '승차감 범위' : cpm > 90 ? '딱딱함' : '너무 무름'}`,
+      cpm >= 60 && cpm <= 90 ? 'good' : 'warn');
+    $('mZeta').textContent = zeta.toFixed(2);
+    if (zeta < 0.12) setChip($('cZeta'), '감쇠 부족 · 출렁임 지속', 'bad');
+    else if (zeta < 0.95) setChip($('cZeta'), zeta <= 0.5 ? '부족감쇠 · 일반 범위' : '부족감쇠 · 단단함', zeta <= 0.5 ? 'good' : 'warn');
+    else if (zeta <= 1.05) setChip($('cZeta'), '임계감쇠', 'warn');
+    else setChip($('cZeta'), '과감쇠 · 충격 전달', 'warn');
+  }
+
+  let metricTimer = 0;
+  function updateMetrics() {
+    let peak = 0, roadPeak = 0, grip = Infinity;
+    hist.forEach(p => {
+      peak = Math.max(peak, Math.abs(p.xs));
+      roadPeak = Math.max(roadPeak, Math.abs(p.r));
+      grip = Math.min(grip, p.ft);
+    });
+    if (!isFinite(grip)) grip = 1;
+    $('mPeak').textContent = (peak * 100).toFixed(1);
+    if (roadPeak > 0.001) {
+      const ratio = peak / roadPeak;
+      setChip($('cPeak'), `노면 높이의 ${Math.round(ratio * 100)}%`, ratio > 1.2 ? 'bad' : ratio > 0.8 ? 'warn' : 'good');
+    } else {
+      setChip($('cPeak'), peak > 0.002 ? '진동 중' : '안정', peak > 0.002 ? 'warn' : 'good');
+    }
+    const g = Math.max(0, Math.round(grip * 100));
+    $('mGrip').textContent = g;
+    if (g <= 0) setChip($('cGrip'), '바퀴 들림 · 접지 상실', 'bad');
+    else if (g < 50) setChip($('cGrip'), '접지력 크게 감소', 'warn');
+    else setChip($('cGrip'), '접지 양호', 'good');
+  }
+
+  // ---------- 세그먼트 컨트롤 ----------
+  function initSeg(root, onPick) {
+    const thumb = root.querySelector('.seg-thumb');
+    const btns = [...root.querySelectorAll('button')];
+    function place(animate) {
+      const on = btns.find(b => b.getAttribute('aria-pressed') === 'true');
+      if (!animate) thumb.style.transition = 'none';
+      if (on) {
+        thumb.style.opacity = 1;
+        thumb.style.width = on.offsetWidth + 'px';
+        thumb.style.transform = `translateX(${on.offsetLeft}px)`;
+      } else {
+        thumb.style.opacity = 0;
+      }
+      if (!animate) { thumb.offsetWidth; thumb.style.transition = ''; }
+    }
+    function select(v) {
+      btns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+      place(true);
+    }
+    btns.forEach(b => b.addEventListener('click', () => { select(b.dataset.v); onPick(b.dataset.v); }));
+    new ResizeObserver(() => place(false)).observe(root);
+    return { select, clear: () => select(null) };
+  }
+
+  // ---------- 입력 바인딩 ----------
+  const inK = $('inK'), inC = $('inC'), inMs = $('inMs'), inMu = $('inMu'), inSpeed = $('inSpeed');
+
+  function syncLabels() {
+    $('vK').textContent = (P.k / 1000).toFixed(1);
+    $('vC').textContent = P.c;
+    $('vMs').textContent = P.ms;
+    $('vMu').textContent = P.mu;
+    $('vSpeed').textContent = P.speedKmh;
+    updateStatic();
+  }
+
+  function matchPreset() {
+    const hit = Object.keys(PRESETS).find(key => PRESETS[key].k === P.k && PRESETS[key].c === P.c);
+    if (hit) { presetSeg.select(hit); $('presetCaption').textContent = PRESETS[hit].caption; }
+    else { presetSeg.clear(); $('presetCaption').textContent = '사용자 설정'; }
+  }
+
+  const presetSeg = initSeg($('segPreset'), v => {
+    const p = PRESETS[v];
+    P.k = p.k; P.c = p.c;
+    inK.value = p.k / 1000; inC.value = p.c;
+    $('presetCaption').textContent = p.caption;
+    syncLabels();
+  });
+
+  initSeg($('segRoad'), v => {
+    P.road = v;
+    $('roadCaption').textContent = ROADS[v];
+  });
+
+  inK.addEventListener('input', () => { P.k = Math.round(parseFloat(inK.value) * 1000); syncLabels(); matchPreset(); });
+  inC.addEventListener('input', () => { P.c = parseInt(inC.value, 10); syncLabels(); matchPreset(); });
+  inMs.addEventListener('input', () => { P.ms = parseInt(inMs.value, 10); syncLabels(); });
+  inMu.addEventListener('input', () => { P.mu = parseInt(inMu.value, 10); syncLabels(); });
+  inSpeed.addEventListener('input', () => { P.speedKmh = parseInt(inSpeed.value, 10); syncLabels(); });
+
+  $('inGhost').addEventListener('change', e => {
+    P.ghost = e.target.checked;
+    ghost = { ...car };
+    $('legendGhost').hidden = !P.ghost;
+  });
+
+  const btnPlay = $('btnPlay');
+  btnPlay.addEventListener('click', () => {
+    running = !running;
+    $('playTxt').textContent = running ? '일시정지' : '재생';
+    $('playIco').innerHTML = running
+      ? '<rect x="2" y="1.5" width="3.5" height="11" rx="1"/><rect x="8.5" y="1.5" width="3.5" height="11" rx="1"/>'
+      : '<path d="M3 1.5v11l9.5-5.5z"/>';
+    btnPlay.setAttribute('aria-pressed', String(!running));
+  });
+
+  $('btnReset').addEventListener('click', () => {
+    car = newState(); ghost = newState();
+    dist = 0; simTime = 0; hist = [];
+  });
+
+  // 바운스 테스트: 누르고 있는 동안 힘을 가하고, 떼면 놓음
+  const btnPress = $('btnPress');
+  const pressOn = e => { if (e) e.preventDefault(); pushing = true; btnPress.classList.add('is-held'); };
+  const pressOff = () => { pushing = false; btnPress.classList.remove('is-held'); };
+  btnPress.addEventListener('pointerdown', e => { btnPress.setPointerCapture(e.pointerId); pressOn(e); });
+  btnPress.addEventListener('pointerup', pressOff);
+  btnPress.addEventListener('pointercancel', pressOff);
+  btnPress.addEventListener('lostpointercapture', pressOff);
+  btnPress.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) pressOn(e); });
+  btnPress.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') pressOff(); });
+  btnPress.addEventListener('contextmenu', e => e.preventDefault());
+
+  // ---------- 메인 루프 ----------
+  syncLabels();
+  let last = performance.now();
+  function loop(now) {
+    requestAnimationFrame(loop);
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    if (running) advance(dt);
+    drawStage();
+    drawChart();
+    metricTimer += dt;
+    if (metricTimer > 0.15) { metricTimer = 0; updateMetrics(); }
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

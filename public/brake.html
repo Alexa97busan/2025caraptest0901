@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>브레이크 유압 시뮬레이터</title>
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --fill: rgba(118, 118, 128, 0.12);
+    --fg: #1c1c1e;
+    --fg-2: #6e6e73;
+    --line: rgba(60, 60, 67, 0.14);
+    --accent: #007aff;
+    --accent-soft: rgba(0, 122, 255, 0.12);
+    --good: #248a3d;
+    --good-soft: rgba(52, 199, 89, 0.16);
+    --warn: #c93400;
+    --warn-soft: rgba(255, 149, 0, 0.18);
+    --bad: #d70015;
+    --bad-soft: rgba(255, 59, 48, 0.14);
+    --steel: #9aa1ab;
+    --steel-dark: #636366;
+    --metal: #c9ced6;
+    --tire: #2c2c2e;
+    --hot: #ff9500;
+    --fire: #ff3b30;
+    --fluid: #af52de;
+    --cool: #5ac8fa;
+    --knob: #ffffff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+      --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+      --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+      --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+      --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+      --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+      --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+      --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+      --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+    --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+    --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+    --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+    --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+    --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+    --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+    --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding-inline: 16px;
+    padding-block: 20px 40px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-icon { width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0; background: var(--accent); display: grid; place-items: center; }
+  .brand-icon svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  h1 { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.025em; text-wrap: balance; }
+  .sub { margin: 0; font-size: 0.82rem; color: var(--fg-2); }
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .model-tag { font-size: 0.75rem; font-weight: 600; color: var(--fg-2); background: var(--fill); padding: 4px 10px; border-radius: 999px; }
+  .home-link { color: var(--accent); background: var(--accent-soft); text-decoration: none; transition: transform 0.18s var(--ease-out); }
+  .home-link:active { transform: scale(0.95); }
+  .home-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .main { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 920px) {
+    .main { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; }
+    .side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  }
+  .col { display: grid; gap: 14px; min-width: 0; }
+
+  .panel { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: 16px; min-width: 0; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .panel-title { font-size: 0.95rem; font-weight: 650; margin: 0; }
+  .hint { font-size: 0.75rem; color: var(--fg-2); margin: 0; }
+
+  .stage { position: relative; padding: 0; overflow: hidden; }
+  .stage canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
+  @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3.2; } }
+  .stage-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-top: 1px solid var(--line); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  button { font: inherit; color: inherit; }
+  .btn {
+    border: none; cursor: pointer; border-radius: 12px; padding: 9px 14px;
+    font-size: 0.85rem; font-weight: 600; background: var(--fill); color: var(--fg);
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: transform 0.18s var(--ease-out), background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  .btn:active, .btn.is-held { transform: scale(0.95); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-hold.is-held { background: var(--hot); color: #fff; }
+  .btn svg { width: 14px; height: 14px; fill: currentColor; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .metrics { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 700px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { background: var(--surface); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); display: grid; gap: 4px; min-width: 0; align-content: start; }
+  .tile-label { font-size: 0.72rem; font-weight: 600; color: var(--fg-2); }
+  .tile-value { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.15; overflow-wrap: anywhere; }
+  .tile-unit { font-size: 0.78rem; font-weight: 500; color: var(--fg-2); margin-left: 3px; letter-spacing: 0; }
+  .chip { justify-self: start; font-size: 0.7rem; font-weight: 650; padding: 2px 8px; border-radius: 999px; background: var(--fill); color: var(--fg-2); transition: background-color 0.25s var(--ease-out), color 0.25s var(--ease-out); }
+  .chip.good { background: var(--good-soft); color: var(--good); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .chip.info { background: var(--accent-soft); color: var(--accent); }
+
+  .calc { display: grid; gap: 6px; font-size: 0.84rem; font-variant-numeric: tabular-nums; }
+  .calc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--fill); align-items: baseline; }
+  .calc-row span:first-child { color: var(--fg-2); overflow-wrap: anywhere; }
+  .calc-row b { font-weight: 700; white-space: nowrap; }
+
+  .seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--fill); border-radius: 11px; padding: 2px; }
+  .seg-thumb { position: absolute; top: 2px; bottom: 2px; left: 0; width: 0; background: var(--knob); border-radius: 9px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); transition: transform 0.32s var(--ease-out), width 0.32s var(--ease-out), opacity 0.2s; }
+  .seg button { position: relative; z-index: 1; border: none; background: transparent; cursor: pointer; padding: 7px 2px; font-size: 0.78rem; font-weight: 500; border-radius: 9px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg button[aria-pressed="true"] { font-weight: 650; color: #1c1c1e; }
+  .seg-caption { margin-top: 8px; font-size: 0.76rem; color: var(--fg-2); min-height: 1.2em; }
+
+  .field { display: grid; gap: 4px; padding-block: 10px; border-top: 1px solid var(--line); }
+  .field:first-of-type { border-top: none; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field label { font-size: 0.86rem; font-weight: 600; }
+  .field small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .badge { font-size: 0.85rem; font-weight: 650; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 26px; background: transparent; cursor: pointer; margin: 0; }
+  input[type=range]::-webkit-slider-runnable-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8.5px; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); transition: transform 0.15s var(--ease-out); }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.18); }
+  input[type=range]::-moz-range-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border: none; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); }
+
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .switch-row label { font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+  .switch-row label small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .switch { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+  .switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--fill); transition: background-color 0.25s var(--ease-out); }
+  .switch span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15); transition: transform 0.3s var(--ease-out); }
+  .switch input:checked + span { background: var(--good); }
+  .switch input.danger:checked + span { background: var(--bad); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .notes { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 760px) { .notes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .note { min-width: 0; }
+  .note h3 { font-size: 0.9rem; margin: 0 0 6px; }
+  .note p, .note li { font-size: 0.84rem; color: var(--fg-2); margin: 0; }
+  .note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .note b { color: var(--fg); font-weight: 650; }
+  .note table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .note th, .note td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .note th { color: var(--fg-2); font-weight: 600; }
+  .note td { color: var(--fg); }
+  h2.section { font-size: 1.05rem; margin: 0; letter-spacing: -0.02em; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+
+  .gauge-note { font-size: 0.72rem; color: var(--fg-2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 4v3M20 12h-3"/></svg>
+      </div>
+      <div>
+        <h1>브레이크 유압 시뮬레이터</h1>
+        <p class="sub">페달을 밟는 힘이 페달비, 배력장치, 유압을 거쳐 캘리퍼에서 몇 배로 커지는지 확인합니다</p>
+      </div>
+    </div>
+    <div class="tag-row">
+      <span class="model-tag">파스칼의 원리 · 유압식 디스크 브레이크</span>
+      <a class="model-tag home-link" href="lab.html">← 물리 시스템 알기</a>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="col">
+      <section class="panel stage" aria-label="브레이크 계통 애니메이션">
+        <canvas id="stage" role="img" aria-label="브레이크 페달, 배력장치, 마스터 실린더, 브레이크 라인, 캘리퍼의 측면 구성도"></canvas>
+        <div class="stage-bar">
+          <button class="btn btn-hold btn-primary" id="btnPress">브레이크 밟기</button>
+          <span class="hint">버튼을 누르고 있으면 페달을 끝까지 밟습니다</span>
+        </div>
+      </section>
+
+      <div class="metrics">
+        <div class="tile">
+          <span class="tile-label">푸시로드 힘</span>
+          <span class="tile-value"><span id="mRod">600</span><span class="tile-unit">kgf</span></span>
+          <span class="chip" id="cRod">페달력의 20배</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">유압 (최대)</span>
+          <span class="tile-value"><span id="mP">0</span><span class="tile-unit">kgf/cm²</span></span>
+          <span class="chip info" id="cP">0 bar</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">캘리퍼 피스톤 힘</span>
+          <span class="tile-value"><span id="mFw">0</span><span class="tile-unit">kgf</span></span>
+          <span class="chip" id="cFw">피스톤 1개 기준</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">전체 힘 배율</span>
+          <span class="tile-value"><span id="mGain">0</span><span class="tile-unit">배</span></span>
+          <span class="chip" id="cGain">페달력 대비</span>
+        </div>
+      </div>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">계산 과정</h2>
+          <button class="btn" id="btnExample">시험 예제 불러오기</button>
+        </div>
+        <div class="calc" id="calc"></div>
+        <p class="hint" id="exampleText" style="margin-top:10px;">예제: 페달력 30kgf, 페달비 5:1, 마스터 실린더 단면적 5cm², 캘리퍼 피스톤 단면적 10cm²일 때 유압과 피스톤 힘은?</p>
+      </section>
+    </div>
+
+    <aside class="col side">
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">입력</h2></div>
+        <div class="field">
+          <div class="field-head">
+            <label for="inF">페달 밟는 힘<small>운전자가 발로 누르는 힘</small></label>
+            <span class="badge"><span id="vF">30</span> kgf</span>
+          </div>
+          <input type="range" id="inF" min="5" max="60" step="1" value="30">
+        </div>
+        <div class="field">
+          <div class="field-head">
+            <label for="inLever">페달비<small>지렛대 비율 (받침점~발판 ÷ 받침점~로드)</small></label>
+            <span class="badge"><span id="vLever">5.0</span> : 1</span>
+          </div>
+          <input type="range" id="inLever" min="2" max="7" step="0.1" value="5">
+        </div>
+        <div class="field">
+          <div class="field-head">
+            <label for="inBoost">배력비<small>진공 배력장치. 1이면 배력 없음(고장)</small></label>
+            <span class="badge"><span id="vBoost">4.0</span> 배</span>
+          </div>
+          <input type="range" id="inBoost" min="1" max="8" step="0.1" value="4">
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">실린더 크기</h2></div>
+        <div class="field">
+          <div class="field-head">
+            <label for="inDm">마스터 실린더 지름<small id="vAm">단면적 3.80 cm²</small></label>
+            <span class="badge"><span id="vDm">22.00</span> mm</span>
+          </div>
+          <input type="range" id="inDm" min="15" max="32" step="0.01" value="22">
+        </div>
+        <div class="field">
+          <div class="field-head">
+            <label for="inDw">캘리퍼 피스톤 지름<small id="vAw">단면적 20.43 cm²</small></label>
+            <span class="badge"><span id="vDw">51.00</span> mm</span>
+          </div>
+          <input type="range" id="inDw" min="20" max="64" step="0.01" value="51">
+        </div>
+        <div class="switch-row">
+          <label for="inAir">브레이크 라인에 공기 혼입<small>베이퍼 록·공기빼기 불량 상태</small></label>
+          <div class="switch"><input type="checkbox" id="inAir" class="danger" role="switch"><span></span></div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2 class="section">자동차산업기사 시험 포인트</h2></div>
+    <div class="notes">
+      <div class="note">
+        <h3>파스칼의 원리</h3>
+        <ul>
+          <li>밀폐된 액체에 가한 압력은 <b>모든 방향으로 같은 크기</b>로 전달된다.</li>
+          <li>유압 <b>P = F ÷ A</b>(마스터 실린더). 같은 압력이 캘리퍼에 전달되므로 피스톤 힘은 <b>P × A</b>(휠 쪽)로, 면적이 클수록 커진다.</li>
+          <li>대신 이동 거리는 면적비만큼 줄어든다. 힘 × 거리(일)는 늘어나지 않는다.</li>
+          <li>진공 배력장치는 <b>흡기 다기관 진공과 대기압의 차이</b>로 페달력을 돕는다.</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>베이퍼 록과 페이드</h3>
+        <ul>
+          <li><b>베이퍼 록</b>: 브레이크액이 끓어 라인에 기포가 생기는 현상. 페달이 스펀지처럼 들어가고 제동력이 떨어진다.</li>
+          <li>원인: 긴 내리막에서 과도한 브레이크 사용, 브레이크 끌림, 비점이 낮거나 수분을 먹은 브레이크액.</li>
+          <li><b>페이드</b>: 마찰열로 패드·라이닝의 마찰계수가 떨어지는 현상. 액체가 아니라 마찰재의 문제다.</li>
+          <li>공기빼기는 보통 <b>마스터 실린더에서 먼 바퀴부터</b> 한다.</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>잔압과 브레이크액</h3>
+        <ul>
+          <li>체크 밸브가 라인에 <b>잔압</b>을 남겨 둔다(드럼식, 대략 0.6~0.8 kgf/cm²).</li>
+          <li>잔압의 목적: 작동 지연 방지, 베이퍼 록 방지, 공기 혼입 방지, 휠 실린더 오일 누출 방지.</li>
+          <li>브레이크액은 <b>비등점이 높고</b>, 흡습성이 있어 정기 교환이 필요하다(DOT 규격).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ---------- 공통: 테마 토큰, 캔버스, 세그먼트, 길게 누르기 ----------
+  const $ = id => document.getElementById(id);
+  const C = {};
+  const TOKEN_NAMES = ['bg', 'surface', 'fill', 'fg', 'fg-2', 'line', 'accent', 'good', 'warn', 'bad', 'steel', 'steel-dark', 'metal', 'tire', 'hot', 'fire', 'fluid', 'cool', 'knob'];
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    TOKEN_NAMES.forEach(t => { C[t] = cs.getPropertyValue('--' + t).trim(); });
+    C.font = getComputedStyle(document.body).fontFamily;
+  }
+  readTokens();
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTokens);
+  new MutationObserver(readTokens).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+  const REDUCE = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  function fitCanvas(cv) {
+    const ctx = cv.getContext('2d');
+    const fit = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const r = cv.getBoundingClientRect();
+      cv.width = Math.round(r.width * dpr);
+      cv.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cv._w = r.width; cv._h = r.height;
+    };
+    new ResizeObserver(fit).observe(cv);
+    fit();
+    return ctx;
+  }
+
+  function setChip(el, text, tone) {
+    el.textContent = text;
+    el.className = 'chip' + (tone ? ' ' + tone : '');
+  }
+
+  // 선택 표시가 미끄러져 이동하는 세그먼트 컨트롤
+  function initSeg(root, onPick) {
+    const thumb = root.querySelector('.seg-thumb');
+    const btns = [...root.querySelectorAll('button')];
+    function place(animate) {
+      const on = btns.find(b => b.getAttribute('aria-pressed') === 'true');
+      if (!animate) thumb.style.transition = 'none';
+      if (on) {
+        thumb.style.opacity = 1;
+        thumb.style.width = on.offsetWidth + 'px';
+        thumb.style.transform = `translateX(${on.offsetLeft}px)`;
+      } else {
+        thumb.style.opacity = 0;
+      }
+      if (!animate) { void thumb.offsetWidth; thumb.style.transition = ''; }
+    }
+    function select(v) {
+      btns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+      place(true);
+    }
+    btns.forEach(b => b.addEventListener('click', () => { select(b.dataset.v); onPick(b.dataset.v); }));
+    new ResizeObserver(() => place(false)).observe(root);
+    return { select, clear: () => select(null) };
+  }
+
+  // 누르고 있는 동안 on, 떼면 off (마우스·터치·키보드)
+  function holdButton(btn, onChange) {
+    const on = e => { if (e) e.preventDefault(); btn.classList.add('is-held'); onChange(true); };
+    const off = () => { if (!btn.classList.contains('is-held')) return; btn.classList.remove('is-held'); onChange(false); };
+    btn.addEventListener('pointerdown', e => { btn.setPointerCapture(e.pointerId); on(e); });
+    btn.addEventListener('pointerup', off);
+    btn.addEventListener('pointercancel', off);
+    btn.addEventListener('lostpointercapture', off);
+    btn.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) on(e); });
+    btn.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') off(); });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const DEG = Math.PI / 180;
+
+
+  const P = { F: 30, lever: 5, boost: 4, dm: 22, dw: 51, air: false };
+  const area = d => Math.PI / 4 * Math.pow(d / 10, 2); // mm → cm²
+
+  function calc() {
+    const rod = P.F * P.lever * P.boost;
+    const Am = area(P.dm), Aw = area(P.dw);
+    const p = rod / Am;
+    const Fw = p * Aw;
+    return { rod, Am, Aw, p, Fw, gain: Fw / P.F, travel: Am / Aw };
+  }
+
+  // ---------- 화면 갱신 ----------
+  const fmt = (v, d = 1) => v.toLocaleString('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+  function updateText() {
+    const r = calc();
+    $('vF').textContent = P.F;
+    $('vLever').textContent = P.lever.toFixed(1);
+    $('vBoost').textContent = P.boost.toFixed(1);
+    $('vDm').textContent = P.dm.toFixed(2);
+    $('vDw').textContent = P.dw.toFixed(2);
+    $('vAm').textContent = `단면적 ${r.Am.toFixed(2)} cm²`;
+    $('vAw').textContent = `단면적 ${r.Aw.toFixed(2)} cm²`;
+
+    $('mRod').textContent = fmt(r.rod, 0);
+    setChip($('cRod'), `페달력의 ${fmt(P.lever * P.boost, 1)}배`, P.boost <= 1.05 ? 'warn' : '');
+    $('mP').textContent = fmt(r.p, 1);
+    setChip($('cP'), `${fmt(r.p * 0.980665, 1)} bar · ${fmt(r.p * 0.0980665, 2)} MPa`, 'info');
+    $('mFw').textContent = fmt(r.Fw, 0);
+    setChip($('cFw'), `이동량은 마스터의 ${fmt(r.travel * 100, 0)}%`, '');
+    $('mGain').textContent = fmt(r.gain, 1);
+    setChip($('cGain'), P.boost <= 1.05 ? '배력 없음 · 페달 무거움' : '페달력 대비', P.boost <= 1.05 ? 'warn' : 'good');
+
+    $('calc').innerHTML = `
+      <div class="calc-row"><span>① 푸시로드 힘 = 페달력 × 페달비 × 배력비 = ${P.F} × ${P.lever.toFixed(1)} × ${P.boost.toFixed(1)}</span><b>${fmt(r.rod, 1)} kgf</b></div>
+      <div class="calc-row"><span>② 마스터 실린더 단면적 = π/4 × ${(P.dm / 10).toFixed(3)}²</span><b>${r.Am.toFixed(2)} cm²</b></div>
+      <div class="calc-row"><span>③ 유압 P = ① ÷ ② = ${fmt(r.rod, 1)} ÷ ${r.Am.toFixed(2)}</span><b>${fmt(r.p, 2)} kgf/cm²</b></div>
+      <div class="calc-row"><span>④ 캘리퍼 피스톤 단면적 = π/4 × ${(P.dw / 10).toFixed(3)}²</span><b>${r.Aw.toFixed(2)} cm²</b></div>
+      <div class="calc-row"><span>⑤ 피스톤 힘 = ③ × ④ = ${fmt(r.p, 2)} × ${r.Aw.toFixed(2)}</span><b>${fmt(r.Fw, 1)} kgf</b></div>`;
+  }
+
+  // ---------- 입력 ----------
+  const bind = (id, key, parse = parseFloat) => {
+    $(id).addEventListener('input', e => { P[key] = parse(e.target.value); updateText(); });
+  };
+  bind('inF', 'F'); bind('inLever', 'lever'); bind('inBoost', 'boost'); bind('inDm', 'dm'); bind('inDw', 'dw');
+  $('inAir').addEventListener('change', e => { P.air = e.target.checked; });
+
+  $('btnExample').addEventListener('click', () => {
+    // 단면적 5cm², 10cm²가 되는 지름(mm)
+    const dFromA = a => Math.sqrt(4 * a / Math.PI) * 10;
+    Object.assign(P, { F: 30, lever: 5, boost: 1, dm: +dFromA(5).toFixed(2), dw: +dFromA(10).toFixed(2) });
+    $('inF').value = P.F; $('inLever').value = P.lever; $('inBoost').value = P.boost;
+    $('inDm').value = P.dm; $('inDw').value = P.dw;
+    updateText();
+    $('exampleText').textContent = '예제 풀이: 30 × 5 = 150kgf, 150 ÷ 5 = 30kgf/cm², 30 × 10 = 300kgf (배력장치 없음 기준). 지름은 단면적에 맞춰 반올림해서 소수점 아래 값이 조금 다를 수 있습니다.';
+  });
+
+  // ---------- 애니메이션 ----------
+  const stage = $('stage');
+  const ctx = fitCanvas(stage);
+  let held = false, press = 0;   // press: 페달 밟은 정도 0~1
+  holdButton($('btnPress'), v => { held = v; });
+
+  // 공기가 섞이면 처음 45%의 페달 행정은 기포만 압축하고 압력이 거의 오르지 않음
+  const pressureFactor = p => P.air ? clamp((p - 0.45) / 0.55, 0, 1) * 0.85 : p;
+
+  let bubbles = Array.from({ length: 9 }, (_, i) => ({ t: i / 9, r: 2 + Math.random() * 2.5 }));
+
+  function draw() {
+    const W = stage._w, H = stage._h;
+    if (!W) return;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = C.surface; ctx.fillRect(0, 0, W, H);
+    const u = Math.min(W / 100, H / 58);       // 레이아웃 단위
+    const ox = (W - 100 * u) / 2, oy = (H - 58 * u) / 2;
+    const X = v => ox + v * u, Y = v => oy + v * u;
+    const pf = pressureFactor(press);
+    const r = calc();
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.font = `600 ${Math.max(10, u * 2.1)}px ${C.font}`;
+    ctx.textBaseline = 'middle';
+
+    // 1) 페달 (받침점 위쪽, 발판 아래쪽)
+    const pivot = { x: X(10), y: Y(8) };
+    const ang = -0.05 - press * 0.42;           // 밟을수록 앞으로(오른쪽) 회전
+    const padLen = 30 * u, rodAt = 7 * u;
+    const pad = { x: pivot.x + Math.sin(-ang) * padLen, y: pivot.y + Math.cos(ang) * padLen };
+    const rodP = { x: pivot.x + Math.sin(-ang) * rodAt, y: pivot.y + Math.cos(ang) * rodAt };
+    ctx.strokeStyle = C['steel-dark']; ctx.lineWidth = u * 1.4;
+    ctx.beginPath(); ctx.moveTo(pivot.x, pivot.y); ctx.lineTo(pad.x, pad.y); ctx.stroke();
+    ctx.fillStyle = C.fg;
+    roundRect(ctx, pad.x - 4 * u, pad.y - 1.2 * u, 8 * u, 3 * u, u); ctx.fill();
+    ctx.fillStyle = C.surface; ctx.strokeStyle = C['steel-dark']; ctx.lineWidth = u * 0.6;
+    ctx.beginPath(); ctx.arc(pivot.x, pivot.y, u * 1.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // 발 힘 화살표
+    if (press > 0.02) {
+      ctx.strokeStyle = C.hot; ctx.fillStyle = C.hot; ctx.lineWidth = u * 0.9;
+      const ax = pad.x - 12 * u * (0.5 + press * 0.5);
+      ctx.beginPath(); ctx.moveTo(ax, pad.y); ctx.lineTo(pad.x - 5 * u, pad.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pad.x - 5 * u, pad.y); ctx.lineTo(pad.x - 7.5 * u, pad.y - 1.6 * u); ctx.lineTo(pad.x - 7.5 * u, pad.y + 1.6 * u); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = C['fg-2']; ctx.textAlign = 'left';
+    ctx.fillText(`페달 ${P.F}kgf`, X(1), Y(47));
+    ctx.fillText(`페달비 ${P.lever.toFixed(1)}:1`, X(1), Y(51));
+
+    // 2) 배력장치 (원통)
+    const bx = X(30), by = Y(14), br = 8 * u;
+    const rodX = bx - br - 2 * u + press * 3 * u;
+    ctx.strokeStyle = C['steel-dark']; ctx.lineWidth = u * 0.8;
+    ctx.beginPath(); ctx.moveTo(rodP.x, rodP.y); ctx.lineTo(rodX, by); ctx.stroke();
+    ctx.fillStyle = C.metal; ctx.strokeStyle = C.steel;
+    ctx.beginPath(); ctx.ellipse(bx, by, br * 0.75, br, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // 배력 작동 표시 (다이어프램 위치)
+    const boostOn = P.boost > 1.05;
+    ctx.strokeStyle = boostOn ? C.accent : C.steel; ctx.lineWidth = u * 0.7;
+    const dpx = bx - br * 0.3 + press * br * 0.5;
+    ctx.beginPath(); ctx.moveTo(dpx, by - br * 0.85); ctx.quadraticCurveTo(dpx + 2 * u, by, dpx, by + br * 0.85); ctx.stroke();
+    ctx.fillStyle = C['fg-2']; ctx.textAlign = 'center';
+    ctx.fillText(boostOn ? `배력 ×${P.boost.toFixed(1)}` : '배력 없음', bx, by + br + 3 * u);
+
+    // 3) 마스터 실린더
+    const mx0 = bx + br * 0.75, mx1 = X(56), my = by;
+    const mh = clamp(P.dm / 22, 0.7, 1.45) * 4 * u;          // 지름에 비례한 두께
+    const mStroke = press * 6 * u;
+    ctx.fillStyle = C.metal; ctx.strokeStyle = C.steel; ctx.lineWidth = u * 0.5;
+    roundRect(ctx, mx0, my - mh / 2 - u * 0.6, mx1 - mx0, mh + u * 1.2, u); ctx.fill(); ctx.stroke();
+    // 리저버 탱크
+    roundRect(ctx, X(46), my - mh / 2 - 7 * u, 7 * u, 6 * u, u * 0.8); ctx.fill(); ctx.stroke();
+    // 유압액 (압력이 오를수록 진해짐)
+    const fluidAlpha = 0.25 + pf * 0.65;
+    ctx.globalAlpha = fluidAlpha; ctx.fillStyle = C.fluid;
+    ctx.fillRect(mx0 + 4 * u + mStroke, my - mh / 2, mx1 - mx0 - 4 * u - mStroke - u * 0.6, mh);
+    ctx.fillRect(X(46.8), my - mh / 2 - 4.5 * u, 5.4 * u, 3.3 * u);
+    ctx.globalAlpha = 1;
+    // 피스톤
+    ctx.fillStyle = C['steel-dark'];
+    ctx.fillRect(mx0 + 1 * u + mStroke, my - mh / 2, 3 * u, mh);
+    ctx.fillStyle = C['fg-2'];
+    ctx.fillText(`마스터 실린더 Ø${P.dm.toFixed(1)}`, (mx0 + mx1) / 2, my + mh / 2 + 4 * u);
+
+    // 4) 브레이크 라인
+    const line = [[mx1, my], [X(64), my], [X(64), Y(40)], [X(74), Y(40)]];
+    ctx.strokeStyle = C.fluid; ctx.globalAlpha = fluidAlpha; ctx.lineWidth = u * 1.2;
+    ctx.beginPath(); line.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+    ctx.globalAlpha = 1;
+    // 공기 기포: 압력이 오르기 전까지 크게, 눌리면 작아짐
+    if (P.air) {
+      const pts = t => {
+        const total = (X(64) - mx1) + (Y(40) - my) + (X(74) - X(64));
+        let d = t * total;
+        if (d < X(64) - mx1) return [mx1 + d, my];
+        d -= X(64) - mx1;
+        if (d < Y(40) - my) return [X(64), my + d];
+        d -= Y(40) - my;
+        return [X(64) + d, Y(40)];
+      };
+      ctx.fillStyle = C.surface; ctx.strokeStyle = C.fluid; ctx.lineWidth = 1;
+      bubbles.forEach(b => {
+        const [x, y] = pts(b.t);
+        const rr = b.r * (u / 6) * (1 - clamp(press / 0.45, 0, 1) * 0.6) + 0.6;
+        ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      });
+    }
+
+    // 5) 압력 게이지
+    const gx = X(64), gy = Y(26), gr = 5 * u;
+    ctx.fillStyle = C.surface; ctx.strokeStyle = C.steel; ctx.lineWidth = u * 0.5;
+    ctx.beginPath(); ctx.arc(gx + 6.5 * u, gy, gr, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + 1.5 * u, gy); ctx.stroke();
+    const a0 = Math.PI * 0.75, a1 = Math.PI * 2.25;
+    ctx.strokeStyle = C.fill; ctx.lineWidth = u * 0.9;
+    ctx.beginPath(); ctx.arc(gx + 6.5 * u, gy, gr * 0.78, a0, a1); ctx.stroke();
+    const gaugeMax = Math.max(100, Math.ceil(r.p / 50) * 50);
+    const frac = clamp(r.p * pf / gaugeMax, 0, 1);
+    ctx.strokeStyle = C.fluid;
+    ctx.beginPath(); ctx.arc(gx + 6.5 * u, gy, gr * 0.78, a0, a0 + (a1 - a0) * frac); ctx.stroke();
+    ctx.fillStyle = C.fg; ctx.textAlign = 'center';
+    ctx.font = `700 ${Math.max(10, u * 2)}px ${C.font}`;
+    ctx.fillText(fmt(r.p * pf, 0), gx + 6.5 * u, gy - 0.4 * u);
+    ctx.font = `500 ${Math.max(8, u * 1.4)}px ${C.font}`;
+    ctx.fillStyle = C['fg-2'];
+    ctx.fillText('kgf/cm²', gx + 6.5 * u, gy + 2.2 * u);
+    ctx.font = `600 ${Math.max(10, u * 2.1)}px ${C.font}`;
+
+    // 6) 디스크와 캘리퍼
+    const dx = X(88), dy = Y(40), dr = 15 * u;
+    ctx.fillStyle = C.metal; ctx.strokeStyle = C.steel; ctx.lineWidth = u * 0.5;
+    roundRect(ctx, dx - 1.6 * u, dy - dr, 3.2 * u, dr * 2, u); ctx.fill(); ctx.stroke();
+    // 캘리퍼 본체
+    const cw = clamp(P.dw / 51, 0.6, 1.3) * 7 * u;            // 피스톤 지름에 비례
+    ctx.fillStyle = C['steel-dark'];
+    roundRect(ctx, X(74), dy - cw / 2 - 1.2 * u, dx - X(74) - 4 * u, cw + 2.4 * u, u); ctx.fill();
+    // 캘리퍼 피스톤 + 패드 (이동은 면적비만큼 작게; 화면에서는 ×4 과장)
+    const gap = 2.2 * u;
+    const pStroke = Math.min(gap, gap * pf);
+    ctx.globalAlpha = fluidAlpha; ctx.fillStyle = C.fluid;
+    ctx.fillRect(X(74) + 0.8 * u, dy - cw / 2, 2 * u + pStroke, cw);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = C.metal;
+    ctx.fillRect(X(74) + 2.8 * u + pStroke, dy - cw / 2, 3 * u, cw);
+    ctx.fillStyle = pf > 0.98 ? C.hot : C.fg;
+    ctx.fillRect(X(74) + 5.8 * u + pStroke, dy - cw / 2 - u, 1.6 * u, cw + 2 * u);
+    ctx.fillStyle = C['fg-2'];
+    ctx.fillText(`캘리퍼 Ø${P.dw.toFixed(1)}`, X(80), dy + cw / 2 + 4.5 * u);
+    if (pf > 0.02) {
+      ctx.fillStyle = C.fg; ctx.textAlign = 'left';
+      ctx.fillText(`${fmt(r.Fw * pf, 0)} kgf`, dx + 3 * u, dy - dr * 0.55);
+    }
+    if (P.air && press > 0.2 && pf < 0.5) {
+      ctx.fillStyle = C.fire; ctx.textAlign = 'left';
+      ctx.fillText('페달이 쑥 들어가요 (스펀지 현상)', X(1), Y(56));
+    }
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    requestAnimationFrame(loop);
+    const dt = Math.min((now - last) / 1000, 0.05); last = now;
+    // 밟을 때는 빠르게, 뗄 때는 리턴 스프링으로 조금 천천히 (ease-out 성격의 1차 지연)
+    const target = held ? 1 : 0;
+    const k = held ? 9 : 6;
+    press = REDUCE ? target : press + (target - press) * (1 - Math.exp(-k * dt));
+    if (P.air) bubbles.forEach(b => { b.t = (b.t + dt * 0.03) % 1; });
+    draw();
+  }
+  updateText();
+  if (location.hash === '#example') $('btnExample').click();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

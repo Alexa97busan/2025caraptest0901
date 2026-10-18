@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { QUIZ_DATABASE, Question } from './data/quizData';
 import { SetupView } from './components/SetupView';
+import { LabLinkCard } from './components/LabLinkCard';
 import { QuestionView } from './components/QuestionView';
 import { ResultView } from './components/ResultView';
 import { sound } from './utils/audio';
@@ -190,6 +191,7 @@ export default function App() {
             onResetAllData={handleResetAllData}
           />
         )}
+        {view === 'setup' && <LabLinkCard />}
 
         {view === 'quiz' && (
           <QuestionView
