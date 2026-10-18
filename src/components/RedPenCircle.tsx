@@ -98,17 +98,41 @@ export const RedPenSlash: React.FC<{ className?: string }> = ({ className = '' }
   );
 };
 
-export const RedPenCheckMark: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const RedPenCheckMark: React.FC<{ 
+  className?: string; 
+  size?: 'xs' | 'sm' | 'md' | 'lg';
+  animate?: boolean;
+}> = ({ 
+  className = '',
+  size = 'md',
+  animate = true
+}) => {
+  const sizeMap = {
+    xs: 'w-3.5 h-3.5',
+    sm: 'w-4 h-4',
+    md: 'w-6 h-6',
+    lg: 'w-8 h-8'
+  };
+
   return (
-    <svg viewBox="0 0 80 80" className={`w-8 h-8 pointer-events-none inline-block ${className}`}>
+    <svg 
+      viewBox="0 0 48 48" 
+      className={`${sizeMap[size]} pointer-events-none inline-block flex-shrink-0 ${className}`}
+      style={{ overflow: 'visible' }}
+    >
+      {/* Authentic natural hand-drawn red ballpoint pen checkmark */}
       <path
-        d="M 12,42 Q 28,62 34,68 Q 50,32 72,12"
+        d="M 6,24 C 11,28 16,35 21,41 C 25,32 34,18 42,7"
         fill="none"
         stroke="#dc2626"
-        strokeWidth="4.5"
+        strokeWidth="4.2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="animate-draw-slash"
+        className={animate ? 'animate-draw-check' : ''}
+        style={{
+          filter: 'drop-shadow(0 0 1px rgba(220, 38, 38, 0.45))',
+          opacity: 0.95
+        }}
       />
     </svg>
   );

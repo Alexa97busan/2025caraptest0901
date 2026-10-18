@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { QUIZ_DATABASE, Question } from './data/quizData';
+import { CompletedExamInfo } from './types';
 import { SetupView } from './components/SetupView';
 import { LabLinkCard } from './components/LabLinkCard';
 import { QuestionView } from './components/QuestionView';
 import { ResultView } from './components/ResultView';
+import { SearchModal } from './components/SearchModal';
 import { sound } from './utils/audio';
 
 type ViewMode = 'setup' | 'quiz' | 'result';
 
+const ALL_ROUNDS_KEY = 'ALL';
+
 export default function App() {
   const [view, setView] = useState<ViewMode>('setup');
-  const [selectedYear, setSelectedYear] = useState<string>('2024');
+  const [selectedYear, setSelectedYear] = useState<string>('2026-42');
   const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Array<{ selected: number; correct: boolean } | null>>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -18,8 +22,10 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [savedWrongPool, setSavedWrongPool] = useState<Question[]>([]);
   const [gradingMode, setGradingMode] = useState<'instant' | 'exam'>('instant');
+  const [completedExams, setCompletedExams] = useState<Record<string, CompletedExamInfo>>({});
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
 
-  // Load saved sound preference and wrong pool on mount (with versioning & DB synchronization)
+  // Load saved sound preference, wrong pool, and completed exams on mount
   useEffect(() => {
     try {
       const DB_VERSION = 'v2_2026';
@@ -44,6 +50,11 @@ export default function App() {
         localStorage.setItem('auto_quiz_wrongs_v2', JSON.stringify(syncedWrongs));
       }
 
+      const savedCompleted = localStorage.getItem('auto_quiz_completed_rounds');
+      if (savedCompleted) {
+        setCompletedExams(JSON.parse(savedCompleted));
+      }
+
       if (storedVersion !== DB_VERSION) {
         localStorage.setItem('auto_quiz_version', DB_VERSION);
       }
@@ -63,6 +74,42 @@ export default function App() {
     }
   };
 
+  const recordCompletedExam = (
+    currentAnswers: Array<{ selected: number; correct: boolean } | null>,
+    questions: Question[],
+    roundKey: string
+  ) => {
+    const total = questions.length;
+    if (total === 0) return;
+    const correctCount = currentAnswers.filter(a => a?.correct).length;
+    const scorePercent = Math.round((correctCount / total) * 100);
+    const isPassed = scorePercent >= 60;
+    const mode = total === 20 ? 'quick20' : 'full';
+
+    setCompletedExams(prev => {
+      const existing = prev[roundKey];
+      const updated: Record<string, CompletedExamInfo> = {
+        ...prev,
+        [roundKey]: {
+          lastCompletedAt: new Date().toISOString(),
+          scorePercent,
+          correctCount,
+          totalCount: total,
+          isPassed,
+          mode,
+          timesTaken: (existing?.timesTaken || 0) + 1,
+          bestScore: Math.max(scorePercent, existing?.bestScore || 0)
+        }
+      };
+      try {
+        localStorage.setItem('auto_quiz_completed_rounds', JSON.stringify(updated));
+      } catch {
+        // Ignore
+      }
+      return updated;
+    });
+  };
+
   const handleStartQuiz = (
     yearKey: string, 
     studyMode: 'full' | 'quick20' | 'wrongOnly', 
@@ -71,16 +118,20 @@ export default function App() {
     setSelectedYear(yearKey);
     setGradingMode(chosenGradingMode);
 
+    const baseSet: Question[] =
+      yearKey === ALL_ROUNDS_KEY
+        ? Object.values(QUIZ_DATABASE).flatMap(set => set.questions)
+        : QUIZ_DATABASE[yearKey].questions;
+
     let qList: Question[] = [];
     if (studyMode === 'wrongOnly') {
-      qList = savedWrongPool.length > 0 ? [...savedWrongPool] : [...QUIZ_DATABASE[yearKey].questions];
+      qList = savedWrongPool.length > 0 ? [...savedWrongPool] : [...baseSet];
     } else if (studyMode === 'quick20') {
       // Pick 20 questions evenly distributed
-      const fullSet = QUIZ_DATABASE[yearKey].questions;
-      const step = fullSet.length / 20;
-      qList = Array.from({ length: 20 }, (_, i) => fullSet[Math.floor(i * step)]);
+      const step = baseSet.length / 20;
+      qList = Array.from({ length: 20 }, (_, i) => baseSet[Math.floor(i * step)]);
     } else {
-      qList = [...QUIZ_DATABASE[yearKey].questions];
+      qList = [...baseSet];
     }
 
     setActiveQuestions(qList);
@@ -113,11 +164,16 @@ export default function App() {
     }
   };
 
+  const handleFinishQuiz = () => {
+    recordCompletedExam(answers, activeQuestions, selectedYear);
+    setView('result');
+  };
+
   const handleNext = () => {
     if (currentIndex < activeQuestions.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
-      setView('result');
+      handleFinishQuiz();
     }
   };
 
@@ -159,12 +215,14 @@ export default function App() {
   };
 
   const handleResetAllData = () => {
-    // Clear all saved wrong pools and cached answer records
+    // Clear all saved wrong pools, completed exam records and cached answer records
     setSavedWrongPool([]);
+    setCompletedExams({});
     setAnswers(new Array(activeQuestions.length).fill(null));
     setCurrentIndex(0);
     setBookmarkedIndices([]);
     try {
+      localStorage.removeItem('auto_quiz_completed_rounds');
       localStorage.removeItem('auto_quiz_wrongs_v2');
       localStorage.removeItem('auto_quiz_wrongs');
     } catch {
@@ -176,7 +234,22 @@ export default function App() {
     setView('setup');
   };
 
-  const yearLabel = QUIZ_DATABASE[selectedYear]?.label || `${selectedYear}년도`;
+  const handleSelectQuestionFromSearch = (roundKey: string, question: Question) => {
+    setSelectedYear(roundKey);
+    const roundQuestions = QUIZ_DATABASE[roundKey]?.questions || [];
+    const targetIdx = roundQuestions.findIndex(q => q.q === question.q && q.n === question.n);
+
+    setActiveQuestions(roundQuestions);
+    setAnswers(new Array(roundQuestions.length).fill(null));
+    setCurrentIndex(targetIdx >= 0 ? targetIdx : 0);
+    setBookmarkedIndices([]);
+    setView('quiz');
+  };
+
+  const yearLabel =
+    selectedYear === ALL_ROUNDS_KEY
+      ? '2019~2026 전체 통합 모의고사'
+      : QUIZ_DATABASE[selectedYear]?.label || `${selectedYear}년도`;
 
   return (
     <main className="min-h-screen bg-[#242426] text-[#2c2b29] flex flex-col items-center justify-start pb-12">
@@ -186,9 +259,11 @@ export default function App() {
           <SetupView
             onStartQuiz={handleStartQuiz}
             savedWrongCount={savedWrongPool.length}
+            completedExams={completedExams}
             soundEnabled={soundEnabled}
             onToggleSound={handleToggleSound}
             onResetAllData={handleResetAllData}
+            onOpenSearch={() => setIsSearchOpen(true)}
           />
         )}
         {view === 'setup' && <LabLinkCard />}
@@ -205,13 +280,14 @@ export default function App() {
             onNext={handleNext}
             onPrev={handlePrev}
             onJumpToIndex={handleJumpToIndex}
-            onFinishQuiz={() => setView('result')}
+            onFinishQuiz={handleFinishQuiz}
             onExit={handleGoHome}
             soundEnabled={soundEnabled}
             onToggleSound={handleToggleSound}
             bookmarkedIndices={bookmarkedIndices}
             onToggleBookmark={handleToggleBookmark}
             onResetAllData={handleResetAllData}
+            onOpenSearch={() => setIsSearchOpen(true)}
           />
         )}
 
@@ -225,6 +301,14 @@ export default function App() {
             onGoHome={handleGoHome}
           />
         )}
+
+        {/* Global Search Modal */}
+        <SearchModal
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
+          onSelectQuestion={handleSelectQuestionFromSearch}
+          completedExams={completedExams}
+        />
       </div>
     </main>
   );

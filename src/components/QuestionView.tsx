@@ -13,7 +13,8 @@ import {
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
-  RotateCcw
+  RotateCcw,
+  Search
 } from 'lucide-react';
 import { Question } from '../data/quizData';
 import { RedPenCircle, RedPenSlash, RedPenCheckMark } from './RedPenCircle';
@@ -42,6 +43,7 @@ interface QuestionViewProps {
   bookmarkedIndices: number[];
   onToggleBookmark: (idx: number) => void;
   onResetAllData: () => void;
+  onOpenSearch: () => void;
 }
 
 export const QuestionView: React.FC<QuestionViewProps> = ({
@@ -61,7 +63,8 @@ export const QuestionView: React.FC<QuestionViewProps> = ({
   onToggleSound,
   bookmarkedIndices,
   onToggleBookmark,
-  onResetAllData
+  onResetAllData,
+  onOpenSearch
 }) => {
   const [showScratchpad, setShowScratchpad] = useState(false);
   const [showOmr, setShowOmr] = useState(false);
@@ -120,6 +123,15 @@ export const QuestionView: React.FC<QuestionViewProps> = ({
         </button>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenSearch}
+            title="900문항 기출문제 검색"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#faf7ef] hover:bg-[#f1ebe0] text-[#332b23] font-medium border border-[#cfc4b0] shadow-2xs transition-colors cursor-pointer"
+          >
+            <Search className="w-3.5 h-3.5 text-[#fbbf24]" />
+            <span className="hidden sm:inline">문제 검색</span>
+          </button>
+
           <button
             onClick={() => setShowResetConfirm(true)}
             title="처음부터 다시 풀기 (모든 풀이 및 오답 데이터 초기화)"
