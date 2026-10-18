@@ -30,7 +30,7 @@ export const RedPenCircle: React.FC<RedPenCircleProps> = ({
         <path
           d="M 18,34 C 18,16 55,10 88,10 C 130,10 152,22 152,36 C 152,52 120,62 80,62 C 34,62 12,50 14,32 C 16,14 62,8 96,8"
           fill="none"
-          stroke="#d92424"
+          stroke="#ff3b30"
           strokeWidth="3.2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -55,7 +55,7 @@ export const RedPenCircle: React.FC<RedPenCircleProps> = ({
         <path
           d="M 50,14 C 74,12 91,27 89,52 C 87,76 68,90 47,89 C 23,88 11,68 13,44 C 15,20 37,8 60,9 C 84,10 93,31 92,54 C 91,72 75,86 52,87"
           fill="none"
-          stroke="#dc2626"
+          stroke="#ff3b30"
           strokeWidth="3.8"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -78,7 +78,7 @@ export const RedPenSlash: React.FC<{ className?: string }> = ({ className = '' }
         <path
           d="M 18,18 Q 45,52 82,82"
           fill="none"
-          stroke="#e11d48"
+          stroke="#ff3b30"
           strokeWidth="3.5"
           strokeLinecap="round"
           className="animate-draw-slash"
@@ -87,7 +87,7 @@ export const RedPenSlash: React.FC<{ className?: string }> = ({ className = '' }
         <path
           d="M 80,20 Q 52,50 20,80"
           fill="none"
-          stroke="#e11d48"
+          stroke="#ff3b30"
           strokeWidth="2.8"
           strokeLinecap="round"
           className="animate-draw-slash"
@@ -124,7 +124,7 @@ export const RedPenCheckMark: React.FC<{
       <path
         d="M 6,24 C 11,28 16,35 21,41 C 25,32 34,18 42,7"
         fill="none"
-        stroke="#dc2626"
+        stroke="#ff3b30"
         strokeWidth="4.2"
         strokeLinecap="round"
         strokeLinejoin="round"

@@ -7,15 +7,15 @@ interface QuestionDiagramProps {
 export const QuestionDiagram: React.FC<QuestionDiagramProps> = ({ type }) => {
   if (type === 'car-body-q42') {
     return (
-      <div className="my-4 p-3 sm:p-4 bg-[#fbf9f4] rounded-xl border-2 border-[#2b251e] max-w-md mx-auto shadow-xs select-none">
-        <div className="relative w-full aspect-[16/10] bg-white rounded-lg border border-[#3d3429] p-3 overflow-hidden flex items-center justify-center">
+      <div className="my-4 p-3 sm:p-4 bg-(--a-card) rounded-xl border-2 border-(--a-label-3) max-w-md mx-auto shadow-xs select-none">
+        <div className="relative w-full aspect-[16/10] bg-(--a-card) rounded-lg border border-(--a-label-3) p-3 overflow-hidden flex items-center justify-center">
           {/* Top-left [전방] label */}
-          <div className="absolute top-2.5 left-2.5 px-2 py-0.5 border border-[#1f1b17] bg-white text-[#1f1b17] text-xs font-serif-kr font-bold shadow-2xs">
+          <div className="absolute top-2.5 left-2.5 px-2 py-0.5 border border-(--a-label-3) bg-(--a-card) text-(--a-label) text-xs font-serif-kr font-bold shadow-2xs">
             전방
           </div>
 
           {/* Bottom-right [후방] label */}
-          <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 border border-[#1f1b17] bg-white text-[#1f1b17] text-xs font-serif-kr font-bold shadow-2xs">
+          <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 border border-(--a-label-3) bg-(--a-card) text-(--a-label) text-xs font-serif-kr font-bold shadow-2xs">
             후방
           </div>
 
@@ -72,12 +72,12 @@ export const QuestionDiagram: React.FC<QuestionDiagramProps> = ({ type }) => {
             {/* Pointer Arrow pointing specifically to Rear Fender (A) */}
             <g className="cursor-pointer">
               {/* Arrow Line */}
-              <line x1="195" y1="158" x2="216" y2="128" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="195" y1="158" x2="216" y2="128" stroke="#ff3b30" strokeWidth="2.5" strokeLinecap="round" />
               {/* Arrow Head */}
-              <polygon points="216,124 210,132 220,130" fill="#dc2626" />
+              <polygon points="216,124 210,132 220,130" fill="#ff3b30" />
               
               {/* Circle A Label Indicator */}
-              <circle cx="188" cy="165" r="12" fill="#dc2626" stroke="#b91c1c" strokeWidth="1.5" />
+              <circle cx="188" cy="165" r="12" fill="#ff3b30" stroke="#b91c1c" strokeWidth="1.5" />
               <text
                 x="188"
                 y="169"
@@ -94,7 +94,7 @@ export const QuestionDiagram: React.FC<QuestionDiagramProps> = ({ type }) => {
           </svg>
         </div>
 
-        <div className="mt-2 text-center text-xs text-[#524536] font-serif-kr">
+        <div className="mt-2 text-center text-xs text-(--a-label) font-serif-kr">
           [사고 자동차 수리 이력 부위 모노코크 보디도]
         </div>
       </div>

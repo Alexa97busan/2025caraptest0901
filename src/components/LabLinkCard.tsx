@@ -13,37 +13,37 @@ export const LabLinkCard: React.FC = () => (
       href={LAB_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className="group block relative bg-[#f6f2e8] paper-texture-ivory rounded-2xl paper-shadow-vintage border-2 border-[#d0c6b3] p-5 sm:p-6 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 active:scale-[0.985] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#c2410c] focus-visible:outline-offset-2"
+      className="group block relative bg-(--a-card) paper-texture-ivory rounded-2xl paper-shadow-vintage border border-(--a-sep) p-5 sm:p-6 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 active:scale-[0.985] focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--a-accent) focus-visible:outline-offset-2"
     >
       <div className="flex items-start gap-4">
-        <span className="shrink-0 w-11 h-11 rounded-xl bg-[#fef7ee] border-2 border-[#c2410c]/40 flex items-center justify-center">
-          <FlaskConical className="w-5 h-5 text-[#c2410c]" />
+        <span className="shrink-0 w-11 h-11 rounded-xl bg-(--a-accent-soft) flex items-center justify-center">
+          <FlaskConical className="w-5 h-5 text-(--a-accent)" />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-typewriter text-[11px] font-bold px-2 py-0.5 bg-[#e3dac9] border border-[#beb19d] text-[#554737] rounded">
+            <span className="font-typewriter text-[11px] font-bold px-2 py-0.5 bg-(--a-fill-2) border border-(--a-sep) text-(--a-label) rounded">
               LAB
             </span>
-            <span className="font-mono-custom text-[11px] text-[#7d6f5c]">인터랙티브 시뮬레이터</span>
+            <span className="font-mono-custom text-[11px] text-(--a-label-2)">인터랙티브 시뮬레이터</span>
           </div>
-          <h2 className="font-serif-kr text-lg sm:text-xl font-bold text-[#1f1b17] tracking-tight">
+          <h2 className="font-serif-kr text-lg sm:text-xl font-bold text-(--a-label) tracking-tight">
             물리 시스템 알기
           </h2>
-          <p className="font-hand text-base text-[#685947] mt-0.5 leading-snug">
+          <p className="font-hand text-base text-(--a-label-2) mt-0.5 leading-snug">
             공식을 직접 움직여 보며 익히는 시뮬레이터 8개와 연습 문제
           </p>
           <div className="flex flex-wrap gap-1.5 mt-3">
             {TOPICS.map((t) => (
               <span
                 key={t}
-                className="text-[11px] font-serif-kr px-2 py-0.5 rounded-md bg-[#faf7ef] border border-[#d8cebe] text-[#5c4e3f]"
+                className="text-[11px] font-serif-kr px-2 py-0.5 rounded-md bg-(--a-card) border border-(--a-sep) text-(--a-label-2)"
               >
                 {t}
               </span>
             ))}
           </div>
         </div>
-        <ArrowUpRight className="shrink-0 w-5 h-5 text-[#7d6f5c] transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        <ArrowUpRight className="shrink-0 w-5 h-5 text-(--a-label-2) transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
       </div>
     </a>
   </div>

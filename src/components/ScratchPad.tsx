@@ -95,34 +95,34 @@ export const ScratchPad: React.FC<ScratchPadProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-      <div className="relative w-full max-w-xl bg-[#faf7ef] paper-texture-grid rounded-xl paper-shadow-vintage border-2 border-[#b8ab96] overflow-hidden flex flex-col h-[520px]">
+      <div className="relative w-full max-w-xl bg-(--a-card) paper-texture-grid rounded-xl paper-shadow-vintage border-2 border-(--a-sep) overflow-hidden flex flex-col h-[520px]">
         {/* Header styling like vintage notepad top */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-[#e9e2d0] border-b border-[#c8bba6]">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-(--a-fill) border-b border-(--a-sep)">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#c2410c]/80 inline-block"></span>
-            <span className="font-serif-kr font-bold text-sm text-[#44382e] tracking-tight">
+            <span className="w-3 h-3 rounded-full bg-(--a-accent)/80 inline-block"></span>
+            <span className="font-serif-kr font-bold text-sm text-(--a-label) tracking-tight">
               연습장 (Scratch Note / 계산 풀이)
             </span>
           </div>
           <button
             id="closeScratchpadBtn"
             onClick={onClose}
-            className="p-1 rounded-md hover:bg-[#d6cbba] text-[#554a3e] transition-colors"
+            className="p-1 rounded-md hover:bg-(--a-fill-2) text-(--a-label) transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between px-4 py-2 bg-[#f3ecda] border-b border-[#ded2bd] text-xs">
+        <div className="flex items-center justify-between px-4 py-2 bg-(--a-fill) border-b border-(--a-sep) text-xs">
           <div className="flex items-center gap-1.5">
             <button
               id="toolPencilBtn"
               onClick={() => setTool('pencil')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded border transition-all ${
                 tool === 'pencil'
-                  ? 'bg-[#374151] text-white border-[#1f2937] shadow-xs'
-                  : 'bg-white/80 text-[#374151] border-[#d1c7b7] hover:bg-white'
+                  ? 'bg-(--a-accent) text-white border-(--a-accent)'
+                  : 'bg-(--a-card)/80 text-(--a-label) border-(--a-sep) hover:bg-(--a-card)'
               }`}
             >
               <Pencil className="w-3 h-3" /> 연필
@@ -132,8 +132,8 @@ export const ScratchPad: React.FC<ScratchPadProps> = ({ onClose }) => {
               onClick={() => setTool('pen-blue')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded border transition-all ${
                 tool === 'pen-blue'
-                  ? 'bg-[#1d4ed8] text-white border-[#1e40af] shadow-xs'
-                  : 'bg-white/80 text-[#1d4ed8] border-[#d1c7b7] hover:bg-white'
+                  ? 'bg-(--a-accent) text-white border-(--a-accent) shadow-xs'
+                  : 'bg-(--a-card)/80 text-(--a-accent) border-(--a-sep) hover:bg-(--a-card)'
               }`}
             >
               파란펜
@@ -143,8 +143,8 @@ export const ScratchPad: React.FC<ScratchPadProps> = ({ onClose }) => {
               onClick={() => setTool('pen-red')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded border transition-all ${
                 tool === 'pen-red'
-                  ? 'bg-[#dc2626] text-white border-[#b91c1c] shadow-xs'
-                  : 'bg-white/80 text-[#dc2626] border-[#d1c7b7] hover:bg-white'
+                  ? 'bg-(--a-red) text-white border-(--a-red) shadow-xs'
+                  : 'bg-(--a-card)/80 text-(--a-red) border-(--a-sep) hover:bg-(--a-card)'
               }`}
             >
               빨간펜
@@ -154,8 +154,8 @@ export const ScratchPad: React.FC<ScratchPadProps> = ({ onClose }) => {
               onClick={() => setTool('eraser')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded border transition-all ${
                 tool === 'eraser'
-                  ? 'bg-[#6b7280] text-white border-[#4b5563] shadow-xs'
-                  : 'bg-white/80 text-[#4b5563] border-[#d1c7b7] hover:bg-white'
+                  ? 'bg-(--a-fill-2) text-white border-(--a-sep) shadow-xs'
+                  : 'bg-(--a-card)/80 text-(--a-label-2) border-(--a-sep) hover:bg-(--a-card)'
               }`}
             >
               <Eraser className="w-3 h-3" /> 지우개
@@ -165,7 +165,7 @@ export const ScratchPad: React.FC<ScratchPadProps> = ({ onClose }) => {
           <button
             id="clearScratchpadBtn"
             onClick={clearCanvas}
-            className="flex items-center gap-1 px-2 py-1 text-[#a83232] hover:bg-red-50 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-(--a-red) hover:bg-(--a-red-soft) rounded transition-colors"
           >
             <Trash2 className="w-3 h-3" /> 비우기
           </button>
@@ -184,8 +184,8 @@ export const ScratchPad: React.FC<ScratchPadProps> = ({ onClose }) => {
             onTouchEnd={stopDrawing}
             className="absolute inset-0 w-full h-full touch-none"
           />
-          <div className="absolute bottom-2 right-3 pointer-events-none text-[11px] font-hand text-[#8b7e6d]">
-            💡 손가락이나 마우스로 자유롭게 메모하세요
+          <div className="absolute bottom-2 right-3 pointer-events-none text-[11px] font-hand text-(--a-label-2)">
+            손가락이나 마우스로 자유롭게 메모하세요
           </div>
         </div>
       </div>
