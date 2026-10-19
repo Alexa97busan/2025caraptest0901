@@ -144,7 +144,7 @@
   <header>
     <p class="eyebrow">자동차산업기사 · 인터랙티브 학습 · <a href="./" style="color:var(--accent);text-decoration:none;">← 처음 화면</a></p>
     <h1>물리 시스템 알기</h1>
-    <p class="lead">교재의 공식과 그림을 직접 움직여 보며 익히는 시뮬레이터 9개, 마력·토크 계산기, 연습 문제입니다. 섹션은 시험 과목 순서로 묶었습니다. 값을 바꾸면 결과가 바로 보이니, 외우기 전에 먼저 눈으로 이해해 보세요.</p>
+    <p class="lead">교재의 공식과 그림을 직접 움직여 보며 익히는 시뮬레이터 10개, 마력·토크 계산기, 연습 문제입니다. 섹션은 시험 과목 순서로 묶었습니다. 값을 바꾸면 결과가 바로 보이니, 외우기 전에 먼저 눈으로 이해해 보세요.</p>
   </header>
 
   <div class="sections">
@@ -294,6 +294,22 @@
           </span>
         </div>
       </a>
+      <a class="card" href="differential.html">
+        <canvas class="preview" id="pvDiff" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">종감속·차동장치</span><span class="tag">LSD</span></div>
+          <h2>디퍼렌셜 시뮬레이터</h2>
+          <p>선회할 때 좌우 바퀴의 회전수 차이를 흡수하는 원리와, 한쪽이 빙판일 때 오픈·LSD·토센·잠금 디퍼렌셜의 토크 분배를 비교합니다.</p>
+          <div class="formula">링 기어 회전수 = (왼쪽 + 오른쪽) ÷ 2</div>
+          <ul class="learn">
+            <li>한쪽 바퀴가 멈추면 다른 쪽은 링 기어의 2배</li>
+            <li>오픈 디퍼렌셜이 빙판에서 출발하지 못하는 이유와 LSD</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
     </div>
   </section>
 
@@ -378,9 +394,10 @@
   const pvG = document.getElementById('pvGear');
   const pvP = document.getElementById('pvPower');
   const pvS = document.getElementById('pvSusType');
+  const pvD = document.getElementById('pvDiff');
   const pvC = document.getElementById('pvCircuit');
   const pvR = document.getElementById('pvRelay');
-  const ctx1 = setup(pv1), ctx2 = setup(pv2), ctx3 = setup(pv3), ctx4 = setup(pv4), ctx5 = setup(pv5), ctxG = setup(pvG), ctxC = setup(pvC), ctxR = setup(pvR), ctxP = setup(pvP), ctxS = setup(pvS);
+  const ctx1 = setup(pv1), ctx2 = setup(pv2), ctx3 = setup(pv3), ctx4 = setup(pv4), ctx5 = setup(pv5), ctxG = setup(pvG), ctxC = setup(pvC), ctxR = setup(pvR), ctxP = setup(pvP), ctxS = setup(pvS), ctxD = setup(pvD);
 
   // 단진자 미리보기: 감쇠 없이 일정하게 흔들림
   function drawPendulum(t) {
@@ -538,6 +555,26 @@
     g(x2, H / 2, z2, m, -a * z1 / z2 + Math.PI / z2, C.steel);
   }
 
+  // 디퍼렌셜 미리보기: 위에서 본 차축. 좌회전 중이라 안쪽(왼쪽) 바퀴 줄무늬가 느리고 바깥쪽이 빠르다
+  function drawDiff(t) {
+    const W = pvD._w, H = pvD._h, ctx = ctxD;
+    ctx.clearRect(0, 0, W, H);
+    const cx = W / 2, cy = H / 2, wx = W * 0.36, ww = Math.max(16, W * 0.06), wh = H * 0.56, tt = reduce ? 0.4 : t;
+    const stripes = (x, y, w, h, ph, col) => {
+      ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); ctx.fillStyle = col; ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2; const g = 9, off = (ph % 1) * g;
+      ctx.beginPath(); for (let yy = y - g + off; yy < y + h + g; yy += g) { ctx.moveTo(x, yy); ctx.lineTo(x + w, yy); } ctx.stroke(); ctx.restore();
+    };
+    ctx.fillStyle = C.steel; ctx.fillRect(cx - wx, cy - 3, wx * 2, 6);
+    stripes(cx - wx - ww / 2, cy - wh / 2, ww, wh, tt * 1.1, C.fg);
+    stripes(cx + wx - ww / 2, cy - wh / 2, ww, wh, tt * 1.7, C.fg);
+    ctx.fillStyle = C.surface; ctx.strokeStyle = C.line; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, H * 0.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    stripes(cx - H * 0.2 - 4, cy - H * 0.26, 8, H * 0.52, tt * 1.4, C.accent);
+    ctx.fillStyle = C.spring; ctx.fillRect(cx - 9, cy - H * 0.13, 18, 10); ctx.fillRect(cx - 9, cy + H * 0.13 - 10, 18, 10);
+    ctx.font = `600 11px ${C.font || 'sans-serif'}`; ctx.fillStyle = C['fg-2']; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('안쪽 · 느림', cx - wx, cy + wh / 2 + 4); ctx.fillText('바깥쪽 · 빠름', cx + wx, cy + wh / 2 + 4);
+  }
+
   // 현가장치 형식 미리보기: 정면에서 본 위시본. 왼쪽 바퀴만 오르내리며 기울고(캠버), 오른쪽은 그대로(독립식)
   function drawSusType(t) {
     const W = pvS._w, H = pvS._h, ctx = ctxS;
@@ -642,7 +679,7 @@
   // 화면에 보일 때만 애니메이션
   const visible = new Set();
   const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? visible.add(e.target) : visible.delete(e.target)));
-  [pv1, pv2, pv3, pv4, pv5, pvG, pvC, pvR, pvP, pvS].forEach(c => io.observe(c));
+  [pv1, pv2, pv3, pv4, pv5, pvG, pvC, pvR, pvP, pvS, pvD].forEach(c => io.observe(c));
 
   let first = true;   // 첫 프레임은 화면 밖 카드도 그려 둠 (정지 상태로도 완성된 화면)
   function loop(now) {
@@ -658,6 +695,7 @@
     if (visible.has(pvR) || all || pvR._dirty) { drawRelay(t); pvR._dirty = false; }
     if (visible.has(pvP) || all || pvP._dirty) { drawPower(t); pvP._dirty = false; }
     if (visible.has(pvS) || all || pvS._dirty) { drawSusType(t); pvS._dirty = false; }
+    if (visible.has(pvD) || all || pvD._dirty) { drawDiff(t); pvD._dirty = false; }
     if (!reduce) requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
