@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>디퍼렌셜 시뮬레이터</title>
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --fill: rgba(118, 118, 128, 0.12);
+    --fg: #1c1c1e;
+    --fg-2: #6e6e73;
+    --line: rgba(60, 60, 67, 0.14);
+    --accent: #007aff;
+    --accent-soft: rgba(0, 122, 255, 0.12);
+    --good: #248a3d;
+    --good-soft: rgba(52, 199, 89, 0.16);
+    --warn: #c93400;
+    --warn-soft: rgba(255, 149, 0, 0.18);
+    --bad: #d70015;
+    --bad-soft: rgba(255, 59, 48, 0.14);
+    --steel: #9aa1ab;
+    --steel-dark: #636366;
+    --metal: #c9ced6;
+    --tire: #2c2c2e;
+    --hot: #ff9500;
+    --fire: #ff3b30;
+    --fluid: #af52de;
+    --cool: #5ac8fa;
+    --knob: #ffffff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+      --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+      --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+      --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+      --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+      --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+      --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+      --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+      --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+    --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+    --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+    --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+    --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+    --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+    --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+    --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding-inline: 16px;
+    padding-block: 20px 40px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-icon { width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0; background: var(--accent); display: grid; place-items: center; }
+  .brand-icon svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  h1 { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.025em; text-wrap: balance; }
+  .sub { margin: 0; font-size: 0.82rem; color: var(--fg-2); }
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .model-tag { font-size: 0.75rem; font-weight: 600; color: var(--fg-2); background: var(--fill); padding: 4px 10px; border-radius: 999px; }
+  .home-link { color: var(--accent); background: var(--accent-soft); text-decoration: none; transition: transform 0.18s var(--ease-out); }
+  .home-link:active { transform: scale(0.95); }
+  .home-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .main { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 920px) {
+    .main { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; }
+    .side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  }
+  .col { display: grid; gap: 14px; min-width: 0; }
+
+  .panel { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: 16px; min-width: 0; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .panel-title { font-size: 0.95rem; font-weight: 650; margin: 0; }
+  .hint { font-size: 0.75rem; color: var(--fg-2); margin: 0; }
+
+  .stage { position: relative; padding: 0; overflow: hidden; }
+  .stage canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
+  @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3.2; } }
+  .stage-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-top: 1px solid var(--line); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  button { font: inherit; color: inherit; }
+  .btn {
+    border: none; cursor: pointer; border-radius: 12px; padding: 9px 14px;
+    font-size: 0.85rem; font-weight: 600; background: var(--fill); color: var(--fg);
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: transform 0.18s var(--ease-out), background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  .btn:active, .btn.is-held { transform: scale(0.95); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-hold.is-held { background: var(--hot); color: #fff; }
+  .btn svg { width: 14px; height: 14px; fill: currentColor; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .metrics { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 700px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { background: var(--surface); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); display: grid; gap: 4px; min-width: 0; align-content: start; }
+  .tile-label { font-size: 0.72rem; font-weight: 600; color: var(--fg-2); }
+  .tile-value { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.15; overflow-wrap: anywhere; }
+  .tile-unit { font-size: 0.78rem; font-weight: 500; color: var(--fg-2); margin-left: 3px; letter-spacing: 0; }
+  .chip { justify-self: start; font-size: 0.7rem; font-weight: 650; padding: 2px 8px; border-radius: 999px; background: var(--fill); color: var(--fg-2); transition: background-color 0.25s var(--ease-out), color 0.25s var(--ease-out); }
+  .chip.good { background: var(--good-soft); color: var(--good); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .chip.info { background: var(--accent-soft); color: var(--accent); }
+
+  .calc { display: grid; gap: 6px; font-size: 0.84rem; font-variant-numeric: tabular-nums; }
+  .calc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--fill); align-items: baseline; }
+  .calc-row span:first-child { color: var(--fg-2); overflow-wrap: anywhere; }
+  .calc-row b { font-weight: 700; white-space: nowrap; }
+
+  .seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--fill); border-radius: 11px; padding: 2px; }
+  .seg-thumb { position: absolute; top: 2px; bottom: 2px; left: 0; width: 0; background: var(--knob); border-radius: 9px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); transition: transform 0.32s var(--ease-out), width 0.32s var(--ease-out), opacity 0.2s; }
+  .seg button { position: relative; z-index: 1; border: none; background: transparent; cursor: pointer; padding: 7px 2px; font-size: 0.78rem; font-weight: 500; border-radius: 9px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg button[aria-pressed="true"] { font-weight: 650; color: #1c1c1e; }
+  .seg-caption { margin-top: 8px; font-size: 0.76rem; color: var(--fg-2); min-height: 1.2em; }
+
+  .field { display: grid; gap: 4px; padding-block: 10px; border-top: 1px solid var(--line); }
+  .field:first-of-type { border-top: none; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field label { font-size: 0.86rem; font-weight: 600; }
+  .field small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .badge { font-size: 0.85rem; font-weight: 650; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 26px; background: transparent; cursor: pointer; margin: 0; }
+  input[type=range]::-webkit-slider-runnable-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8.5px; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); transition: transform 0.15s var(--ease-out); }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.18); }
+  input[type=range]::-moz-range-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border: none; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); }
+
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .switch-row label { font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+  .switch-row label small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .switch { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+  .switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--fill); transition: background-color 0.25s var(--ease-out); }
+  .switch span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15); transition: transform 0.3s var(--ease-out); }
+  .switch input:checked + span { background: var(--good); }
+  .switch input.danger:checked + span { background: var(--bad); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .notes { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 760px) { .notes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .note { min-width: 0; }
+  .note h3 { font-size: 0.9rem; margin: 0 0 6px; }
+  .note p, .note li { font-size: 0.84rem; color: var(--fg-2); margin: 0; }
+  .note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .note b { color: var(--fg); font-weight: 650; }
+  .note table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .note th, .note td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .note th { color: var(--fg-2); font-weight: 600; }
+  .note td { color: var(--fg); }
+  h2.section { font-size: 1.05rem; margin: 0; letter-spacing: -0.02em; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+
+  .road-row { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; align-items: center; margin-top: 8px; }
+  .road-row > span { font-size: 0.8rem; font-weight: 600; }
+  .seg.small button { font-size: 0.72rem; padding: 6px 1px; }
+  .type-desc { margin-top: 10px; font-size: 0.84rem; line-height: 1.6; color: var(--fg-2); min-height: 4.8em; }
+  .type-desc b { color: var(--fg); }
+  .swap { animation: swapIn 0.3s var(--ease-out) both; }
+  @keyframes swapIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+  .preset-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .preset { border: 0; background: var(--fill); color: var(--fg); font: inherit; font-size: 0.76rem; font-weight: 600; padding: 7px 11px; border-radius: 999px; cursor: pointer; transition: transform 0.15s var(--ease-out), background-color 0.2s var(--ease-out); }
+  .preset:active { transform: scale(0.95); }
+  .preset:hover { background: var(--accent-soft); color: var(--accent); }
+  .calc-row b { white-space: normal; text-align: right; }
+  @media (max-width: 600px) { .calc-row { grid-template-columns: minmax(0, 1fr); gap: 2px; } .calc-row b { text-align: left; } }
+  @media (prefers-reduced-motion: reduce) { .swap { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M2 12h5M17 12h5M12 2v5"/><circle cx="12" cy="12" r="1.5"/></svg>
+      </div>
+      <div>
+        <h1>디퍼렌셜 시뮬레이터</h1>
+        <p class="sub">좌우 바퀴의 회전수 차이를 흡수하는 원리와, 한쪽이 미끄러울 때 오픈·LSD·잠금 디퍼렌셜이 토크를 어떻게 나누는지 봅니다</p>
+      </div>
+    </div>
+    <div class="tag-row">
+      <span class="model-tag">종감속 및 차동장치</span>
+      <a class="model-tag home-link" href="lab.html">← 물리 시스템 알기</a>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="col">
+      <section class="panel stage" aria-label="디퍼렌셜 평면도">
+        <canvas id="cv" role="img" aria-label="디퍼렌셜 평면도"></canvas>
+        <div class="stage-bar">
+          <div class="seg" id="segTurn" style="min-width: 240px; flex: 1;">
+            <span class="seg-thumb"></span>
+            <button data-v="left" aria-pressed="false">좌회전</button>
+            <button data-v="straight" aria-pressed="true">직진</button>
+            <button data-v="right" aria-pressed="false">우회전</button>
+          </div>
+          <span class="hint">위에서 내려다본 뒤 차축 · 위쪽이 차의 앞</span>
+        </div>
+      </section>
+
+      <div class="metrics">
+        <div class="tile"><span class="tile-label">왼쪽 바퀴</span><span class="tile-value"><span id="mTL">0</span><span class="tile-unit">N·m</span></span><span class="chip" id="mNL">0 rpm</span></div>
+        <div class="tile"><span class="tile-label">오른쪽 바퀴</span><span class="tile-value"><span id="mTR">0</span><span class="tile-unit">N·m</span></span><span class="chip" id="mNR">0 rpm</span></div>
+        <div class="tile"><span class="tile-label">구동력 합 / 필요한 힘</span><span class="tile-value"><span id="mF">0</span><span class="tile-unit" id="mFreq">/ 0 N</span></span><span class="chip" id="mFchip">—</span></div>
+        <div class="tile"><span class="tile-label">상태</span><span class="tile-value" id="mState" style="font-size:1.1rem">정지</span><span class="chip" id="mStateChip">—</span></div>
+      </div>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">계산</h2><p class="hint">회전수는 화면 움직임을 rpm 으로 나타낸 예시 값</p></div>
+        <div class="calc" id="calc"></div>
+      </section>
+    </div>
+
+    <aside class="col side">
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">디퍼렌셜 종류</h2></div>
+        <div class="seg" id="segType">
+          <span class="seg-thumb"></span>
+          <button data-v="open" aria-pressed="true">오픈</button>
+          <button data-v="clutch" aria-pressed="false">LSD 클러치</button>
+          <button data-v="torsen" aria-pressed="false">토센</button>
+          <button data-v="lock" aria-pressed="false">잠금</button>
+        </div>
+        <p class="type-desc" id="typeDesc"></p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">노면</h2><p class="hint">바퀴마다 따로</p></div>
+        <div class="road-row"><span>왼쪽</span>
+          <div class="seg small" id="segRoadL"><span class="seg-thumb"></span>
+            <button data-v="dry" aria-pressed="true">건조</button><button data-v="wet" aria-pressed="false">젖음</button><button data-v="snow" aria-pressed="false">눈</button><button data-v="ice" aria-pressed="false">빙판</button><button data-v="air" aria-pressed="false">들뜸</button>
+          </div></div>
+        <div class="road-row"><span>오른쪽</span>
+          <div class="seg small" id="segRoadR"><span class="seg-thumb"></span>
+            <button data-v="dry" aria-pressed="true">건조</button><button data-v="wet" aria-pressed="false">젖음</button><button data-v="snow" aria-pressed="false">눈</button><button data-v="ice" aria-pressed="false">빙판</button><button data-v="air" aria-pressed="false">들뜸</button>
+          </div></div>
+
+        <div class="field" style="margin-top:12px">
+          <div class="field-head"><label for="thr">가속 페달<small>차축에 들어가는 토크 (종감속 후)</small></label><span class="badge" id="thrVal">60 %</span></div>
+          <input type="range" id="thr" min="0" max="100" step="1" value="60">
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="grade">오르막 경사<small>출발에 필요한 힘이 커짐</small></label><span class="badge" id="gradeVal">10 %</span></div>
+          <input type="range" id="grade" min="0" max="30" step="1" value="10">
+        </div>
+        <div class="field">
+          <label>빠른 상황</label>
+          <div class="preset-row">
+            <button class="preset" data-p="ice">한쪽 빙판 오르막</button>
+            <button class="preset" data-p="air">한쪽 바퀴 들뜸</button>
+            <button class="preset" data-p="corner">마른 길 코너링</button>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="panel">
+    <div class="notes">
+      <div class="note">
+        <h3>차동장치의 원리</h3>
+        <ul>
+          <li>구성: <b>링 기어</b>(디퍼렌셜 케이스와 한 몸) · <b>차동 피니언</b>과 피니언 축 · 좌우 <b>사이드 기어</b>(액슬 축과 연결)</li>
+          <li>직진: 피니언이 자전하지 않고 케이스와 함께 돌아 좌우가 같은 속도</li>
+          <li>선회: 안쪽 바퀴가 느려지면 피니언이 자전하며 그만큼 바깥쪽을 빠르게 → <b>링 기어 회전수 = (왼쪽 + 오른쪽) ÷ 2</b></li>
+          <li>한쪽 바퀴가 멈추면 다른 쪽은 <b>링 기어의 2배</b>로 돈다</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>종류별 토크 분배</h3>
+        <table>
+          <thead><tr><th>종류</th><th>한쪽이 미끄러우면</th></tr></thead>
+          <tbody>
+            <tr><td>오픈</td><td>좌우 토크가 항상 같아, 미끄러운 쪽이 낼 수 있는 토크에 묶임</td></tr>
+            <tr><td>LSD (다판 클러치)</td><td>클러치 마찰만큼 미끄러지지 않는 쪽에 토크를 더 줌. 미끄러운 쪽이 0이어도 클러치 몫은 전달</td></tr>
+            <tr><td>토센 (헬리컬 기어)</td><td>미끄러운 쪽 토크의 몇 배(토크 배분비)까지 반대쪽에 줌. 한쪽이 들뜨면(0) 배수도 0</td></tr>
+            <tr><td>잠금 (디퍼렌셜 록)</td><td>좌우를 직결해 접지되는 쪽이 토크를 모두 받음. 마른 길 선회 땐 타이어가 끌림</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note">
+        <h3>모델 안내</h3>
+        <p>뒤 차축 하중 750 kg(바퀴당 약 3,680 N), 타이어 반경 0.31 m, 차량 1,500 kg, 최대 차축 토크 2,000 N·m 로 가정한 단순 정적 모델입니다. 노면 마찰계수(건조 0.9, 젖음 0.5, 눈 0.2, 빙판 0.05)와 클러치 LSD 마찰(80 N·m + 입력의 35%), 토센 토크 배분비 3은 이해를 위한 대표값입니다.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ---------- 공통: 테마 토큰, 캔버스, 세그먼트, 길게 누르기 ----------
+  const $ = id => document.getElementById(id);
+  const C = {};
+  const TOKEN_NAMES = ['bg', 'surface', 'fill', 'fg', 'fg-2', 'line', 'accent', 'good', 'warn', 'bad', 'steel', 'steel-dark', 'metal', 'tire', 'hot', 'fire', 'fluid', 'cool', 'knob'];
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    TOKEN_NAMES.forEach(t => { C[t] = cs.getPropertyValue('--' + t).trim(); });
+    C.font = getComputedStyle(document.body).fontFamily;
+  }
+  readTokens();
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTokens);
+  new MutationObserver(readTokens).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+  const REDUCE = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  function fitCanvas(cv) {
+    const ctx = cv.getContext('2d');
+    const fit = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const r = cv.getBoundingClientRect();
+      cv.width = Math.round(r.width * dpr);
+      cv.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cv._w = r.width; cv._h = r.height;
+    };
+    new ResizeObserver(fit).observe(cv);
+    fit();
+    return ctx;
+  }
+
+  function setChip(el, text, tone) {
+    el.textContent = text;
+    el.className = 'chip' + (tone ? ' ' + tone : '');
+  }
+
+  // 선택 표시가 미끄러져 이동하는 세그먼트 컨트롤
+  function initSeg(root, onPick) {
+    const thumb = root.querySelector('.seg-thumb');
+    const btns = [...root.querySelectorAll('button')];
+    function place(animate) {
+      const on = btns.find(b => b.getAttribute('aria-pressed') === 'true');
+      if (!animate) thumb.style.transition = 'none';
+      if (on) {
+        thumb.style.opacity = 1;
+        thumb.style.width = on.offsetWidth + 'px';
+        thumb.style.transform = `translateX(${on.offsetLeft}px)`;
+      } else {
+        thumb.style.opacity = 0;
+      }
+      if (!animate) { void thumb.offsetWidth; thumb.style.transition = ''; }
+    }
+    function select(v) {
+      btns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+      place(true);
+    }
+    btns.forEach(b => b.addEventListener('click', () => { select(b.dataset.v); onPick(b.dataset.v); }));
+    new ResizeObserver(() => place(false)).observe(root);
+    return { select, clear: () => select(null) };
+  }
+
+  // 누르고 있는 동안 on, 떼면 off (마우스·터치·키보드)
+  function holdButton(btn, onChange) {
+    const on = e => { if (e) e.preventDefault(); btn.classList.add('is-held'); onChange(true); };
+    const off = () => { if (!btn.classList.contains('is-held')) return; btn.classList.remove('is-held'); onChange(false); };
+    btn.addEventListener('pointerdown', e => { btn.setPointerCapture(e.pointerId); on(e); });
+    btn.addEventListener('pointerup', off);
+    btn.addEventListener('pointercancel', off);
+    btn.addEventListener('lostpointercapture', off);
+    btn.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) on(e); });
+    btn.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') off(); });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const DEG = Math.PI / 180;
+
+
+  /* ---------- 모델 ---------- */
+  const MU = { dry: 0.9, wet: 0.5, snow: 0.2, ice: 0.05, air: 0 };
+  const ROAD_NAME = { dry: '건조', wet: '젖음', snow: '눈', ice: '빙판', air: '들뜸' };
+  const FZ = 750 * 9.81 / 2, RW = 0.31, MASS = 1500, TMAX = 2000, TBR = 3, RPM = 400, DELTA = 0.08;   // DELTA: 반경 10 m 선회 시 좌우 속도 차 비율 (윤거 1.6 m)
+  const DESC = {
+    open: '<b>오픈 디퍼렌셜</b> — 좌우에 항상 <b>같은 토크</b>를 보냅니다. 회전수 차이는 자유롭게 흡수하지만, 한쪽이 미끄러우면 그쪽이 버티는 만큼만 양쪽에 전해져 차가 못 나갈 수 있습니다.',
+    clutch: '<b>LSD (다판 클러치식)</b> — 사이드 기어와 케이스 사이의 클러치 마찰이 좌우 회전 차이를 억제합니다. 마찰 토크만큼 접지가 좋은 쪽에 토크를 더 보낼 수 있습니다.',
+    torsen: '<b>토센 LSD</b> — 웜(헬리컬) 기어의 마찰로 미끄러운 쪽 토크의 일정 배수(토크 배분비, 여기서는 3배)까지 반대쪽에 보냅니다. 미끄러운 쪽이 0이면 반대쪽도 0입니다.',
+    lock: '<b>디퍼렌셜 록 (잠금)</b> — 좌우 액슬을 직결해 같은 속도로 돌게 합니다. 험로 탈출에 강하지만, 마른 길에서 선회하면 안쪽·바깥쪽 거리 차를 흡수하지 못해 타이어가 끌립니다.'
+  };
+  let type = 'open', roadL = 'dry', roadR = 'dry', turn = 'straight', thr = 0.6, grade = 0.10;
+
+  function solve() {
+    const Tin = TMAX * thr, capL = MU[roadL] * FZ * RW, capR = MU[roadR] * FZ * RW;
+    const lowIsL = capL <= capR, cLo = Math.min(capL, capR), cHi = Math.max(capL, capR);
+    let tLo, tHi, sLo = false, sHi = false, rule = '';
+    if (type === 'open') {
+      const t = Math.min(Tin / 2, cLo); tLo = tHi = t;
+      sLo = Tin / 2 > cLo + 1e-9; sHi = Tin / 2 > cHi + 1e-9;
+      rule = '좌우 같은 토크: min(입력 ÷ 2, 미끄러운 쪽 한계)';
+    } else if (type === 'lock') {
+      if (Tin <= cLo + cHi) { tLo = Math.min(cLo, Tin / 2); tHi = Tin - tLo; }
+      else { tLo = cLo; tHi = cHi; sLo = sHi = true; }
+      rule = '직결: 접지 한계 안에서 입력 토크를 모두 전달';
+    } else {
+      if (Tin / 2 <= cLo) { tLo = tHi = Tin / 2; }
+      else {
+        tLo = cLo; sLo = true;
+        const bias = type === 'clutch' ? cLo + 80 + 0.35 * Tin : TBR * cLo;
+        tHi = Math.min(Tin - cLo, bias, cHi); sHi = Tin - cLo > cHi + 1e-9 && bias >= cHi;
+      }
+      rule = type === 'clutch' ? '접지 쪽 ≤ 미끄러운 쪽 + 클러치 마찰(80 + 0.35 × 입력)' : '접지 쪽 ≤ 미끄러운 쪽 × 3 (토크 배분비)';
+    }
+    const TL = lowIsL ? tLo : tHi, TR = lowIsL ? tHi : tLo, slipL = lowIsL ? sLo : sHi, slipR = lowIsL ? sHi : sLo;
+    const F = (TL + TR) / RW, th = Math.atan(grade), Freq = MASS * 9.81 * (0.015 * Math.cos(th) + Math.sin(th));
+    const moving = Tin > 0 && F >= Freq;
+    // 회전 속도 (회전/초, 화면용). 케이스는 가속 페달에 비례해 돈다.
+    const nc = 1.5 * thr;
+    let nL, nR;
+    const d = turn === 'left' ? -DELTA : turn === 'right' ? DELTA : 0;   // 좌회전이면 왼쪽이 안쪽(느림)
+    if (type === 'lock') { nL = nR = nc; }
+    else if (!moving) {
+      if (slipL && !slipR) { nL = 2 * nc; nR = 0; } else if (slipR && !slipL) { nR = 2 * nc; nL = 0; } else if (slipL && slipR) { nL = nR = nc; } else { nL = nR = 0; }
+    } else if (slipL !== slipR) { const s = 0.35; nL = nc * (slipL ? 1 + s : 1 - s); nR = nc * (slipR ? 1 + s : 1 - s); }
+    else { nL = nc * (1 + d); nR = nc * (1 - d); }
+    const scrub = type === 'lock' && turn !== 'straight' && moving && Math.min(capL, capR) > 0.3 * FZ * RW;
+    const vCar = moving ? (type === 'lock' ? nc : Math.min(nL, nR) > 0 ? (slipL || slipR ? Math.min(nL, nR) : nc) : 0) : 0;
+    return { Tin, capL, capR, TL, TR, slipL, slipR, F, Freq, moving, nc, nL, nR, rule, scrub, vCar, d };
+  }
+
+  /* ---------- 그리기 ---------- */
+  const cv = $('cv'), ctx = fitCanvas(cv);
+  const ph = { case: 0, L: 0, R: 0, pin: 0, prop: 0, road: 0 };
+  let S = solve();
+  const ROAD_COL = () => ({ dry: C.fill, wet: 'rgba(90,130,170,0.35)', snow: 'rgba(235,240,245,0.9)', ice: 'rgba(150,205,240,0.55)', air: 'transparent' });
+
+  // 원통의 회전을 줄무늬의 이동으로 보여 준다 (dir: 'v' 세로로 흐름, 'h' 가로로 흐름)
+  function cyl(x, y, w, h, phase, dir, base, stripe, gap) {
+    ctx.save(); roundRect(ctx, x, y, w, h, Math.min(w, h) * 0.18); ctx.fillStyle = base; ctx.fill(); ctx.clip();
+    ctx.strokeStyle = stripe; ctx.lineWidth = Math.max(1.5, gap * 0.35);
+    const off = ((phase % 1) + 1) % 1 * gap;
+    ctx.beginPath();
+    if (dir === 'v') for (let yy = y - gap + off; yy < y + h + gap; yy += gap) { ctx.moveTo(x, yy); ctx.lineTo(x + w, yy); }
+    else for (let xx = x - gap + off; xx < x + w + gap; xx += gap) { ctx.moveTo(xx, y); ctx.lineTo(xx, y + h); }
+    ctx.stroke(); ctx.restore();
+  }
+  function arrow(x, y, len, col, label, cap) {
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    if (len > 2) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - len); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x - 7, y - len + 9); ctx.lineTo(x, y - len - 2); ctx.lineTo(x + 7, y - len + 9); ctx.fill(); }
+    if (cap != null) { ctx.strokeStyle = C['fg-2']; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(x - 16, y - cap); ctx.lineTo(x + 16, y - cap); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.font = `600 12px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillStyle = C.fg;
+    ctx.fillText(label, x, y - Math.max(len, cap || 0) - 8);
+  }
+  function draw() {
+    const W = cv._w, H = cv._h; if (!W) return;
+    ctx.clearRect(0, 0, W, H);
+    const cx = W / 2, cy = H * 0.62, wx = W * 0.4, ww = Math.max(26, W * 0.07), wh = H * 0.36;
+    const rc = ROAD_COL();
+    // 노면 (차가 나아가면 차선 표시가 아래로 흐른다)
+    [[-1, roadL, S.slipL], [1, roadR, S.slipR]].forEach(([sg, road, slip]) => {
+      const x0 = cx + sg * wx - ww * 1.4, w0 = ww * 2.8;
+      if (road === 'air') {
+        ctx.strokeStyle = C.line; ctx.setLineDash([5, 5]); ctx.lineWidth = 1.5; ctx.strokeRect(x0, 10, w0, H - 20); ctx.setLineDash([]);
+      } else {
+        ctx.fillStyle = rc[road]; roundRect(ctx, x0, 10, w0, H - 20, 12); ctx.fill();
+        ctx.strokeStyle = C.line; ctx.lineWidth = 2; const gap = 34, off = (ph.road % 1) * gap;
+        ctx.beginPath(); for (let y = 10 - gap + off; y < H - 10; y += gap) { if (y < 10) continue; ctx.moveTo(x0 + 8, y); ctx.lineTo(x0 + 8, Math.min(y + 14, H - 12)); ctx.moveTo(x0 + w0 - 8, y); ctx.lineTo(x0 + w0 - 8, Math.min(y + 14, H - 12)); } ctx.stroke();
+      }
+      ctx.font = `600 12px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillStyle = C['fg-2'];
+      ctx.fillText(ROAD_NAME[road] + ' μ ' + MU[road], cx + sg * wx, H - 14);
+      if (slip) { ctx.fillStyle = C.bad; ctx.textBaseline = 'top'; ctx.fillText('공회전', cx + sg * wx, cy + wh / 2 + 8); }
+    });
+    // 추진축(앞에서 들어옴)과 구동 피니언: 세로 축이라 줄무늬가 가로로 흐름
+    const ringX = cx - W * 0.085;
+    cyl(ringX + 10, 10, 18, cy - H * 0.2 - 10, ph.prop, 'h', C['steel-dark'], C.steel, 7);
+    // 액슬 축
+    const sgx = W * 0.055, axY = cy - 7;
+    cyl(cx - wx + ww / 2, axY, (cx - sgx) - (cx - wx + ww / 2), 14, ph.L, 'v', C['steel-dark'], C.steel, 6);
+    cyl(cx + sgx, axY, (cx + wx - ww / 2) - (cx + sgx), 14, ph.R, 'v', C['steel-dark'], C.steel, 6);
+    // 케이스
+    const cw = W * 0.2, chh = H * 0.42;
+    ctx.fillStyle = C.surface; ctx.strokeStyle = C.line; ctx.lineWidth = 2; roundRect(ctx, cx - cw / 2, cy - chh / 2, cw, chh, 16); ctx.fill(); ctx.stroke();
+    // 링 기어 (케이스와 함께 회전)
+    cyl(ringX - 8, cy - H * 0.27, 16, H * 0.54, ph.case, 'v', C.accent, 'rgba(255,255,255,0.45)', 7);
+    // 사이드 기어
+    cyl(cx - sgx - 14, cy - H * 0.11, 14, H * 0.22, ph.L, 'v', C.metal, C['steel-dark'], 6);
+    cyl(cx + sgx, cy - H * 0.11, 14, H * 0.22, ph.R, 'v', C.metal, C['steel-dark'], 6);
+    // 차동 피니언 (위·아래): 피니언 축이 세로라 자전하면 줄무늬가 가로로 흐름
+    const pw = W * 0.07, phh = H * 0.07;
+    [-1, 1].forEach(sg => cyl(cx - pw / 2, cy + sg * H * 0.12 - phh / 2, pw, phh, ph.pin * sg, 'h', C.hot, 'rgba(255,255,255,0.5)', 7));
+    ctx.strokeStyle = C['steel-dark']; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx, cy - H * 0.12 + phh / 2); ctx.lineTo(cx, cy + H * 0.12 - phh / 2); ctx.stroke();
+    if (type !== 'open') {   // LSD·잠금 표시
+      ctx.font = `700 11px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = type === 'lock' ? C.bad : C.good;
+      ctx.fillText(type === 'lock' ? '잠김' : type === 'clutch' ? '클러치' : '헬리컬', cx, cy + chh / 2 + 4);
+    }
+    // 바퀴
+    [[-1, S.nL, S.slipL, ph.L], [1, S.nR, S.slipR, ph.R]].forEach(([sg, n, slip, p]) => {
+      const x = cx + sg * wx - ww / 2, lift = sg < 0 ? roadL === 'air' : roadR === 'air';
+      if (lift) { ctx.fillStyle = 'rgba(0,0,0,0.08)'; roundRect(ctx, x + 6, cy - wh / 2 + 8, ww, wh, 8); ctx.fill(); }
+      cyl(x, cy - wh / 2, ww, wh, p, 'v', C.tire, slip ? C.bad : 'rgba(255,255,255,0.18)', 11);
+    });
+    // 토크 화살표 (점선 = 그 노면에서 낼 수 있는 한계)
+    const k = (H * 0.24) / (MU.dry * FZ * RW);   // 마른 노면 한계가 화면 높이의 24%
+    arrow(cx - wx, cy - wh / 2 - 6, S.TL * k, S.slipL ? C.bad : C.good, Math.round(S.TL) + ' N·m', S.capL * k);
+    arrow(cx + wx, cy - wh / 2 - 6, S.TR * k, S.slipR ? C.bad : C.good, Math.round(S.TR) + ' N·m', S.capR * k);
+    ctx.font = `600 11px ${C.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = C['fg-2'];
+    ctx.fillText('링 기어', ringX, cy + H * 0.27 + 4); ctx.textAlign = 'left'; ctx.fillText('추진축 (앞에서 들어옴)', ringX + 34, 14); ctx.textAlign = 'center';
+    ctx.fillText('차동 피니언', cx, cy - H * 0.12 - phh / 2 - 15);
+  }
+
+  /* ---------- 숫자 ---------- */
+  const fmt0 = v => Math.round(v).toLocaleString('ko-KR');
+  function update() {
+    S = solve();
+    $('mTL').textContent = fmt0(S.TL); $('mTR').textContent = fmt0(S.TR);
+    setChip($('mNL'), fmt0(S.nL * RPM) + ' rpm' + (S.slipL ? ' · 공회전' : ''), S.slipL ? 'bad' : '');
+    setChip($('mNR'), fmt0(S.nR * RPM) + ' rpm' + (S.slipR ? ' · 공회전' : ''), S.slipR ? 'bad' : '');
+    $('mF').textContent = fmt0(S.F); $('mFreq').textContent = '/ ' + fmt0(S.Freq) + ' N';
+    setChip($('mFchip'), S.F >= S.Freq ? '충분' : '부족', S.F >= S.Freq ? 'good' : 'bad');
+    let st, tone, chip;
+    if (S.Tin === 0) { st = '정지'; chip = '가속 페달을 밟으세요'; tone = ''; }
+    else if (!S.moving) { st = '출발 불가'; tone = 'bad'; chip = S.slipL || S.slipR ? ((S.slipL && S.slipR) ? '양쪽 공회전' : (S.slipL ? '왼쪽' : '오른쪽') + ' 바퀴만 헛돎') : '구동력 부족'; }
+    else if (S.scrub) { st = '주행 · 끌림'; tone = 'warn'; chip = '좌우 속도 차를 못 흡수'; }
+    else { st = '주행'; tone = 'good'; chip = S.slipL || S.slipR ? '일부 미끄러지며 전진' : turn === 'straight' ? '좌우 같은 속도' : '좌우 속도 차 흡수'; }
+    $('mState').textContent = st; setChip($('mStateChip'), chip, tone);
+    const nL = S.nL * RPM, nR = S.nR * RPM, ncase = S.nc * RPM;
+    $('calc').innerHTML = [
+      ['링 기어(케이스) 회전수 = (왼쪽 + 오른쪽) ÷ 2', type === 'lock' ? fmt0(ncase) + ' rpm (직결)' : `(${fmt0(nL)} + ${fmt0(nR)}) ÷ 2 = ${fmt0((nL + nR) / 2)} rpm`],
+      ['차동 피니언 자전 (좌우 차이의 절반)', type === 'lock' ? '0 (잠김)' : `|${fmt0(nR)} − ${fmt0(nL)}| ÷ 2 = ${fmt0(Math.abs(nR - nL) / 2)} rpm 상당`],
+      ['차축 입력 토크', fmt0(S.Tin) + ' N·m'],
+      ['바퀴별 견인 한계 = μ × 하중 × 반경', `왼 ${fmt0(S.capL)} · 오 ${fmt0(S.capR)} N·m`],
+      ['분배 규칙', S.rule],
+      ['구동력 = (왼 + 오) ÷ 반경', `(${fmt0(S.TL)} + ${fmt0(S.TR)}) ÷ 0.31 = ${fmt0(S.F)} N`],
+      ['출발에 필요한 힘 = 무게 × (구름저항 + 경사)', `${fmt0(S.Freq)} N (경사 ${Math.round(grade * 100)} %)`]
+    ].map(r => `<div class="calc-row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('');
+    cv.setAttribute('aria-label', `${DESC_NAME[type]}, 왼쪽 ${ROAD_NAME[roadL]} ${fmt0(S.TL)} N·m, 오른쪽 ${ROAD_NAME[roadR]} ${fmt0(S.TR)} N·m, ${st}.`);
+  }
+  const DESC_NAME = { open: '오픈 디퍼렌셜', clutch: '다판 클러치 LSD', torsen: '토센 LSD', lock: '디퍼렌셜 록' };
+  function setDesc(anim) { const el = $('typeDesc'); el.innerHTML = DESC[type]; if (anim) { el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap'); } }
+
+  /* ---------- 입력 ---------- */
+  const segType = initSeg($('segType'), v => { type = v; setDesc(true); update(); });
+  const segL = initSeg($('segRoadL'), v => { roadL = v; update(); });
+  const segR = initSeg($('segRoadR'), v => { roadR = v; update(); });
+  const segTurn = initSeg($('segTurn'), v => { turn = v; update(); });
+  $('thr').addEventListener('input', e => { thr = e.target.value / 100; $('thrVal').textContent = e.target.value + ' %'; update(); });
+  $('grade').addEventListener('input', e => { grade = e.target.value / 100; $('gradeVal').textContent = e.target.value + ' %'; update(); });
+  function setRange(id, v, lab, suf) { $(id).value = v; $(lab).textContent = v + suf; }
+  document.querySelectorAll('.preset').forEach(b => b.addEventListener('click', () => {
+    const p = b.dataset.p;
+    if (p === 'ice') { roadL = 'ice'; roadR = 'dry'; turn = 'straight'; thr = 0.6; grade = 0.10; }
+    if (p === 'air') { roadL = 'dry'; roadR = 'air'; turn = 'straight'; thr = 0.6; grade = 0.05; }
+    if (p === 'corner') { roadL = 'dry'; roadR = 'dry'; turn = 'left'; thr = 0.4; grade = 0; }
+    segL.select(roadL); segR.select(roadR); segTurn.select(turn);
+    setRange('thr', Math.round(thr * 100), 'thrVal', ' %'); setRange('grade', Math.round(grade * 100), 'gradeVal', ' %');
+    update();
+  }));
+
+  /* ---------- 애니메이션 ---------- */
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!REDUCE) {
+      ph.case += S.nc * dt * 2; ph.L += S.nL * dt * 2; ph.R += S.nR * dt * 2;
+      ph.pin += (S.nR - S.nL) / 2 * 1.6 * dt * 2; ph.prop += S.nc * 3.5 * dt * 2; ph.road += S.vCar * dt * 2.2;
+    }
+    draw();
+    requestAnimationFrame(frame);
+  }
+  setDesc(false); update(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
