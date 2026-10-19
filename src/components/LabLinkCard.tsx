@@ -5,7 +5,7 @@ import { FlaskConical, ArrowUpRight } from 'lucide-react';
 // 정적 HTML 페이지라 React 라우팅 대신 새 탭 링크로 연다. (상대 경로라 하위 경로 배포에서도 동작)
 const LAB_URL = './lab.html';
 
-const TOPICS = ['단진자', '엔진', '현가장치', '브레이크', '조향', '변속기', '전기회로', '릴레이', '마력·토크'];
+const TOPICS = ['단진자', '엔진', '현가장치', '브레이크', '조향', '변속기', '전기회로', '릴레이', '마력·토크', '현가 형식'];
 
 export const LabLinkCard: React.FC = () => (
   <div className="w-full max-w-xl mx-auto px-4">
@@ -30,7 +30,7 @@ export const LabLinkCard: React.FC = () => (
             물리 시스템 알기
           </h2>
           <p className="font-hand text-base text-(--a-label-2) mt-0.5 leading-snug">
-            공식을 직접 움직여 보며 익히는 시뮬레이터 8개, 마력·토크 계산기, 연습 문제
+            공식을 직접 움직여 보며 익히는 시뮬레이터 9개, 마력·토크 계산기, 연습 문제
           </p>
           <div className="flex flex-wrap gap-1.5 mt-3">
             {TOPICS.map((t) => (
