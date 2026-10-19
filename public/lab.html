@@ -144,7 +144,7 @@
   <header>
     <p class="eyebrow">자동차산업기사 · 인터랙티브 학습 · <a href="./" style="color:var(--accent);text-decoration:none;">← 처음 화면</a></p>
     <h1>물리 시스템 알기</h1>
-    <p class="lead">교재의 공식과 그림을 직접 움직여 보며 익히는 시뮬레이터 8개, 마력·토크 계산기, 연습 문제입니다. 섹션은 시험 과목 순서로 묶었습니다. 값을 바꾸면 결과가 바로 보이니, 외우기 전에 먼저 눈으로 이해해 보세요.</p>
+    <p class="lead">교재의 공식과 그림을 직접 움직여 보며 익히는 시뮬레이터 9개, 마력·토크 계산기, 연습 문제입니다. 섹션은 시험 과목 순서로 묶었습니다. 값을 바꾸면 결과가 바로 보이니, 외우기 전에 먼저 눈으로 이해해 보세요.</p>
   </header>
 
   <div class="sections">
@@ -224,6 +224,22 @@
           <ul class="learn">
             <li>부족·임계·과감쇠와 쇼크업소버 불량 증상</li>
             <li>바운스 테스트, 공진, 스프링 아래 질량의 영향</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+      <a class="card" href="suspension-types.html">
+        <canvas class="preview" id="pvSusType" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">현가장치</span><span class="tag">형식 비교</span></div>
+          <h2>현가장치 형식 5종</h2>
+          <p>맥퍼슨, 더블 위시본, 멀티링크, 토션 빔, 일체 차축. 바퀴를 움직여 캠버·윤거 변화와 좌우 바퀴의 연결 정도를 비교합니다.</p>
+          <div class="formula">독립식 · 반독립식(토션 빔) · 일체식</div>
+          <ul class="learn">
+            <li>평행사변형식 vs SLA형 위시본의 캠버·윤거 변화</li>
+            <li>독립 현가식과 일체 차축식의 장단점, 스프링 아래 질량</li>
           </ul>
           <span class="open">열기
             <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
@@ -361,9 +377,10 @@
   const pv5 = document.getElementById('pvSteering');
   const pvG = document.getElementById('pvGear');
   const pvP = document.getElementById('pvPower');
+  const pvS = document.getElementById('pvSusType');
   const pvC = document.getElementById('pvCircuit');
   const pvR = document.getElementById('pvRelay');
-  const ctx1 = setup(pv1), ctx2 = setup(pv2), ctx3 = setup(pv3), ctx4 = setup(pv4), ctx5 = setup(pv5), ctxG = setup(pvG), ctxC = setup(pvC), ctxR = setup(pvR), ctxP = setup(pvP);
+  const ctx1 = setup(pv1), ctx2 = setup(pv2), ctx3 = setup(pv3), ctx4 = setup(pv4), ctx5 = setup(pv5), ctxG = setup(pvG), ctxC = setup(pvC), ctxR = setup(pvR), ctxP = setup(pvP), ctxS = setup(pvS);
 
   // 단진자 미리보기: 감쇠 없이 일정하게 흔들림
   function drawPendulum(t) {
@@ -521,6 +538,25 @@
     g(x2, H / 2, z2, m, -a * z1 / z2 + Math.PI / z2, C.steel);
   }
 
+  // 현가장치 형식 미리보기: 정면에서 본 위시본. 왼쪽 바퀴만 오르내리며 기울고(캠버), 오른쪽은 그대로(독립식)
+  function drawSusType(t) {
+    const W = pvS._w, H = pvS._h, ctx = ctxS;
+    ctx.clearRect(0, 0, W, H);
+    const s = Math.min(W / 420, H / 210), cx = W / 2, gy = H * 0.86, z = reduce ? 14 : 16 * Math.sin(t * 1.6);
+    const wheel = (x, dz, tilt) => {
+      ctx.save(); ctx.translate(cx + x * s, gy - (60 + dz) * s); ctx.rotate(tilt);
+      ctx.fillStyle = C.fg; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-14 * s, -58 * s, 28 * s, 116 * s, 6 * s) : ctx.rect(-14 * s, -58 * s, 28 * s, 116 * s); ctx.fill();
+      ctx.restore();
+    };
+    const arm = (x1, y1, x2, y2, col) => { ctx.strokeStyle = col; ctx.lineWidth = 5 * s; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(cx + x1 * s, gy - y1 * s); ctx.lineTo(cx + x2 * s, gy - y2 * s); ctx.stroke(); };
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1.5;
+    [[-150, z], [150, 0]].forEach(([x, dz]) => { ctx.beginPath(); ctx.moveTo(cx + (x - 40) * s, gy - dz * s); ctx.lineTo(cx + (x + 40) * s, gy - dz * s); ctx.stroke(); });
+    arm(-55, 40, -138, 34 + z, C.accent); arm(-60, 100, -140, 92 + z * 1.15, C.accent);
+    arm(55, 40, 138, 34, C.accent); arm(60, 100, 140, 92, C.accent);
+    ctx.fillStyle = C.steel; ctx.fillRect(cx - 62 * s, gy - 108 * s, 124 * s, 76 * s);
+    wheel(-150, z, -z * 0.006); wheel(150, 0, 0);
+  }
+
   // 마력·토크 미리보기: 토크(파랑)와 출력(주황) 곡선 위를 회전수 표시가 왕복. 출력 = 토크 × 회전수
   function drawPower(t) {
     const W = pvP._w, H = pvP._h, ctx = ctxP;
@@ -606,7 +642,7 @@
   // 화면에 보일 때만 애니메이션
   const visible = new Set();
   const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? visible.add(e.target) : visible.delete(e.target)));
-  [pv1, pv2, pv3, pv4, pv5, pvG, pvC, pvR, pvP].forEach(c => io.observe(c));
+  [pv1, pv2, pv3, pv4, pv5, pvG, pvC, pvR, pvP, pvS].forEach(c => io.observe(c));
 
   let first = true;   // 첫 프레임은 화면 밖 카드도 그려 둠 (정지 상태로도 완성된 화면)
   function loop(now) {
@@ -621,6 +657,7 @@
     if (visible.has(pvC) || all || pvC._dirty) { drawCircuit(t); pvC._dirty = false; }
     if (visible.has(pvR) || all || pvR._dirty) { drawRelay(t); pvR._dirty = false; }
     if (visible.has(pvP) || all || pvP._dirty) { drawPower(t); pvP._dirty = false; }
+    if (visible.has(pvS) || all || pvS._dirty) { drawSusType(t); pvS._dirty = false; }
     if (!reduce) requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);

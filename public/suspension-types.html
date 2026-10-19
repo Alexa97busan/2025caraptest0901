@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>현가장치 형식 5종</title>
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --fill: rgba(118, 118, 128, 0.12);
+    --fg: #1c1c1e;
+    --fg-2: #6e6e73;
+    --line: rgba(60, 60, 67, 0.14);
+    --accent: #007aff;
+    --accent-soft: rgba(0, 122, 255, 0.12);
+    --good: #248a3d;
+    --good-soft: rgba(52, 199, 89, 0.16);
+    --warn: #c93400;
+    --warn-soft: rgba(255, 149, 0, 0.18);
+    --bad: #d70015;
+    --bad-soft: rgba(255, 59, 48, 0.14);
+    --steel: #9aa1ab;
+    --steel-dark: #636366;
+    --metal: #c9ced6;
+    --tire: #2c2c2e;
+    --hot: #ff9500;
+    --fire: #ff3b30;
+    --fluid: #af52de;
+    --cool: #5ac8fa;
+    --knob: #ffffff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+      --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+      --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+      --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+      --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+      --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+      --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+      --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+      --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, 0.24);
+    --fg: #f5f5f7; --fg-2: #98989f; --line: rgba(84, 84, 88, 0.5);
+    --accent: #0a84ff; --accent-soft: rgba(10, 132, 255, 0.2);
+    --good: #30d158; --good-soft: rgba(48, 209, 88, 0.18);
+    --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, 0.2);
+    --bad: #ff453a; --bad-soft: rgba(255, 69, 58, 0.2);
+    --steel: #8e8e93; --steel-dark: #aeaeb2; --metal: #48484a; --tire: #0b0b0c;
+    --hot: #ff9f0a; --fire: #ff453a; --fluid: #bf5af2; --cool: #64d2ff; --knob: #f5f5f7;
+    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding-inline: 16px;
+    padding-block: 20px 40px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-icon { width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0; background: var(--accent); display: grid; place-items: center; }
+  .brand-icon svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  h1 { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.025em; text-wrap: balance; }
+  .sub { margin: 0; font-size: 0.82rem; color: var(--fg-2); }
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .model-tag { font-size: 0.75rem; font-weight: 600; color: var(--fg-2); background: var(--fill); padding: 4px 10px; border-radius: 999px; }
+  .home-link { color: var(--accent); background: var(--accent-soft); text-decoration: none; transition: transform 0.18s var(--ease-out); }
+  .home-link:active { transform: scale(0.95); }
+  .home-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .main { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 920px) {
+    .main { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; }
+    .side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  }
+  .col { display: grid; gap: 14px; min-width: 0; }
+
+  .panel { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: 16px; min-width: 0; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .panel-title { font-size: 0.95rem; font-weight: 650; margin: 0; }
+  .hint { font-size: 0.75rem; color: var(--fg-2); margin: 0; }
+
+  .stage { position: relative; padding: 0; overflow: hidden; }
+  .stage canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
+  @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3.2; } }
+  .stage-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-top: 1px solid var(--line); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  button { font: inherit; color: inherit; }
+  .btn {
+    border: none; cursor: pointer; border-radius: 12px; padding: 9px 14px;
+    font-size: 0.85rem; font-weight: 600; background: var(--fill); color: var(--fg);
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: transform 0.18s var(--ease-out), background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  .btn:active, .btn.is-held { transform: scale(0.95); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-hold.is-held { background: var(--hot); color: #fff; }
+  .btn svg { width: 14px; height: 14px; fill: currentColor; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .metrics { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 700px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { background: var(--surface); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); display: grid; gap: 4px; min-width: 0; align-content: start; }
+  .tile-label { font-size: 0.72rem; font-weight: 600; color: var(--fg-2); }
+  .tile-value { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.15; overflow-wrap: anywhere; }
+  .tile-unit { font-size: 0.78rem; font-weight: 500; color: var(--fg-2); margin-left: 3px; letter-spacing: 0; }
+  .chip { justify-self: start; font-size: 0.7rem; font-weight: 650; padding: 2px 8px; border-radius: 999px; background: var(--fill); color: var(--fg-2); transition: background-color 0.25s var(--ease-out), color 0.25s var(--ease-out); }
+  .chip.good { background: var(--good-soft); color: var(--good); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .chip.info { background: var(--accent-soft); color: var(--accent); }
+
+  .calc { display: grid; gap: 6px; font-size: 0.84rem; font-variant-numeric: tabular-nums; }
+  .calc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--fill); align-items: baseline; }
+  .calc-row span:first-child { color: var(--fg-2); overflow-wrap: anywhere; }
+  .calc-row b { font-weight: 700; white-space: nowrap; }
+
+  .seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--fill); border-radius: 11px; padding: 2px; }
+  .seg-thumb { position: absolute; top: 2px; bottom: 2px; left: 0; width: 0; background: var(--knob); border-radius: 9px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); transition: transform 0.32s var(--ease-out), width 0.32s var(--ease-out), opacity 0.2s; }
+  .seg button { position: relative; z-index: 1; border: none; background: transparent; cursor: pointer; padding: 7px 2px; font-size: 0.78rem; font-weight: 500; border-radius: 9px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg button[aria-pressed="true"] { font-weight: 650; color: #1c1c1e; }
+  .seg-caption { margin-top: 8px; font-size: 0.76rem; color: var(--fg-2); min-height: 1.2em; }
+
+  .field { display: grid; gap: 4px; padding-block: 10px; border-top: 1px solid var(--line); }
+  .field:first-of-type { border-top: none; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field label { font-size: 0.86rem; font-weight: 600; }
+  .field small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .badge { font-size: 0.85rem; font-weight: 650; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 26px; background: transparent; cursor: pointer; margin: 0; }
+  input[type=range]::-webkit-slider-runnable-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8.5px; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); transition: transform 0.15s var(--ease-out); }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.18); }
+  input[type=range]::-moz-range-track { height: 5px; background: var(--fill); border-radius: 3px; }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border: none; border-radius: 50%; background: var(--knob); box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0, 0, 0, 0.3); }
+
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .switch-row label { font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+  .switch-row label small { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 500; }
+  .switch { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+  .switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--fill); transition: background-color 0.25s var(--ease-out); }
+  .switch span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15); transition: transform 0.3s var(--ease-out); }
+  .switch input:checked + span { background: var(--good); }
+  .switch input.danger:checked + span { background: var(--bad); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .notes { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 760px) { .notes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .note { min-width: 0; }
+  .note h3 { font-size: 0.9rem; margin: 0 0 6px; }
+  .note p, .note li { font-size: 0.84rem; color: var(--fg-2); margin: 0; }
+  .note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .note b { color: var(--fg); font-weight: 650; }
+  .note table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .note th, .note td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .note th { color: var(--fg-2); font-weight: 600; }
+  .note td { color: var(--fg); }
+  h2.section { font-size: 1.05rem; margin: 0; letter-spacing: -0.02em; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+
+  .type-head { display: grid; gap: 4px; }
+  .type-name { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+  .type-en { font-size: 0.78rem; color: var(--fg-2); }
+  .detail { display: grid; gap: 12px; margin-top: 12px; }
+  .detail h3 { font-size: 0.8rem; font-weight: 650; color: var(--fg-2); margin: 0 0 4px; }
+  .detail p { margin: 0; font-size: 0.86rem; line-height: 1.6; }
+  .detail ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 0.86rem; line-height: 1.55; }
+  .exam { padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); font-size: 0.84rem; line-height: 1.6; }
+  .exam b { color: var(--accent); }
+  .sub-seg[hidden] { display: none; }
+  /* 형식이 바뀌면 설명이 아래에서 살짝 떠오르며 바뀐다 (무엇이 바뀌었는지 알림) */
+  .swap { animation: swapIn 0.32s var(--ease-out) both; }
+  @keyframes swapIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .stroke-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%; }
+  .stroke-row label { font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+  .stroke-row input { width: 100%; accent-color: var(--accent); }
+  .cmp { overflow-x: auto; }
+  .cmp table { min-width: 640px; }
+  .cmp td:first-child { font-weight: 650; white-space: nowrap; }
+  .cmp td:nth-child(2), .cmp th:nth-child(2) { white-space: nowrap; }
+  .cmp tr.on td { background: var(--accent-soft); }
+  @media (prefers-reduced-motion: reduce) { .swap { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="7" cy="16" r="4"/><circle cx="17" cy="16" r="4"/><path d="M7 12V7h10v5M10 7l2-3 2 3"/></svg>
+      </div>
+      <div>
+        <h1>현가장치 형식 5종</h1>
+        <p class="sub">바퀴를 위아래로 움직여 형식마다 캠버·윤거가 어떻게 변하고, 반대쪽 바퀴에 영향이 가는지 봅니다</p>
+      </div>
+    </div>
+    <div class="tag-row">
+      <a class="model-tag home-link" href="suspension.html">스프링·댐퍼 시뮬레이터</a>
+      <a class="model-tag home-link" href="lab.html">← 물리 시스템 알기</a>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="col">
+      <section class="panel stage" aria-label="정면도">
+        <canvas id="cv" role="img" aria-label="현가장치 정면도"></canvas>
+        <div class="stage-bar">
+          <div class="seg" id="segMode" style="min-width: 260px; flex: 1;">
+            <span class="seg-thumb"></span>
+            <button data-v="one" aria-pressed="true">한쪽 범프</button>
+            <button data-v="both" aria-pressed="false">양쪽 범프</button>
+            <button data-v="roll" aria-pressed="false">롤 (코너링)</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="play" aria-pressed="false">
+              <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 2l9 5-9 5z"/></svg><span>움직이기</span>
+            </button>
+          </div>
+          <div class="stroke-row">
+            <label for="stroke">바퀴 상하 이동</label>
+            <input type="range" id="stroke" min="-80" max="80" step="1" value="50">
+            <span class="badge" id="strokeVal">+50 mm</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="metrics">
+        <div class="tile"><span class="tile-label">방식 분류</span><span class="tile-value" id="mClass" style="font-size:1.15rem">독립식</span><span class="chip info" id="mClassChip">좌우 따로 움직임</span></div>
+        <div class="tile"><span class="tile-label">왼쪽 바퀴 캠버</span><span class="tile-value"><span id="mCamL">0.0</span><span class="tile-unit">°</span></span><span class="chip" id="mCamLChip">—</span></div>
+        <div class="tile"><span class="tile-label">윤거(트레드) 변화</span><span class="tile-value"><span id="mTrack">0</span><span class="tile-unit">mm</span></span><span class="chip" id="mTrackChip">—</span></div>
+        <div class="tile"><span class="tile-label">오른쪽 바퀴 캠버</span><span class="tile-value"><span id="mCamR">0.0</span><span class="tile-unit">°</span></span><span class="chip" id="mCamRChip">—</span></div>
+      </div>
+      <p class="hint">그림은 변화가 잘 보이도록 움직임을 3배로 과장해서 그리고, 숫자는 실제 이동량 기준으로 계산합니다. 그림 위를 위아래로 끌어도 바퀴가 움직입니다. 캠버 −는 바퀴 위쪽이 차체 안쪽으로 기운 것(네거티브)입니다.</p>
+    </div>
+
+    <aside class="col side">
+      <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">형식 선택</h2></div>
+        <div class="seg" id="segType">
+          <span class="seg-thumb"></span>
+          <button data-v="mp" aria-pressed="true">맥퍼슨</button>
+          <button data-v="dw" aria-pressed="false">위시본</button>
+          <button data-v="ml" aria-pressed="false">멀티링크</button>
+          <button data-v="tb" aria-pressed="false">토션빔</button>
+          <button data-v="sa" aria-pressed="false">일체차축</button>
+        </div>
+        <div class="seg sub-seg" id="segDw" style="margin-top:8px" hidden>
+          <span class="seg-thumb"></span>
+          <button data-v="sla" aria-pressed="true">SLA형 (위 암이 짧음)</button>
+          <button data-v="par" aria-pressed="false">평행사변형식</button>
+        </div>
+        <div id="detail"></div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2 class="panel-title">한눈에 비교</h2><p class="hint">표의 행을 누르면 그 형식을 봅니다</p></div>
+    <div class="note cmp">
+      <table>
+        <thead><tr><th>형식</th><th>분류</th><th>구조 핵심</th><th>장점</th><th>단점</th><th>적용 예</th></tr></thead>
+        <tbody id="cmpBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="notes">
+      <div class="note">
+        <h3>독립 현가식 vs 일체 차축식 (시험 단골)</h3>
+        <table>
+          <thead><tr><th></th><th>독립 현가식</th><th>일체 차축식</th></tr></thead>
+          <tbody>
+            <tr><td>스프링 아래 질량</td><td>작다 → 승차감·접지성 좋음</td><td>크다 → 승차감 나쁨</td></tr>
+            <tr><td>좌우 바퀴</td><td>따로 움직임</td><td>한쪽 충격이 반대쪽에 전달</td></tr>
+            <tr><td>시미(앞바퀴 떨림)</td><td>잘 생기지 않음</td><td>생기기 쉬움</td></tr>
+            <tr><td>구조·강도</td><td>복잡, 부품 많음</td><td>간단, 튼튼함</td></tr>
+            <tr><td>얼라인먼트</td><td>바퀴가 움직이면 변함 → 정기 점검</td><td>양쪽이 함께 움직이면 거의 변하지 않음</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note">
+        <h3>스프링 아래 질량이란</h3>
+        <p>스프링보다 아래에 있어 노면과 함께 움직이는 부분(바퀴·브레이크·너클·차축)의 질량입니다. 이것이 가벼울수록 바퀴가 요철을 빨리 따라가 <b>접지가 좋고</b>, 차체로 전해지는 충격이 작아 <b>승차감이 좋습니다</b>. 일체 차축은 무거운 차축(구동축이면 디퍼렌셜까지)이 통째로 스프링 아래에 있어 불리합니다.</p>
+      </div>
+      <div class="note">
+        <h3>모델 안내</h3>
+        <p>정면(토션빔·일체차축은 후면)에서 본 2차원 단순 모델입니다. 링크 위치는 원리를 보여 주기 위한 예시 값이며 특정 차종의 설계값이 아닙니다. 맥퍼슨은 스트럿 축이 로어 암 볼 조인트를 지난다고 단순화했고, 토션빔은 좌우 연결 정도를 계수(0.6)로 나타냈습니다. 적용 차종은 대표 예시이며 같은 모델도 연식·트림에 따라 형식이 다를 수 있습니다.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ---------- 공통: 테마 토큰, 캔버스, 세그먼트, 길게 누르기 ----------
+  const $ = id => document.getElementById(id);
+  const C = {};
+  const TOKEN_NAMES = ['bg', 'surface', 'fill', 'fg', 'fg-2', 'line', 'accent', 'good', 'warn', 'bad', 'steel', 'steel-dark', 'metal', 'tire', 'hot', 'fire', 'fluid', 'cool', 'knob'];
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    TOKEN_NAMES.forEach(t => { C[t] = cs.getPropertyValue('--' + t).trim(); });
+    C.font = getComputedStyle(document.body).fontFamily;
+  }
+  readTokens();
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTokens);
+  new MutationObserver(readTokens).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+  const REDUCE = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  function fitCanvas(cv) {
+    const ctx = cv.getContext('2d');
+    const fit = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const r = cv.getBoundingClientRect();
+      cv.width = Math.round(r.width * dpr);
+      cv.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cv._w = r.width; cv._h = r.height;
+    };
+    new ResizeObserver(fit).observe(cv);
+    fit();
+    return ctx;
+  }
+
+  function setChip(el, text, tone) {
+    el.textContent = text;
+    el.className = 'chip' + (tone ? ' ' + tone : '');
+  }
+
+  // 선택 표시가 미끄러져 이동하는 세그먼트 컨트롤
+  function initSeg(root, onPick) {
+    const thumb = root.querySelector('.seg-thumb');
+    const btns = [...root.querySelectorAll('button')];
+    function place(animate) {
+      const on = btns.find(b => b.getAttribute('aria-pressed') === 'true');
+      if (!animate) thumb.style.transition = 'none';
+      if (on) {
+        thumb.style.opacity = 1;
+        thumb.style.width = on.offsetWidth + 'px';
+        thumb.style.transform = `translateX(${on.offsetLeft}px)`;
+      } else {
+        thumb.style.opacity = 0;
+      }
+      if (!animate) { void thumb.offsetWidth; thumb.style.transition = ''; }
+    }
+    function select(v) {
+      btns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+      place(true);
+    }
+    btns.forEach(b => b.addEventListener('click', () => { select(b.dataset.v); onPick(b.dataset.v); }));
+    new ResizeObserver(() => place(false)).observe(root);
+    return { select, clear: () => select(null) };
+  }
+
+  // 누르고 있는 동안 on, 떼면 off (마우스·터치·키보드)
+  function holdButton(btn, onChange) {
+    const on = e => { if (e) e.preventDefault(); btn.classList.add('is-held'); onChange(true); };
+    const off = () => { if (!btn.classList.contains('is-held')) return; btn.classList.remove('is-held'); onChange(false); };
+    btn.addEventListener('pointerdown', e => { btn.setPointerCapture(e.pointerId); on(e); });
+    btn.addEventListener('pointerup', off);
+    btn.addEventListener('pointercancel', off);
+    btn.addEventListener('lostpointercapture', off);
+    btn.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) on(e); });
+    btn.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') off(); });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const DEG = Math.PI / 180;
+
+
+  /* ---------- 내용 (카드·표에 그대로 쓰는 텍스트) ---------- */
+  const TYPES = {
+    mp: { name: '맥퍼슨 스트럿', en: 'MacPherson Strut', cls: '독립식', part: '스트럿',
+      struct: '쇼크업소버와 코일 스프링을 하나로 묶은 스트럿이 위쪽 암 역할까지 맡습니다. 아래는 로어 암 하나, 위는 스트럿 상단 마운트(베어링)로 차체에 고정됩니다.',
+      short: '스트럿이 위쪽 암 역할 + 로어 암 1개',
+      pros: ['부품이 적고 가벼워 값이 싸다', '좌우로 차지하는 폭이 작아 엔진룸이 넓다 (가로배치 앞바퀴굴림에 유리)', '스프링 아래 질량이 작다'],
+      cons: ['스트럿이 옆 방향 힘을 받아 굽힘과 마찰이 생긴다', '범프·롤 때 캠버 변화를 설계로 조절할 여지가 작다', '스트럿 높이만큼 보닛 높이가 필요하다'],
+      cars: '대부분의 승용차 전륜 (현대 아반떼·쏘나타 등), 포르쉐 911 전륜',
+      exam: '<b>킹핀 축</b> = 스트럿 상단 마운트와 로어 암 볼 조인트를 잇는 선. 맥퍼슨에는 <b>어퍼 암이 없습니다</b>.' },
+    dw: { name: '더블 위시본', en: 'Double Wishbone', cls: '독립식', part: '어퍼·로어 암',
+      struct: '위·아래 두 개의 A자형 암이 너클을 잡고, 스프링과 쇼크업소버는 따로 달려 암을 받칩니다.',
+      short: '위·아래 A자형 암 2개가 너클을 잡음',
+      pros: ['두 암의 길이·각도로 캠버 변화와 롤 센터를 자유롭게 설계할 수 있다', '옆 방향 강성이 높아 조종 안정성이 좋다', '스프링 아래 질량이 작다'],
+      cons: ['부품이 많고 좌우 폭을 많이 차지한다', '제작·정비 비용이 높다'],
+      cars: '포뮬러 레이싱카, 마쯔다 MX-5 전륜, 기아 모하비·KGM 렉스턴 등 프레임 SUV 전륜',
+      exam: '<b>평행사변형식</b>(위·아래 암 길이 같음): 캠버는 변하지 않지만 <b>윤거가 변해 타이어 마멸</b>이 큽니다. <b>SLA형</b>(위 암이 짧음): 윤거 변화가 작고 <b>캠버가 변합니다</b>. 위의 버튼으로 바꿔 비교해 보세요.' },
+    ml: { name: '멀티링크', en: 'Multi-Link', cls: '독립식', part: '링크 4~5개',
+      struct: '3~5개의 링크를 서로 다른 방향으로 배치해 바퀴의 캠버·토·위치를 따로따로 잡습니다. 더블 위시본의 암을 여러 개의 막대로 나눈 형태입니다.',
+      short: '링크 3~5개로 캠버·토를 따로 제어',
+      pros: ['링크마다 캠버·토 변화를 따로 조정해 승차감과 핸들링을 함께 맞추기 좋다', '뒷바퀴의 토 변화를 제어해 고속 안정성을 높일 수 있다'],
+      cons: ['구조가 복잡해 설계·제작비가 높다', '부싱이 많아 노후되면 얼라인먼트가 틀어지기 쉽다'],
+      cars: '현대 쏘나타·그랜저 후륜, BMW 3·5시리즈, 벤츠 E·S클래스 후륜 등',
+      exam: '링크 <b>부싱 마모 → 토·캠버 틀어짐 → 타이어 편마모</b>. 정비 후에는 휠 얼라인먼트를 점검합니다.' },
+    tb: { name: '토션 빔', en: 'Torsion Beam (CTBA)', cls: '반독립식', part: '토션 빔',
+      struct: '좌우 트레일링 암을 비틀릴 수 있는 빔으로 잇습니다. 한쪽 바퀴만 움직이면 빔이 비틀리며 움직임의 일부만 반대쪽으로 전해집니다.',
+      short: '좌우 트레일링 암을 비틀리는 빔으로 연결',
+      pros: ['구조가 아주 간단하고 값이 싸다', '차지하는 공간이 작아 트렁크·뒷좌석 바닥을 낮게 만들 수 있다', '빔 자체가 스태빌라이저 역할을 한다'],
+      cons: ['좌우가 완전히 독립이 아니어서 한쪽 요철의 충격이 반대쪽에 전해진다', '캠버·토를 세밀하게 조절하기 어렵다'],
+      cars: '경차·소형·준중형 앞바퀴굴림 차의 후륜 (기아 모닝, 현대 캐스퍼, 아반떼 일반 트림, 셀토스 2WD 등)',
+      exam: '<b>반독립식</b>으로 분류합니다. 앞바퀴굴림(FF) 차량의 <b>뒤 현가장치</b>에 주로 씁니다.' },
+    sa: { name: '일체 차축 (솔리드 액슬)', en: 'Solid Axle', cls: '일체식', part: '차축·판 스프링',
+      struct: '하나의 단단한 차축이 좌우 바퀴를 잇습니다. 구동축이면 차축 하우징 안에 디퍼렌셜과 액슬 축이 들어 있고, 판 스프링이나 코일 스프링과 링크로 차체에 답니다.',
+      short: '한 개의 차축이 좌우 바퀴를 묶음',
+      pros: ['구조가 간단하고 튼튼해 무거운 하중을 견딘다', '양쪽이 함께 움직일 때 캠버·윤거가 변하지 않아 타이어가 고르게 닳는다', '험로에서 바퀴 상하 이동량을 크게 잡기 쉽다'],
+      cons: ['스프링 아래 질량이 커서 승차감과 접지성이 나쁘다', '한쪽 바퀴의 충격과 기울어짐이 반대쪽 바퀴에 그대로 전해진다', '앞차축이면 시미(바퀴 떨림)가 생기기 쉽다'],
+      cars: '지프 랭글러 전·후륜, 벤츠 G클래스 후륜, 현대 포터·기아 봉고 등 화물차 후륜 (판 스프링)',
+      exam: '일체 차축식의 단점 = <b>스프링 아래 질량 큼 · 승차감 나쁨 · 시미</b>. 판 스프링의 <b>섀클</b>은 스프링이 휠 때 길이 변화를 흡수합니다.' }
+  };
+  const ORDER = ['mp', 'dw', 'ml', 'tb', 'sa'];
+
+  /* ---------- 기구학 (mm, 차체 기준, 오른쪽 바퀴 기준으로 풀고 왼쪽은 거울상) ---------- */
+  const R = 320, HW = 780;                       // 타이어 반경, 윤거의 절반
+  const P = (x, y) => ({ x, y });
+  const sub = (a, b) => P(a.x - b.x, a.y - b.y), add = (a, b) => P(a.x + b.x, a.y + b.y);
+  const len = v => Math.hypot(v.x, v.y), ang = v => Math.atan2(v.y, v.x);
+  const rot = (v, a) => P(v.x * Math.cos(a) - v.y * Math.sin(a), v.x * Math.sin(a) + v.y * Math.cos(a));
+  const GEO = {   // Li·Lo: 로어 암 안쪽·바깥쪽, Ui·Uo: 어퍼 암, Top: 스트럿 상단 마운트, W: 바퀴 중심
+    mp:  { Li: P(300, 190), Lo: P(700, 170), Top: P(620, 790), W: P(HW, R) },
+    sla: { Li: P(260, 150), Lo: P(690, 175), Ui: P(440, 498), Uo: P(660, 540), W: P(HW, R) },   // 두 암 연장선의 교점(순간 중심)이 안쪽 지면 높이에 오도록 → 캠버는 변하고 윤거는 거의 그대로
+    par: { Li: P(260, 150), Lo: P(690, 175), Ui: P(260, 515), Uo: P(690, 540), W: P(HW, R) },   // 위·아래 암이 같은 길이로 평행 → 캠버는 그대로, 바퀴가 원호를 그리며 윤거가 변함
+    ml:  { Li: P(240, 149), Lo: P(690, 175), Ui: P(330, 488), Uo: P(660, 540), W: P(HW, R) }    // 순간 중심을 더 멀리 두어 캠버 변화를 줄인 예
+  };
+  function interCircle(c1, r1, c2, r2, near) {
+    const d = sub(c2, c1), dd = len(d), a = (r1 * r1 - r2 * r2 + dd * dd) / (2 * dd), h = Math.sqrt(Math.max(0, r1 * r1 - a * a));
+    const m = add(c1, P(d.x * a / dd, d.y * a / dd)), p1 = P(m.x + h * d.y / dd, m.y - h * d.x / dd), p2 = P(m.x - h * d.y / dd, m.y + h * d.x / dd);
+    return len(sub(p1, near)) < len(sub(p2, near)) ? p1 : p2;
+  }
+  function poseAt(g, th) {   // 로어 암 각도 th 에서 너클의 자세
+    const Ll = len(sub(g.Lo, g.Li)), Lo = add(g.Li, P(Ll * Math.cos(th), Ll * Math.sin(th)));
+    let a, Uo = null;
+    if (g.Top) a = ang(sub(g.Top, Lo)) - ang(sub(g.Top, g.Lo));
+    else {
+      Uo = interCircle(g.Ui, len(sub(g.Uo, g.Ui)), Lo, len(sub(g.Uo, g.Lo)), g.Uo);
+      a = ang(sub(Uo, Lo)) - ang(sub(g.Uo, g.Lo));
+    }
+    const W = add(Lo, rot(sub(g.W, g.Lo), a)), C = add(Lo, rot(sub(P(g.W.x, 0), g.Lo), a));
+    return { Lo, Uo, a, W, C };
+  }
+  function solveIndep(g, z) {   // 바퀴 중심이 z 만큼 오르도록 로어 암 각도를 이분법으로 찾는다
+    const t0 = ang(sub(g.Lo, g.Li));
+    let lo = t0 - 0.6, hi = t0 + 0.6;
+    for (let i = 0; i < 50; i++) { const m = (lo + hi) / 2; if (poseAt(g, m).W.y - g.W.y < z) lo = m; else hi = m; }
+    return poseAt(g, (lo + hi) / 2);
+  }
+  const KAPPA = 0.6;   // 토션빔: 차축 기울기 중 바퀴에 전해지는 비율 (일체 차축 = 1)
+  function solve(type, sub2, zL, zR) {
+    if (type === 'tb' || type === 'sa') {
+      const psi = Math.atan2(zR - zL, 2 * HW), k = type === 'sa' ? 1 : KAPPA;
+      const mid = P(0, R + (zL + zR) / 2);
+      const wL = type === 'sa' ? add(mid, rot(P(-HW, 0), psi)) : P(-HW, R + zL);
+      const wR = type === 'sa' ? add(mid, rot(P(HW, 0), psi)) : P(HW, R + zR);
+      const rw = k * psi;   // 바퀴 회전각 (반시계 +)
+      return { beam: true, psi, rw, L: { W: wL, a: rw, C: add(wL, rot(P(0, -R), rw)) }, R: { W: wR, a: rw, C: add(wR, rot(P(0, -R), rw)) },
+        camL: rw / DEG, camR: -rw / DEG, twist: Math.atan2(zL - zR, 450) / DEG };
+    }
+    const g = GEO[type === 'dw' ? sub2 : type];
+    const r = solveIndep(g, zR), l = solveIndep(g, zL);
+    const mir = q => q && P(-q.x, q.y);
+    return { beam: false, g, R: r, L: { Lo: mir(l.Lo), Uo: mir(l.Uo), a: -l.a, W: mir(l.W), C: mir(l.C) }, camR: -r.a / DEG, camL: -l.a / DEG };
+  }
+
+  /* ---------- 그리기 ---------- */
+  const cv = $('cv'), ctx = fitCanvas(cv);
+  let type = 'mp', dwSub = 'sla', mode = 'one', stroke = 50, playing = false, t0 = 0;
+  const EXAG = 3;
+  let tr = null;
+  function wz() { const z = stroke; return mode === 'one' ? [z, 0] : mode === 'both' ? [z, z] : [z, -z]; }
+  function setup() {
+    const W = cv._w, H = cv._h, s = Math.min(W / 2000, (H - 24) / 940);   // 그림 범위: 가로 ±1000, 세로 −40~900 mm
+    tr = { s, cx: W / 2, gy: H / 2 + 430 * s };
+  }
+  const X = x => tr.cx + x * tr.s, Y = y => tr.gy - y * tr.s;
+  function line(a, b, w, col) { ctx.strokeStyle = col; ctx.lineWidth = Math.max(2, w * tr.s); ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(X(a.x), Y(a.y)); ctx.lineTo(X(b.x), Y(b.y)); ctx.stroke(); }
+  function joint(p, r, col) { ctx.fillStyle = col || C.surface; ctx.strokeStyle = C['steel-dark']; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), Math.max(3, r * tr.s), 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+  function coil(a, b, rad, turns, col) {
+    const d = sub(b, a), L = len(d), u = P(d.x / L, d.y / L), n = P(-u.y, u.x);
+    ctx.strokeStyle = col; ctx.lineWidth = Math.max(2, 9 * tr.s); ctx.lineJoin = 'round'; ctx.beginPath();
+    const N = turns * 2;
+    for (let i = 0; i <= N; i++) {
+      const f = i / N, side = i === 0 || i === N ? 0 : (i % 2 ? 1 : -1);
+      const q = add(a, add(P(u.x * L * f, u.y * L * f), P(n.x * rad * side, n.y * rad * side)));
+      i ? ctx.lineTo(X(q.x), Y(q.y)) : ctx.moveTo(X(q.x), Y(q.y));
+    }
+    ctx.stroke();
+  }
+  function tire(w) {
+    ctx.save(); ctx.translate(X(w.W.x), Y(w.W.y)); ctx.rotate(-w.a);
+    const tw = 200 * tr.s, th = 2 * R * tr.s;
+    ctx.fillStyle = C.tire; roundRect(ctx, -tw / 2, -th / 2, tw, th, 26 * tr.s); ctx.fill();
+    ctx.fillStyle = C.metal; roundRect(ctx, -tw / 2 + 14 * tr.s, -th * 0.31, tw - 28 * tr.s, th * 0.62, 10 * tr.s); ctx.fill();
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);   // 바퀴 중심선: 기울기(캠버)를 읽는 기준
+    ctx.beginPath(); ctx.moveTo(0, -th / 2 - 16 * tr.s); ctx.lineTo(0, th / 2 + 16 * tr.s); ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+  }
+  function ground(w) {
+    const y = Y(w.C.y), x = X(w.C.x);
+    ctx.strokeStyle = C['fg-2']; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 150 * tr.s, y); ctx.lineTo(x + 150 * tr.s, y); ctx.stroke();
+    ctx.fillStyle = C.accent; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();   // 접지점
+  }
+  function label(text, p, align) {
+    ctx.font = `600 ${Math.max(11, 34 * tr.s)}px ${C.font}`; ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 4; ctx.strokeStyle = C.surface; ctx.strokeText(text, X(p.x), Y(p.y));
+    ctx.fillStyle = C.fg; ctx.fillText(text, X(p.x), Y(p.y));
+  }
+  function body(beam) {
+    ctx.fillStyle = C.fill;
+    if (beam) { roundRect(ctx, X(-560), Y(860), 1120 * tr.s, 90 * tr.s, 14 * tr.s); ctx.fill(); }
+    else {
+      roundRect(ctx, X(-470), Y(250), 940 * tr.s, 110 * tr.s, 14 * tr.s); ctx.fill();   // 서브프레임
+      roundRect(ctx, X(-700), Y(860), 1400 * tr.s, 70 * tr.s, 14 * tr.s); ctx.fill();   // 차체(스트럿 타워·위쪽 마운트)
+    }
+  }
+  function drawIndep(sol, z) {
+    const hl = C.accent, st = C.steel, g = sol.g;
+    [['R', 1], ['L', -1]].forEach(([k, sg]) => {
+      const w = sol[k], m = q => P(q.x * sg, q.y);
+      const Li = m(g.Li), Lo = w.Lo;
+      if (type === 'mp') {
+        const Top = m(g.Top), dir = sub(Top, Lo), dl = len(dir), u = P(dir.x / dl, dir.y / dl);
+        const seat = add(Lo, P(u.x * 330, u.y * 330));
+        coil(add(seat, P(u.x * 20, u.y * 20)), add(Top, P(-u.x * 40, -u.y * 40)), 70, 6, C.hot);
+        line(add(Lo, P(u.x * 120, u.y * 120)), add(Lo, P(u.x * 360, u.y * 360)), 70, hl);   // 스트럿 아래 통
+        line(add(Lo, P(u.x * 360, u.y * 360)), Top, 22, hl);                                   // 피스톤 로드
+        joint(Top, 26, C.surface);
+        line(Li, Lo, 46, st);
+        if (k === 'R') { label('스트럿', add(Top, P(-120, -90)), 'right'); label('로어 암', P(470, 90), 'center'); }
+      } else {
+        const Ui = m(g.Ui), Uo = w.Uo, sp = P(lerp(Li.x, Lo.x, 0.6), lerp(Li.y, Lo.y, 0.6));
+        coil(sp, m(P(470, 830)), 55, 6, C.hot);
+        line(sp, m(P(470, 830)), 16, C['steel-dark']);
+        if (type === 'ml') {   // 링크를 앞뒤로 살짝 어긋나게 그려 여러 개임을 표현
+          [-26, 26].forEach(o => { line(P(Ui.x + o * sg, Ui.y + o), P(Uo.x + o * sg, Uo.y + o * 0.4), 20, hl); line(P(Li.x + o * sg, Li.y + o * 0.6), P(Lo.x + o * 0.3 * sg, Lo.y + o * 0.3), 22, hl); });
+          line(P(Li.x, Li.y + 120), P(Lo.x, Lo.y + 140), 14, st);   // 토 링크
+        } else { line(Ui, Uo, 34, hl); line(Li, Lo, 40, hl); }
+        joint(Ui, 18); joint(Uo, 16);
+        ctx.fillStyle = C['steel-dark']; ctx.beginPath();   // 너클
+        ctx.moveTo(X(Lo.x), Y(Lo.y)); ctx.lineTo(X(Uo.x), Y(Uo.y)); ctx.lineTo(X(w.W.x), Y(w.W.y)); ctx.closePath(); ctx.fill();
+        if (k === 'R') {
+          label(type === 'ml' ? '어퍼 링크' : '어퍼 암', P((Ui.x + Uo.x) / 2, Ui.y + 90), 'center');
+          label(type === 'ml' ? '로어 링크' : '로어 암', P(470, 70), 'center');
+          if (type === 'ml') label('토 링크', P(470, 380), 'center');
+        }
+      }
+      joint(Li, 20); joint(Lo, 16);
+    });
+  }
+  function drawBeam(sol) {
+    const hl = C.accent, L = sol.L.W, Rw = sol.R.W;
+    [[L, -1], [Rw, 1]].forEach(([w, sg]) => {   // 스프링: 바퀴 안쪽 위
+      const base = P(w.x - sg * 230, w.y - (type === 'sa' ? 0 : 20));
+      if (type === 'sa') {   // 판 스프링: 차축 위에 겹친 판, 양 끝이 차체에 걸림
+        const fx = w.x - sg * 250;
+        for (let i = 0; i < 4; i++) { const yy = w.y + 60 + i * 16, sag = 40 - i * 10; ctx.strokeStyle = C['steel-dark']; ctx.lineWidth = Math.max(2, 10 * tr.s); ctx.beginPath(); ctx.moveTo(X(fx - 190 + i * 30), Y(yy + sag)); ctx.quadraticCurveTo(X(fx), Y(yy - sag * 0.6), X(fx + 190 - i * 30), Y(yy + sag)); ctx.stroke(); }
+        line(P(fx - 190, w.y + 100), P(fx - 200, 790), 12, C.steel); line(P(fx + 190, w.y + 100), P(fx + 210, 790), 12, C.steel);
+      } else coil(base, P(base.x, 800), 60, 6, C.hot);
+    });
+    if (type === 'sa') {
+      line(L, Rw, 70, C['steel-dark']);
+      const mid = P((L.x + Rw.x) / 2, (L.y + Rw.y) / 2);
+      ctx.fillStyle = hl; ctx.beginPath(); ctx.arc(X(mid.x), Y(mid.y), 130 * tr.s, 0, Math.PI * 2); ctx.fill();
+      label('디퍼렌셜', P(mid.x, mid.y - 210), 'center'); label('판 스프링', P(Rw.x - 250, Rw.y + 210), 'center'); label('차축 하우징', P(Rw.x - 520, Rw.y - 110), 'center');
+    } else {
+      const a = P(L.x + 110, L.y - 40), b = P(Rw.x - 110, Rw.y - 40);
+      line(a, b, 56, hl);
+      const tw = Math.abs(sol.twist);
+      if (tw > 0.2) {   // 비틀림 표시: 빔 가운데에 감긴 화살표, 비틀린 만큼 길어짐
+        const m = P((a.x + b.x) / 2, (a.y + b.y) / 2), r = 70 * tr.s, sweep = Math.min(5, tw * 0.35);
+        ctx.strokeStyle = C.hot; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(X(m.x), Y(m.y), r * 0.45, r, 0, -sweep / 2, sweep / 2); ctx.stroke();
+      }
+      label('토션 빔', P(0, Math.min(a.y, b.y) - 120), 'center'); label('트레일링 암(앞쪽으로 뻗음)', P(Rw.x - 130, Rw.y + 380), 'center');
+    }
+  }
+  function draw() {
+    if (!cv._w) return;
+    setup();
+    ctx.clearRect(0, 0, cv._w, cv._h);
+    const [zl, zr] = wz(), sol = solve(type, dwSub, zl * EXAG, zr * EXAG);
+    body(sol.beam);
+    ground(sol.L); ground(sol.R);
+    if (sol.beam) drawBeam(sol); else drawIndep(sol);
+    tire(sol.L); tire(sol.R);
+    ctx.font = `600 ${Math.max(11, 30 * tr.s)}px ${C.font}`; ctx.fillStyle = C['fg-2']; ctx.textBaseline = 'top';
+    ctx.textAlign = 'left'; ctx.fillText(sol.beam ? '왼쪽 (뒤에서 본 모습)' : '왼쪽 (앞에서 본 모습)', X(-990), Y(900));
+    ctx.textAlign = 'right'; ctx.fillText('오른쪽', X(990), Y(900));
+  }
+
+  /* ---------- 숫자·설명 ---------- */
+  const fmtSign = (v, d) => (v > 0.0005 ? '+' : v < -0.0005 ? '−' : '') + Math.abs(v).toFixed(d);
+  function update() {
+    const [zl, zr] = wz(), sol = solve(type, dwSub, zl, zr), info = TYPES[type];
+    const track = (sol.R.C.x - sol.L.C.x) - 2 * HW;
+    $('mClass').textContent = info.cls;
+    setChip($('mClassChip'), info.cls === '독립식' ? '좌우 따로 움직임' : info.cls === '반독립식' ? '일부만 전달' : '좌우가 함께 움직임', info.cls === '독립식' ? 'good' : info.cls === '반독립식' ? 'warn' : 'bad');
+    $('mCamL').textContent = fmtSign(sol.camL, 2); $('mCamR').textContent = fmtSign(sol.camR, 2); $('mTrack').textContent = fmtSign(track, 1);
+    const camTone = v => Math.abs(v) < 0.05 ? ['변화 없음', 'good'] : [v < 0 ? '네거티브 쪽' : '포지티브 쪽', 'info'];
+    const cl = camTone(sol.camL); setChip($('mCamLChip'), cl[0], cl[1]);
+    const cr = mode === 'one' ? (Math.abs(sol.camR) < 0.05 ? ['영향 없음 (독립)', 'good'] : ['반대쪽도 기울어짐', 'bad']) : camTone(sol.camR);
+    setChip($('mCamRChip'), cr[0], cr[1]);
+    setChip($('mTrackChip'), Math.abs(track) < 0.5 ? '거의 변화 없음' : Math.abs(track) < 4 ? '작음' : '타이어 옆으로 끌림', Math.abs(track) < 0.5 ? 'good' : Math.abs(track) < 4 ? 'info' : 'warn');
+    $('strokeVal').textContent = (stroke > 0 ? '+' : stroke < 0 ? '−' : '') + Math.abs(stroke) + ' mm';
+    cv.setAttribute('aria-label', info.name + ' 정면도. 왼쪽 바퀴 ' + stroke + 'mm, 왼쪽 캠버 ' + sol.camL.toFixed(2) + '도, 오른쪽 캠버 ' + sol.camR.toFixed(2) + '도, 윤거 변화 ' + track.toFixed(1) + 'mm.');
+    draw();
+  }
+  function renderDetail(animate) {
+    const d = TYPES[type], el = $('detail');
+    el.innerHTML = `<div class="detail${animate ? ' swap' : ''}">
+      <div class="type-head"><p class="type-name">${d.name}</p><span class="type-en">${d.en} · ${d.cls}</span></div>
+      <div><h3>구조 핵심</h3><p>${d.struct}</p></div>
+      <div><h3>장점</h3><ul>${d.pros.map(x => `<li>${x}</li>`).join('')}</ul></div>
+      <div><h3>단점·한계</h3><ul>${d.cons.map(x => `<li>${x}</li>`).join('')}</ul></div>
+      <div><h3>적용 예</h3><p>${d.cars}</p></div>
+      <div class="exam">${d.exam}</div></div>`;
+    $('segDw').hidden = type !== 'dw';
+    [...$('cmpBody').children].forEach(tr => tr.classList.toggle('on', tr.dataset.t === type));
+  }
+  $('cmpBody').innerHTML = ORDER.map(k => { const d = TYPES[k]; return `<tr data-t="${k}" tabindex="0" style="cursor:pointer"><td>${d.name}</td><td>${d.cls}</td><td>${d.short}</td><td>${d.pros[0]}</td><td>${d.cons[0]}</td><td>${d.cars}</td></tr>`; }).join('');
+
+  /* ---------- 입력 ---------- */
+  const segType = initSeg($('segType'), v => { type = v; renderDetail(true); update(); });
+  const segDw = initSeg($('segDw'), v => { dwSub = v; update(); });
+  initSeg($('segMode'), v => { mode = v; update(); });
+  function pickRow(e) { const r = e.target.closest('tr[data-t]'); if (!r) return; type = r.dataset.t; segType.select(type); renderDetail(true); update(); $('cv').scrollIntoView({ behavior: REDUCE ? 'auto' : 'smooth', block: 'center' }); }
+  $('cmpBody').addEventListener('click', pickRow);
+  $('cmpBody').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickRow(e); } });
+  $('stroke').addEventListener('input', e => { stopPlay(); stroke = +e.target.value; update(); });
+  // 그림 위를 위아래로 끌면 바퀴가 따라 움직인다
+  let dragY = null, dragStart = 0;
+  cv.addEventListener('pointerdown', e => { stopPlay(); dragY = e.clientY; dragStart = stroke; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointermove', e => {
+    if (dragY == null) return;
+    stroke = Math.round(clamp(dragStart + (dragY - e.clientY) / (tr.s * EXAG), -80, 80));
+    $('stroke').value = stroke; update();
+  });
+  const endDrag = () => { dragY = null; };
+  cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+  cv.style.touchAction = 'pan-x'; cv.style.cursor = 'ns-resize';
+
+  const playBtn = $('play');
+  function setPlayUI() {
+    playBtn.setAttribute('aria-pressed', String(playing));
+    playBtn.querySelector('span').textContent = playing ? '멈추기' : '움직이기';
+    playBtn.querySelector('path').setAttribute('d', playing ? 'M3 2h3v10H3zM8 2h3v10H8z' : 'M3 2l9 5-9 5z');
+  }
+  function stopPlay() { if (!playing) return; playing = false; setPlayUI(); }
+  playBtn.addEventListener('click', () => { playing = !playing; t0 = performance.now() - Math.asin(clamp(stroke / 70, -1, 1)) / 2.2 * 1000; setPlayUI(); if (playing) requestAnimationFrame(loop); });
+  function loop(now) {
+    if (!playing) return;
+    stroke = Math.round(70 * Math.sin((now - t0) / 1000 * 2.2));   // 약 2.9초 주기로 천천히 오르내림
+    $('stroke').value = stroke; update();
+    requestAnimationFrame(loop);
+  }
+  if (REDUCE) playBtn.hidden = true;
+
+  new ResizeObserver(() => draw()).observe(cv);
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => setTimeout(draw, 0));
+  renderDetail(false); update();
+})();
+</script>
+</body>
+</html>
