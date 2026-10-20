@@ -144,7 +144,7 @@
   <header>
     <p class="eyebrow">자동차산업기사 · 인터랙티브 학습 · <a href="./" style="color:var(--accent);text-decoration:none;">← 처음 화면</a></p>
     <h1>물리 시스템 알기</h1>
-    <p class="lead">교재의 공식과 그림을 직접 움직여 보며 익히는 시뮬레이터 10개, 마력·토크 계산기, 연습 문제입니다. 섹션은 시험 과목 순서로 묶었습니다. 값을 바꾸면 결과가 바로 보이니, 외우기 전에 먼저 눈으로 이해해 보세요.</p>
+    <p class="lead">교재의 공식과 그림을 직접 움직여 보며 익히는 시뮬레이터 11개, 마력·토크 계산기, 연습 문제입니다. 섹션은 시험 과목 순서로 묶었습니다. 값을 바꾸면 결과가 바로 보이니, 외우기 전에 먼저 눈으로 이해해 보세요.</p>
   </header>
 
   <div class="sections">
@@ -256,6 +256,22 @@
           <ul class="learn">
             <li>파스칼의 원리와 면적비에 따른 힘·이동량</li>
             <li>공기 혼입 시 스펀지 현상, 베이퍼 록·페이드</li>
+          </ul>
+          <span class="open">열기
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+          </span>
+        </div>
+      </a>
+      <a class="card" href="disc-brake.html">
+        <canvas class="preview" id="pvDisc" aria-hidden="true"></canvas>
+        <div class="card-body">
+          <div class="meta"><span class="tag">제동장치</span><span class="tag">단면 모형</span></div>
+          <h2>디스크 브레이크 구조</h2>
+          <p>페달을 밟으면 푸시로드·마스터 실린더·유압 라인·캘리퍼 피스톤·패드가 차례로 움직여 회전하는 로터를 잡는 모습을 입체 단면으로 봅니다.</p>
+          <div class="formula">P = F ÷ A₁ · F₂ = P × A₂ · T = 2μFr</div>
+          <ul class="learn">
+            <li>파스칼의 원리로 힘이 커지는 과정 (페달 → 라인압 → 압착력)</li>
+            <li>부동형 캘리퍼, 페달 유격, 제동 토크</li>
           </ul>
           <span class="open">열기
             <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
@@ -395,9 +411,10 @@
   const pvP = document.getElementById('pvPower');
   const pvS = document.getElementById('pvSusType');
   const pvD = document.getElementById('pvDiff');
+  const pvK = document.getElementById('pvDisc');
   const pvC = document.getElementById('pvCircuit');
   const pvR = document.getElementById('pvRelay');
-  const ctx1 = setup(pv1), ctx2 = setup(pv2), ctx3 = setup(pv3), ctx4 = setup(pv4), ctx5 = setup(pv5), ctxG = setup(pvG), ctxC = setup(pvC), ctxR = setup(pvR), ctxP = setup(pvP), ctxS = setup(pvS), ctxD = setup(pvD);
+  const ctx1 = setup(pv1), ctx2 = setup(pv2), ctx3 = setup(pv3), ctx4 = setup(pv4), ctx5 = setup(pv5), ctxG = setup(pvG), ctxC = setup(pvC), ctxR = setup(pvR), ctxP = setup(pvP), ctxS = setup(pvS), ctxD = setup(pvD), ctxK = setup(pvK);
 
   // 단진자 미리보기: 감쇠 없이 일정하게 흔들림
   function drawPendulum(t) {
@@ -555,6 +572,28 @@
     g(x2, H / 2, z2, m, -a * z1 / z2 + Math.PI / z2, C.steel);
   }
 
+  // 디스크 브레이크 미리보기: 로터가 돌다가 캘리퍼가 조이면(주기적으로) 천천히 멈췄다 다시 돈다
+  let discPh = 0, discLast = 0;
+  function drawDisc(t) {
+    const W = pvK._w, H = pvK._h, ctx = ctxK;
+    ctx.clearRect(0, 0, W, H);
+    const cx = W * 0.44, cy = H * 0.52, R = Math.min(W, H) * 0.36;
+    const cyc = (t % 4) / 4, press = reduce ? 0.6 : (cyc < 0.45 ? 0 : cyc < 0.55 ? (cyc - 0.45) / 0.1 : cyc < 0.85 ? 1 : 1 - (cyc - 0.85) / 0.15);
+    const dt = discLast ? Math.min(0.05, t - discLast) : 0; discLast = t;
+    if (!reduce) discPh += dt * (1 - 0.9 * press) * 3.2;
+    ctx.fillStyle = C.steel; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.surface; ctx.beginPath(); ctx.arc(cx, cy, R * 0.42, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = C.fg; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, R * 0.42, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = C['fg-2'];
+    for (let i = 0; i < 18; i++) { const a = discPh + i / 18 * Math.PI * 2; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * R * 0.72, cy + Math.sin(a) * R * 0.72, 2, 0, Math.PI * 2); ctx.fill(); }
+    for (let i = 0; i < 5; i++) { const a = discPh + i / 5 * Math.PI * 2; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * R * 0.25, cy + Math.sin(a) * R * 0.25, 3, 0, Math.PI * 2); ctx.fill(); }
+    const gap = 6 * (1 - press), cw = R * 0.5, ch = R * 0.9, x0 = cx + R * 0.62;
+    ctx.fillStyle = press > 0.5 ? C.accent : C.fg;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x0 - 4 - gap, cy - ch / 2, cw, ch, 8) : ctx.rect(x0 - 4 - gap, cy - ch / 2, cw, ch); ctx.fill();
+    ctx.font = `600 11px ${C.font || 'sans-serif'}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = C['fg-2'];
+    ctx.fillText(press > 0.5 ? '캘리퍼 조임' : '캘리퍼', x0 + cw + 2 - gap, cy);
+  }
+
   // 디퍼렌셜 미리보기: 위에서 본 차축. 좌회전 중이라 안쪽(왼쪽) 바퀴 줄무늬가 느리고 바깥쪽이 빠르다
   function drawDiff(t) {
     const W = pvD._w, H = pvD._h, ctx = ctxD;
@@ -679,7 +718,7 @@
   // 화면에 보일 때만 애니메이션
   const visible = new Set();
   const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? visible.add(e.target) : visible.delete(e.target)));
-  [pv1, pv2, pv3, pv4, pv5, pvG, pvC, pvR, pvP, pvS, pvD].forEach(c => io.observe(c));
+  [pv1, pv2, pv3, pv4, pv5, pvG, pvC, pvR, pvP, pvS, pvD, pvK].forEach(c => io.observe(c));
 
   let first = true;   // 첫 프레임은 화면 밖 카드도 그려 둠 (정지 상태로도 완성된 화면)
   function loop(now) {
@@ -696,6 +735,7 @@
     if (visible.has(pvP) || all || pvP._dirty) { drawPower(t); pvP._dirty = false; }
     if (visible.has(pvS) || all || pvS._dirty) { drawSusType(t); pvS._dirty = false; }
     if (visible.has(pvD) || all || pvD._dirty) { drawDiff(t); pvD._dirty = false; }
+    if (visible.has(pvK) || all || pvK._dirty) { drawDisc(t); pvK._dirty = false; }
     if (!reduce) requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
