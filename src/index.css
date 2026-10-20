@@ -232,122 +232,150 @@
 
 
 /* ===================== 첫 화면 (Landing) =====================
-   Apple 제품 페이지 문법: 넓은 여백, 큰 제목, 회색 타일, 파란 텍스트 링크.
-   색은 모두 토큰으로 두고 다크 모드에서 바꿈. */
+   제목은 이 사이트가 무엇인지 말하고, 그림은 시뮬레이터의 실제 화면을 쓴다.
+   선·그림자·그라데이션 없이 크기와 바탕 톤으로만 구역을 나눈다. 색은 토큰, 다크 모드에서 바뀜. */
 .lp {
   --lp-bg: #ffffff;
   --lp-tile: #f5f5f7;
-  --lp-tile-hover: #ececf0;
   --lp-fg: #1d1d1f;
   --lp-fg-2: #6e6e73;
-  --lp-line: rgba(0, 0, 0, 0.08);
-  --lp-link: #0066cc;
-  --lp-nav: rgba(255, 255, 255, 0.72);
+  --lp-accent: #0071e3;
+  --lp-field: #1d1d1f;
+  --lp-field-fg: #f5f5f7;
+  --lp-field-2: #a1a1a6;
+  --lp-ok: #30d158;
+  --lp-bad: #ff453a;
   --lp-ease: cubic-bezier(0.16, 1, 0.3, 1);
-  min-height: 100vh;
-  min-height: 100dvh;
-  background: var(--lp-bg);
-  color: var(--lp-fg);
+  --lp-gutter: clamp(16px, 4vw, 48px);
+  min-height: 100svh;
+  background: var(--lp-bg); color: var(--lp-fg);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Helvetica Neue", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  letter-spacing: -0.015em;
-  word-break: keep-all;   /* 한국어는 단어 단위로 줄바꿈 */
-  display: flex;
-  flex-direction: column;
+  font-size: 18px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased; word-break: keep-all;
 }
 @media (prefers-color-scheme: dark) {
   .lp {
     --lp-bg: #000000;
     --lp-tile: #161617;
-    --lp-tile-hover: #1f1f21;
     --lp-fg: #f5f5f7;
-    --lp-fg-2: #86868b;
-    --lp-line: rgba(255, 255, 255, 0.1);
-    --lp-link: #2997ff;
-    --lp-nav: rgba(22, 22, 23, 0.72);
+    --lp-fg-2: #a1a1a6;
+    --lp-accent: #2997ff;
+    --lp-field: #1c1c1e;
   }
 }
-/* 첫 화면일 때는 바깥 배경도 같은 색 (iOS 바운스 스크롤에서 어두운 책상 배경이 비치지 않게) */
+/* 첫 화면일 때는 바깥 배경도 같은 색 (iOS 바운스 스크롤에서 다른 배경이 비치지 않게) */
 body.is-landing { background: #ffffff; }
 @media (prefers-color-scheme: dark) { body.is-landing { background: #000000; } }
 
-.lp-nav {
-  position: sticky; top: 0; z-index: 10;
-  background: var(--lp-nav);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid var(--lp-line);
-  padding-top: env(safe-area-inset-top, 0px);
-}
-.lp-nav-inner {
-  max-width: 980px; margin: 0 auto; height: 44px; padding: 0 22px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.lp-wordmark { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
-.lp-nav-note { font-size: 12px; color: var(--lp-fg-2); }
+.lp-wrap { width: min(1200px, 100% - 2 * var(--lp-gutter)); margin-inline: auto; }
+.lp a { color: inherit; }
 
-.lp-main { flex: 1; width: 100%; max-width: 1024px; margin: 0 auto; padding: 0 22px; }
+/* 내비게이션: 워드마크와 두 과정. 선 없이 바탕과 같은 색 */
+.lp-nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 56px; }
+.lp-wordmark { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+.lp-nav-links { display: flex; gap: 22px; }
+.lp-nav-links a, .lp-nav-links button { font: inherit; font-size: 15px; color: var(--lp-fg); text-decoration: none; background: none; border: 0; padding: 8px 0; cursor: pointer; }
+.lp-nav-links a:hover, .lp-nav-links button:hover { text-decoration: underline; text-underline-offset: 4px; }
 
-.lp-hero { text-align: center; padding: 72px 0 44px; }
-.lp-eyebrow { margin: 0 0 10px; font-size: 17px; font-weight: 600; color: var(--lp-fg-2); }
-.lp-title {
-  margin: 0; font-size: clamp(40px, 7vw, 80px); font-weight: 700; line-height: 1.05; letter-spacing: -0.035em;
-  text-wrap: balance;
-}
-.lp-lead { margin: 18px 0 0; font-size: clamp(19px, 2.4vw, 24px); color: var(--lp-fg-2); font-weight: 500; }
-
-.lp-grid { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); padding-bottom: 56px; }
-@media (min-width: 760px) { .lp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
-
-/* 타일: 링크와 버튼이 같은 모양이 되도록 기본 스타일을 지움 */
-.lp-tile {
-  appearance: none; border: 0; margin: 0; font: inherit; color: inherit; text-align: center; cursor: pointer;
-  text-decoration: none;
-  display: flex; flex-direction: column; align-items: center;
-  padding: 48px 28px 40px; border-radius: 28px; background: var(--lp-tile);
-  min-width: 0;
-  transition: transform 0.5s var(--lp-ease), background-color 0.3s var(--lp-ease);
-  /* 처음 열릴 때 아래에서 살짝 떠오름 (순서대로) */
-  animation: lp-rise 0.9s var(--lp-ease) both;
-  animation-delay: var(--d, 0ms);
-}
-.lp-tile:hover { background: var(--lp-tile-hover); transform: translateY(-4px); }
-.lp-tile:active { transform: scale(0.985); transition-duration: 0.15s; }
-.lp-tile:focus-visible { outline: 2px solid var(--lp-link); outline-offset: 4px; }
-
-.lp-kicker { font-size: 14px; font-weight: 600; color: var(--lp-fg-2); }
-.lp-name { margin: 6px 0 0; font-size: clamp(28px, 3.4vw, 40px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
-.lp-desc { margin: 12px 0 0; max-width: 22em; font-size: 17px; line-height: 1.47; color: var(--lp-fg-2); text-wrap: balance; }
-
-.lp-glyph {
-  width: 112px; height: 112px; margin: 36px 0 30px;
-  fill: none; stroke: var(--lp-fg); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;
-  transition: transform 0.6s var(--lp-ease);
-}
-.lp-tile:hover .lp-glyph { transform: scale(1.06); }
-
-.lp-stats { display: flex; gap: 40px; margin: 0; }
-.lp-stats div { display: flex; flex-direction: column-reverse; align-items: center; }
-.lp-stats dt { font-size: 12px; color: var(--lp-fg-2); margin-top: 2px; }
-.lp-stats dd { margin: 0; font-size: 32px; font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
-
-.lp-cta { margin-top: 28px; display: inline-flex; align-items: center; gap: 6px; font-size: 17px; color: var(--lp-link); }
-.lp-chevron { width: 7px; height: 12px; transition: transform 0.35s var(--lp-ease); }
-.lp-tile:hover .lp-chevron { transform: translateX(3px); }
-.lp-tile:hover .lp-cta { text-decoration: underline; text-underline-offset: 3px; }
-
-.lp-foot { border-top: 1px solid var(--lp-line); }
-.lp-foot p {
-  max-width: 980px; margin: 0 auto; padding: 18px 22px calc(18px + env(safe-area-inset-bottom, 0px));
-  font-size: 12px; line-height: 1.5; color: var(--lp-fg-2);
+/* 첫 화면 */
+.lp-hero { padding-top: clamp(40px, 7vw, 96px); }
+.lp-title { margin: 0; font-size: clamp(34px, 7.2vw, 104px); font-weight: 700; letter-spacing: -0.045em; line-height: 1.04; }
+.lp-hero-row { display: grid; gap: 24px; margin-top: 36px; align-items: end; }
+.lp-lead { margin: 0; max-width: 40em; text-wrap: pretty; font-size: 18px; line-height: 1.6; color: var(--lp-fg); }
+.lp-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+@media (min-width: 900px) {
+  .lp-hero-row { grid-template-columns: minmax(0, 1fr) auto; gap: 48px; }
 }
 
-@keyframes lp-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
-.lp-hero { animation: lp-rise 0.9s var(--lp-ease) both; }
+/* 버튼: 한 가지 모양(알약), 채운 색 하나 */
+.lp-btn {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 24px;
+  border: 0; border-radius: 999px; font: inherit; font-size: 18px; font-weight: 600; text-decoration: none; cursor: pointer;
+  transition: transform 0.2s var(--lp-ease), opacity 0.2s var(--lp-ease), background-color 0.2s var(--lp-ease);
+}
+.lp-btn:hover { opacity: 0.88; }
+.lp-btn:active { transform: scale(0.96); }
+.lp-btn:focus-visible, .lp-opt:focus-visible, .lp a:focus-visible, .lp-nav-links button:focus-visible { outline: 2px solid var(--lp-accent); outline-offset: 3px; }
+.lp .lp-btn-primary { background: var(--lp-accent); color: #ffffff; }
+.lp .lp-btn-quiet { background: var(--lp-tile); color: var(--lp-fg); }
+.lp .lp-btn-light { background: var(--lp-field-fg); color: #1d1d1f; }
+
+/* 그림: 시뮬레이터 실제 화면. 같은 모서리, 같은 바탕, 마우스를 올리면 살짝 커져 눌러 열 수 있음을 알림 */
+.lp figure { margin: 0; }
+.lp figure a { display: block; overflow: hidden; border-radius: 18px; background: var(--lp-tile); }
+.lp figure img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 0.7s var(--lp-ease); }
+.lp figure a:hover img { transform: scale(1.025); }
+.lp figcaption { margin-top: 10px; font-size: 15px; line-height: 1.5; color: var(--lp-fg-2); }
+.lp-hero-shot { margin-top: clamp(32px, 4vw, 56px) !important; }
+.lp-hero-shot img { aspect-ratio: 16 / 9; object-position: 50% 52%; animation: lp-settle 1.8s var(--lp-ease) both; }
+@keyframes lp-settle { from { transform: scale(1.06); } to { transform: scale(1); } }
+
+/* 자동차산업기사: 글과 목록(왼쪽), 화면 모자이크(오른쪽) */
+.lp-lab { display: grid; gap: 48px; padding-top: clamp(96px, 12vw, 180px); padding-bottom: clamp(96px, 12vw, 180px); }
+.lp h2 { margin: 0; font-size: clamp(28px, 3.6vw, 48px); font-weight: 700; letter-spacing: -0.035em; line-height: 1.12; }
+.lp-lab-text p, .lp-exam-text p { margin: 20px 0 0; max-width: 34em; }
+.lp-tools { list-style: none; margin: 28px 0 32px; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 24px; }
+.lp-tools a { text-decoration: none; }
+.lp-tools a:hover { color: var(--lp-accent); text-decoration: underline; text-underline-offset: 4px; }
+.lp-shots { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; }
+.lp-shot-0 { grid-column: 1 / -1; }
+.lp-shot-0 img { aspect-ratio: 16 / 9; }
+.lp-shot-1 img, .lp-shot-3 img { aspect-ratio: 16 / 10; }
+.lp-shot-2 { grid-row: span 2; }
+.lp-shot-2 a { height: calc(100% - 33px); }
+.lp-shot-2 img { object-position: 50% 30%; }
+@media (min-width: 960px) {
+  .lp-lab { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; align-items: start; }
+  /* 글이 그림 모자이크보다 짧으므로, 스크롤하는 동안 글이 함께 내려와 왼쪽이 비지 않게 */
+  .lp-lab-text { position: sticky; top: 32px; }
+}
+
+/* 자동차진단평가사: 바탕 전체를 어둡게 바꾼 구역과 실제 기출 한 문제 */
+.lp-field { background: var(--lp-field); color: var(--lp-field-fg); }
+.lp-exam { display: grid; gap: 48px; padding: clamp(96px, 12vw, 160px) 0; }
+.lp-exam-text p { color: var(--lp-field-fg); }
+.lp-exam-text .lp-btn { margin-top: 32px; }
+@media (min-width: 960px) {
+  .lp-exam { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; align-items: start; }
+}
+.lp-vin { display: flex; flex-wrap: nowrap; gap: 0.06em; margin: 0; font-size: clamp(19px, 2.8vw, 40px); font-weight: 700; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.lp-vin span { display: inline-grid; place-items: center; min-width: 0.78em; padding: 0.04em 0.04em; border-radius: 0.18em; }
+.lp-vin .is-key { background: var(--lp-accent); color: #ffffff; padding-inline: 0.12em; }
+.lp-q-text { margin: 24px 0 18px; font-size: 18px; color: var(--lp-field-fg); }
+.lp-opts { display: grid; gap: 8px; }
+@media (min-width: 560px) { .lp-opts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.lp-opt {
+  display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 12px 16px; text-align: left;
+  border: 0; border-radius: 14px; background: rgba(255, 255, 255, 0.08); color: var(--lp-field-fg);
+  font: inherit; font-size: 18px; cursor: pointer;
+  transition: background-color 0.2s var(--lp-ease), transform 0.15s var(--lp-ease), opacity 0.25s var(--lp-ease);
+}
+.lp-opt:hover:not(:disabled) { background: rgba(255, 255, 255, 0.14); }
+.lp-opt:active:not(:disabled) { transform: scale(0.98); }
+.lp-opt:disabled { cursor: default; }
+.lp-opt-n { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: rgba(255, 255, 255, 0.14); font-size: 15px; font-weight: 600; }
+.lp-opt[data-state="right"] { background: rgba(48, 209, 88, 0.22); }
+.lp-opt[data-state="right"] .lp-opt-n { background: var(--lp-ok); color: #000000; }
+.lp-opt[data-state="wrong"] { background: rgba(255, 69, 58, 0.22); animation: lp-shake 0.32s var(--lp-ease); }
+.lp-opt[data-state="wrong"] .lp-opt-n { background: var(--lp-bad); color: #ffffff; }
+.lp-opt[data-state="dim"] { opacity: 0.4; }
+@keyframes lp-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-2px); } }
+.lp-q-result { margin: 18px 0 0; min-height: 3.2em; font-size: 18px; color: var(--lp-field-fg); }
+.lp-q-result b { font-weight: 700; }
+
+/* 끝: 이름이 화면 너비로 돌아온다 */
+.lp-foot { background: var(--lp-tile); padding: clamp(64px, 8vw, 112px) 0 calc(40px + env(safe-area-inset-bottom, 0px)); overflow: hidden; }
+.lp-foot-name { margin: 0; font-size: clamp(72px, 19vw, 260px); font-weight: 700; letter-spacing: -0.06em; line-height: 0.9; }
+.lp-foot-note { margin: 28px 0 0; max-width: 46em; font-size: 15px; color: var(--lp-fg-2); }
+
+/* 등장: 제목 → 글 → 그림 순서로 24px 떠오르며 나타난다 (스크립트가 붙인 lp-wait 일 때만 숨김) */
+.lp-wait { opacity: 0; transform: translateY(24px); }
+.lp-wait.lp-in { opacity: 1; transform: none; transition: opacity 0.7s var(--lp-ease), transform 0.9s var(--lp-ease); transition-delay: var(--d, 0ms); }
 
 @media (prefers-reduced-motion: reduce) {
-  .lp-tile, .lp-hero { animation: none; }
-  .lp-tile, .lp-glyph, .lp-chevron { transition: none; }
+  .lp-wait { opacity: 1; transform: none; }
+  .lp-hero-shot img, .lp-opt[data-state="wrong"] { animation: none; }
+  .lp figure img, .lp-btn, .lp-opt { transition: none; }
 }
 
 /* 기출문제집 화면 위쪽 '처음 화면' 링크 */
